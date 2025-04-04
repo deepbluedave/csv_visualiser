@@ -16,7 +16,7 @@ let defaultConfig = {
       "true", "TRUE", "yes", "y", "1", "✓", "x", "on"
     ],
     "csvDelimiter": ",",
-    "multiValueColumns": [], // No multi-value columns in this specific task dataset
+    "multiValueColumns": ["Project"], // No multi-value columns in this specific task dataset
 
     // --- NEW ---
     // List of columns containing URLs that should be rendered as links
@@ -121,7 +121,7 @@ let defaultConfig = {
       "layout": { // Default layout settings are likely fine
         "maxItemsPerGroupInColumn": 4, // Allow slightly more stacking maybe
         "preventStackingAboveItemCount": 10,
-        "minColumnWidth": "320px", // Slightly wider cards maybe
+        "minColumnWidth": "500px", // Slightly wider cards maybe
         "columnGap": "15px",
         "itemGap": "10px" // Slightly smaller gap between cards
       }
@@ -131,7 +131,7 @@ let defaultConfig = {
       "enabled": true,
       "groupByColumn": "Project", // Within sections, group by Project for context
       "internalLayout": {
-          "minColumnWidth": "280px",
+          "minColumnWidth": "500px",
           "columnGap": "15px",
           "itemGap": "10px",
           "maxItemsPerGroupInColumn": 2 // Allow a bit of stacking
