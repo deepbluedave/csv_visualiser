@@ -1,0 +1,2095 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV Dashboard Generator</title> <!-- Title set by JS -->
+
+    <!-- Link to the external CSS files -->
+    
+    
+    
+    
+    
+    
+    
+
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>CSV Dashboard Generator</h1> <!-- Title set by JS -->
+
+    <!-- Upload Area -->
+    <div id="uploadContainer">
+        <label for="csvFileInput">Upload CSV Data File:</label>
+        <input type="file" id="csvFileInput" accept=".csv">
+        <!-- Icon Key Container -->
+        <div id="iconKeyContainer">
+            <!-- Key will be rendered here by JS -->
+        </div>
+        <!-- End Icon Key Container -->
+    </div>
+
+    <!-- Tab Controls -->
+    <div id="tabControls">
+        <!-- Buttons are static, active state managed by JS -->
+        <button class="tab-button active" data-view="table">Table View</button>
+        <button class="tab-button" data-view="kanban">Kanban View</button>
+        <button class="tab-button" data-view="summary">Summary View</button>
+        <button class="tab-button" data-view="counts">Counts View</button>
+    </div>
+
+    <!-- View Containers -->
+    <div id="tableView" class="view-container active"> <!-- Start with table active -->
+        <table>
+            <thead>
+                <tr id="tableHeaderRow">
+                    <!-- Table headers added by JS -->
+                </tr>
+            </thead>
+            <tbody id="dataTableBody">
+                <!-- Table data rows added by JS -->
+            </tbody>
+        </table>
+        <div id="tableMessage" class="message-placeholder visible">Upload CSV File</div> <!-- Start visible -->
+    </div>
+
+    <div id="kanbanView" class="view-container">
+        <!-- Kanban grid items (.kanban-column) added by JS -->
+        <div id="kanbanMessage" class="message-placeholder visible">Upload CSV File</div> <!-- Start visible -->
+    </div>
+
+    <div id="summaryView" class="view-container">
+        <!-- Summary sections added dynamically by JS -->
+        <div id="summaryMessage" class="message-placeholder visible">Upload CSV File</div> <!-- Start visible -->
+        <!-- Notes section structure remains -->
+        <div id="notesSection" class="summary-section summary-notes" style="display: none;"> <!-- Start hidden -->
+             <textarea id="summaryNotesArea" placeholder="Notes (saved in browser)..."></textarea>
+        </div>
+   </div>
+
+    <div id="countsView" class="view-container">
+        <!-- Counts grid added by JS -->
+        <div id="countsMessage" class="message-placeholder visible">Upload CSV File</div> <!-- Start visible -->
+    </div>
+
+    <!-- Link to external JavaScript files -->
+    <!-- config.js MUST come before app.js as it defines the global defaultConfig -->
+    <script src="config.js"></script>
+    <!-- Load the main app script as a module -->
+    <script type="module">
+/* --- Combined Application Modules Start --- */
+/* --- Start: js/renderers/renderer-shared.js --- */
+// --- START OF FILE js/renderers/renderer-shared.js ---
+
+/**
+ * Checks if a value represents a "truthy" state based on config.generalSettings.trueValues.
+ * Case-insensitive comparison.
+ * @param {*} value The value to check.
+ * @param {object} config The application configuration.
+ * @returns {boolean} True if the value matches a configured true value.
+ */
+function isTruthy(value, config) {
+    // Explicitly handle null and undefined
+    if (value === null || typeof value === 'undefined') return false;
+    // Convert value to string and lowercase for comparison
+    const stringValue = String(value).toLowerCase();
+    // Empty string is not considered truthy
+    if (stringValue === '') return false;
+    // Get configured true values, default if not set, ensure lowercase
+    const trueValsLower = (config.generalSettings?.trueValues || ["true", "yes", "1", "y", "x", "on", "✓"])
+                            .map(v => String(v).toLowerCase());
+    // Check if the lowercase string value is in the list of true values
+    return trueValsLower.includes(stringValue);
+}
+
+/**
+ * Formats a single value as an HTML tag based on indicatorStyles configuration.
+ * @param {string} value The single string value to format.
+ * @param {object} config The application configuration.
+ * @param {string} columnName The name of the column this value belongs to.
+ * @param {string} [titlePrefix=''] Optional prefix for the tag's title attribute.
+ * @returns {string} The HTML string for the tag, or an empty string if value is empty or no style applies.
+ */
+function formatTag(value, config, columnName, titlePrefix = '') {
+    const stringValue = String(value || ''); // Ensure it's a string, default empty
+    // Don't render tags for empty values
+    if (stringValue === '') return '';
+
+    const columnStyle = config.indicatorStyles?.[columnName];
+    // Check if style exists, is type 'tag', and has a valueMap
+    if (!columnStyle || columnStyle.type !== 'tag' || !columnStyle.valueMap) {
+        // Default fallback tag if no specific style configuration found
+        // Uses the raw value as text and part of the title
+        return `<span class="tag tag-default" title="${titlePrefix}${stringValue}">${stringValue}</span>`;
+    }
+
+    const valueMap = columnStyle.valueMap;
+    const lowerValue = stringValue.toLowerCase(); // For case-insensitive matching
+
+    // Find matching style definition in valueMap:
+    // 1. Exact match (case-sensitive)
+    // 2. Lowercase match (case-insensitive)
+    // 3. 'default' entry in the valueMap
+    const tagStyle = valueMap.hasOwnProperty(stringValue) ? valueMap[stringValue] :
+                       valueMap.hasOwnProperty(lowerValue) ? valueMap[lowerValue] :
+                       valueMap['default']; // Use 'default' if defined and no specific match
+
+    // If no specific match and no 'default' defined, fallback to default tag style
+    if (!tagStyle) {
+        return `<span class="tag tag-default" title="${titlePrefix}${stringValue}">${stringValue}</span>`;
+    }
+
+    // Determine tag properties based on the matched style definition
+    const displayText = tagStyle.text || stringValue; // Use override text from style, or the original value
+    const bgColor = tagStyle.bgColor || 'var(--color-tag-default-bg, #eee)'; // Use style color or CSS variable/default
+    const textColor = tagStyle.textColor || 'var(--color-tag-default-text, #555)';
+    // Use specific title from style if provided, otherwise construct default title
+    const customTitle = tagStyle.title !== undefined ? tagStyle.title : `${titlePrefix || ''}${stringValue}`;
+    // Border defaults to background color for solid look, unless overridden in style
+    const borderColor = tagStyle.borderColor || bgColor;
+
+    // Construct inline style string
+    let styleString = `background-color: ${bgColor}; color: ${textColor}; border-color: ${borderColor};`;
+
+    // Return the complete tag HTML
+    return `<span class="tag" style="${styleString}" title="${customTitle}">${displayText}</span>`;
+}
+
+
+/**
+ * Generates HTML string for indicators (icons/tags) for a given column in a row.
+ * Handles both single string values and arrays of strings (multi-value columns).
+ * Adds a space after each generated indicator element.
+ * Prioritizes rendering link icons for columns defined in config.generalSettings.linkColumns.
+ * @param {object} row The data row object.
+ * @param {string} columnName The header name of the column.
+ * @param {object} config The application configuration object.
+ * @returns {string} The generated HTML string (potentially empty).
+ */
+function generateIndicatorsHTML(row, columnName, config) {
+    const linkColumns = config.generalSettings?.linkColumns || [];
+    const value = row[columnName]; // Could be string, array, null, undefined
+    let indicatorsHTML = ''; // Accumulate HTML
+
+    // --- NEW: Check if this column is designated as a LINK column FIRST ---
+    if (linkColumns.includes(columnName)) {
+        // Treat as potential link(s). If array, render icon for each valid URL.
+        const valuesToCheck = Array.isArray(value) ? value : [value];
+        valuesToCheck.forEach(singleValue => {
+            const url = String(singleValue || '').trim();
+            if (url.startsWith('http://') || url.startsWith('https://')) {
+                // Return only the link icon HTML for indicators
+                // Added class 'card-link-icon' for specific card styling if needed
+                indicatorsHTML += `<a href="${url}" target="_blank" rel="noopener noreferrer" title="Open Link: ${url}" class="card-link-icon">🔗</a> `;
+            }
+            // We typically don't show non-URL text as a link *indicator* on cards.
+        });
+        return indicatorsHTML.trim(); // Return link icons found, or empty string
+    }
+    // --- END NEW ---
+
+    // --- If NOT a link column, proceed with standard indicator style logic ---
+    const styleConfig = config.indicatorStyles ? config.indicatorStyles[columnName] : null;
+
+    // No style defined for this column, return empty string
+    if (!styleConfig || styleConfig.type === 'none') return '';
+
+    // Ensure we always process an array, even for single values
+    const valuesToProcess = Array.isArray(value) ? value : [value];
+
+    valuesToProcess.forEach(singleValue => {
+        // Ensure we have a non-null/undefined value to work with
+        const currentValue = singleValue ?? '';
+        if (currentValue === '') return; // Skip empty strings
+
+        try {
+            // Handle ICON type indicators (existing logic)
+            if (styleConfig.type === 'icon') {
+                let iconApplied = false;
+                // 1. Check trueCondition first (for boolean-like icons)
+                if (styleConfig.trueCondition && !iconApplied && isTruthy(currentValue, config)) {
+                    indicatorsHTML += `<span class="icon ${styleConfig.trueCondition.cssClass || ''}" title="${styleConfig.trueCondition.title || columnName}">${styleConfig.trueCondition.value || '?'}</span> `; // Add space
+                    iconApplied = true;
+                }
+                // 2. Check valueMap if trueCondition didn't apply or doesn't exist
+                if (styleConfig.valueMap && !iconApplied) {
+                     const valueLower = String(currentValue).toLowerCase();
+                     const mapping = styleConfig.valueMap.hasOwnProperty(currentValue) ? styleConfig.valueMap[currentValue] :
+                                      styleConfig.valueMap.hasOwnProperty(valueLower) ? styleConfig.valueMap[valueLower] : null;
+                     if (mapping && mapping !== styleConfig.valueMap.default) {
+                        indicatorsHTML += `<span class="icon ${mapping.cssClass || ''}" title="${mapping.title || columnName + ': ' + currentValue}">${mapping.value || '?'}</span> `;
+                        iconApplied = true;
+                     }
+                     else if (styleConfig.valueMap.default && !iconApplied) {
+                         const defaultMapping = styleConfig.valueMap.default;
+                         if(defaultMapping.value) {
+                             indicatorsHTML += `<span class="icon ${defaultMapping.cssClass || ''}" title="${defaultMapping.title || columnName + ': ' + currentValue}">${defaultMapping.value}</span> `;
+                             iconApplied = true;
+                         }
+                     }
+                }
+            }
+            // Handle TAG type indicators (existing logic)
+            else if (styleConfig.type === 'tag') {
+                const tagHTML = formatTag(currentValue, config, columnName, styleConfig.titlePrefix);
+                if (tagHTML) {
+                    indicatorsHTML += tagHTML + ' '; // Add space after the tag
+                }
+            }
+        } catch (e) {
+            console.error(`Error generating standard indicator for column "${columnName}", value "${currentValue}":`, e);
+        }
+    });
+
+    return indicatorsHTML.trim(); // Return accumulated HTML, remove trailing space
+}
+
+
+/**
+ * Creates the HTML structure for a single initiative card.
+ * @param {object} row The data row object.
+ * @param {object} config The application configuration object.
+ * @param {string} [cardClass='kanban-card'] The CSS class for the card element.
+ * @returns {HTMLElement} The card DOM element.
+ */
+function createInitiativeCard(row, config, cardClass = 'kanban-card') {
+    const cardDiv = document.createElement('div');
+    cardDiv.className = cardClass;
+
+    const headerDiv = document.createElement('div');
+    headerDiv.className = 'card-header';
+
+    const titleSpan = document.createElement('span');
+    titleSpan.className = 'card-title';
+
+    // Determine Title Column - Fallback Logic: KB -> TV[0] -> CSV[0] -> 'Title'
+    let titleCol = 'Title'; // Ultimate fallback
+    const validHeaders = config.csvHeaders || [];
+    if (validHeaders.length > 0) titleCol = validHeaders[0]; // Default to first actual header
+    const kbTitleCol = config.viewSettings?.kanbanView?.cardTitleColumn;
+    const tvFirstCol = config.viewSettings?.tableView?.displayColumns?.[0];
+
+    // Prioritize Kanban config, then Table config, then first CSV header
+    if (kbTitleCol && validHeaders.includes(kbTitleCol)) {
+         titleCol = kbTitleCol;
+    } else if (tvFirstCol && validHeaders.includes(tvFirstCol)) {
+         titleCol = tvFirstCol;
+    } // else titleCol remains the first valid header or 'Title'
+
+    // Safely get title value using the determined titleCol
+    const titleValue = validHeaders.includes(titleCol) ? (row[titleCol] || `[No ${titleCol}]`) : `[${titleCol} Header Missing]`;
+    titleSpan.textContent = titleValue;
+
+    // --- Link Handling (Specific for Card TITLE) ---
+    // This uses cardLinkColumn specifically, distinct from general linkColumns
+    const titleLinkColumn = config.viewSettings?.cardLinkColumn;
+    let linkElement = null;
+    // Check if title link column is configured, exists in headers, and has a value in the row
+    if (titleLinkColumn && validHeaders.includes(titleLinkColumn) && row[titleLinkColumn]) {
+        const url = String(row[titleLinkColumn]).trim(); // Treat link column as single value
+        // Basic check for http/https URL
+        if (url.startsWith('http://') || url.startsWith('https://')) {
+            linkElement = document.createElement('a');
+            linkElement.href = url;
+            linkElement.target = '_blank'; // Open in new tab
+            linkElement.rel = 'noopener noreferrer'; // Security best practice
+            linkElement.className = 'card-title-link'; // For specific styling
+            linkElement.title = `Link to: ${url}`; // Tooltip for the link
+        } else if (url) {
+            // console.warn(`Card "${titleValue}": Value in title link column "${titleLinkColumn}" ("${url}") is not a valid http/https URL.`);
+        }
+    }
+
+    // Append titleSpan inside link if link exists, otherwise append titleSpan directly
+    if (linkElement) {
+        titleSpan.title = titleValue; // Keep tooltip on the text itself
+        linkElement.appendChild(titleSpan);
+        headerDiv.appendChild(linkElement); // Add the <a> tag (containing the title span)
+    } else {
+        titleSpan.title = titleValue; // Add tooltip directly to the title span
+        headerDiv.appendChild(titleSpan);
+    }
+
+    // --- Indicators (Uses generateIndicatorsHTML which now handles linkColumns) ---
+    const indicatorsSpan = document.createElement('span');
+    indicatorsSpan.className = 'card-indicators';
+    let indicatorsHTML = '';
+    // Use Kanban's indicator columns config for consistency on cards
+    const indicatorCols = config.viewSettings?.kanbanView?.cardIndicatorColumns || [];
+
+    indicatorCols.forEach(colName => {
+        // Only process if the column is actually in the data
+        if (validHeaders.includes(colName)) {
+            // generateIndicatorsHTML handles arrays and the linkColumns check internally
+            indicatorsHTML += generateIndicatorsHTML(row, colName, config);
+        } else {
+            // console.warn(`createInitiativeCard: Indicator column "${colName}" not found in CSV headers.`);
+        }
+    });
+
+    // Add indicators to header only if HTML was generated
+    indicatorsSpan.innerHTML = indicatorsHTML.trim();
+    if (indicatorsSpan.innerHTML) {
+        headerDiv.appendChild(indicatorsSpan);
+    }
+
+    cardDiv.appendChild(headerDiv);
+    return cardDiv;
+}
+
+
+/**
+ * Renders grouped data items into a grid structure, potentially using column wrappers for stacking.
+ * @param {HTMLElement} parentGridContainer The container element where the grid/columns will be appended.
+ * @param {object} groupedData Data grouped by a key (e.g., { groupKey1: [row1, row2], groupKey2: [...] }).
+ * @param {object} config The main application configuration.
+ * @param {object|null} layoutConfig Configuration object for layout (e.g., { maxItemsPerGroupInColumn: 3, itemGap: '10px' }).
+ * @param {string} cardClass CSS class for individual item cards.
+ * @param {string} groupBlockClass CSS class for the block containing items of a single group key.
+ * @param {string} columnWrapperClass CSS class for the optional wrapper div used for stacking group blocks.
+ * @param {string} [groupTitleElement='h4'] HTML tag name for the group title (e.g., 'h3', 'h4').
+ * @param {string[]|null} [sortedKeys=null] Optional pre-sorted array of keys from groupedData to control rendering order.
+ */
+function renderGroupedItemsAsGrid(parentGridContainer, groupedData, config, layoutConfig, cardClass, groupBlockClass, columnWrapperClass, groupTitleElement = 'h4', sortedKeys = null) {
+    const keysToRender = sortedKeys ? sortedKeys : Object.keys(groupedData).sort();
+    if (keysToRender.length === 0) return; // Nothing to render
+
+    const maxGroupsPerColumn = Math.max(1, parseInt(layoutConfig?.maxItemsPerGroupInColumn, 10) || 1);
+
+    let currentColumnWrapper = null;
+    let groupsInCurrentColumn = 0;
+
+    keysToRender.forEach(groupKey => {
+        const groupItems = groupedData[groupKey];
+        if (!groupItems || groupItems.length === 0) return; // Skip empty groups
+
+        let targetContainer; // Where the group block will be appended
+
+        // Determine if stacking wrappers are needed
+        if (maxGroupsPerColumn > 1) {
+             // Need a new wrapper?
+             if (currentColumnWrapper === null || groupsInCurrentColumn >= maxGroupsPerColumn) {
+                currentColumnWrapper = document.createElement('div');
+                currentColumnWrapper.className = columnWrapperClass;
+                // Apply item gap for stacked items within the wrapper
+                if (layoutConfig?.itemGap) currentColumnWrapper.style.gap = layoutConfig.itemGap;
+                parentGridContainer.appendChild(currentColumnWrapper);
+                groupsInCurrentColumn = 0; // Reset counter for new wrapper
+            }
+            targetContainer = currentColumnWrapper; // Add block to the wrapper
+        } else {
+            // No stacking: Group blocks are direct children of the grid
+            targetContainer = parentGridContainer;
+        }
+
+        // Create the group block
+        const groupBlockDiv = document.createElement('div');
+        groupBlockDiv.className = groupBlockClass;
+
+        // Add header (e.g., H4)
+        const header = document.createElement(groupTitleElement);
+        header.textContent = groupKey;
+        groupBlockDiv.appendChild(header);
+
+        // Add cards
+        groupItems.forEach(row => {
+            groupBlockDiv.appendChild(createInitiativeCard(row, config, cardClass));
+        });
+
+        // Append the block to the correct container
+        if (targetContainer) {
+            targetContainer.appendChild(groupBlockDiv);
+            if (maxGroupsPerColumn > 1) {
+                 groupsInCurrentColumn++; // Increment counter only if using wrappers
+            }
+        } else {
+             console.error("renderGroupedItemsAsGrid: targetContainer is unexpectedly null.");
+        }
+    });
+}
+
+// --- END OF FILE js/renderers/renderer-shared.js ---
+/* --- End: js/renderers/renderer-shared.js --- */
+/* --- Start: js/config-loader.js --- */
+// --- START OF FILE js/config-loader.js ---
+
+/**
+ * Applies the dashboard title from the configuration to the document and H1 tag.
+ * @param {object} config The application configuration object.
+ * @param {HTMLElement} mainHeading The H1 element.
+ */
+function applyCustomTitle(config, mainHeading) {
+    const titleText = config?.generalSettings?.dashboardTitle || 'CSV Dashboard';
+    document.title = titleText;
+    if (mainHeading) {
+        mainHeading.textContent = titleText;
+    } else {
+        console.warn("applyCustomTitle: Could not find H1 element to update.");
+    }
+}
+
+/**
+ * Applies dynamic CSS styles based on the configuration (e.g., layout dimensions).
+ * @param {object} config The application configuration object.
+ */
+function applyConfigStyles(config) {
+    try {
+        // Apply Kanban layout styles from config to the specific #kanbanView element
+        const kbView = document.getElementById('kanbanView'); // Query within function
+        if (kbView && config.viewSettings?.kanbanView?.layout) {
+            const layout = config.viewSettings.kanbanView.layout;
+            // Set CSS variables used by kanban CSS rules
+            kbView.style.setProperty('--kanban-min-col-width', layout.minColumnWidth || '280px');
+            kbView.style.gap = layout.columnGap || '15px'; // This is the grid gap for columns
+            // Set the item gap (between group blocks within a column wrapper) on the root or body for simplicity,
+            // as it's used by .kanban-column which is dynamically created.
+            document.documentElement.style.setProperty('--kanban-item-gap', layout.itemGap || '12px');
+        }
+
+        // Apply Summary internal layout styles from config
+        const summaryInternalLayout = config.viewSettings?.summaryView?.internalLayout;
+         if (summaryInternalLayout) {
+              // Set CSS variables used by summary CSS rules (applied to .summary-section-grid and .summary-group-column)
+              document.documentElement.style.setProperty('--summary-inner-min-col-width', summaryInternalLayout.minColumnWidth || '260px');
+              document.documentElement.style.setProperty('--summary-inner-column-gap', summaryInternalLayout.columnGap || '15px');
+              document.documentElement.style.setProperty('--summary-inner-item-gap', summaryInternalLayout.itemGap || '10px');
+         }
+    } catch (e) {
+        console.error("Error applying config styles:", e);
+    }
+}
+
+// --- END OF FILE js/config-loader.js ---
+/* --- End: js/config-loader.js --- */
+/* --- Start: js/data-handler.js --- */
+// --- START OF FILE js/data-handler.js ---
+
+/**
+ * Parses a single line of CSV text, respecting quotes and escaped quotes.
+ * @param {string} line The CSV line string.
+ * @param {string} delimiter The delimiter character.
+ * @returns {string[]} An array of field values.
+ */
+function parseCSVLine(line, delimiter = ',') {
+    const values = [];
+    let currentPos = 0;
+    let insideQuotes = false;
+    let currentValue = '';
+
+    while (currentPos < line.length) {
+        const char = line[currentPos];
+
+        if (insideQuotes) {
+            if (char === '"') {
+                // Check if it's an escaped quote ("")
+                if (currentPos + 1 < line.length && line[currentPos + 1] === '"') {
+                    currentValue += '"'; // Add one literal quote
+                    currentPos++; // Skip the second quote
+                } else {
+                    insideQuotes = false; // End of quoted field
+                }
+            } else {
+                currentValue += char; // Add character inside quotes
+            }
+        } else { // Not inside quotes
+            if (char === '"') {
+                // Start of quoted field only if current value is empty
+                if (currentValue === '') {
+                   insideQuotes = true;
+                } else {
+                   // Treat quote literally if it appears mid-field without being the start
+                   currentValue += char;
+                }
+            } else if (char === delimiter) {
+                values.push(currentValue); // End of field
+                currentValue = ''; // Reset for next field
+            } else {
+                currentValue += char; // Add character
+            }
+        }
+        currentPos++;
+    }
+
+    values.push(currentValue); // Add the last value
+    // Trim whitespace AFTER parsing is complete
+    return values.map(v => v.trim());
+}
+
+/**
+ * Parses the entire CSV text content.
+ * Handles multi-value columns specified in config.
+ * Returns the parsed data and headers.
+ * @param {string} csvText The raw CSV content.
+ * @param {object} config The application configuration.
+ * @returns {{data: object[], headers: string[]}} Object containing parsed data and headers.
+ * @throws {Error} If CSV is empty or parsing fails critically.
+ */
+function parseCSV(csvText, config) {
+    const lines = csvText.trim().split(/\r?\n/);
+    if (lines.length < 1) {
+        console.warn("parseCSV: CSV appears empty or has no header row.");
+        return { data: [], headers: [] }; // Return empty structure
+    }
+
+    const delimiter = config.generalSettings?.csvDelimiter || ',';
+    const headers = parseCSVLine(lines[0], delimiter);
+
+    if (lines.length < 2) {
+        console.warn("parseCSV: CSV has headers but no data rows.");
+        return { data: [], headers: headers }; // Return headers only
+    }
+
+    const data = [];
+    const multiValCols = config.generalSettings?.multiValueColumns || [];
+
+    for (let i = 1; i < lines.length; i++) {
+        const lineText = lines[i].trim();
+        if (!lineText) {
+             // console.log(`parseCSV: Skipping blank line ${i + 1}.`);
+             continue; // Skip truly blank lines
+        }
+
+        // Parse data row using the robust parser
+        const values = parseCSVLine(lineText, delimiter);
+         if (values.length !== headers.length && values.length > 0) { // Only warn if not empty but mismatched
+             console.warn(`parseCSV: Row ${i + 1} has ${values.length} fields, but header has ${headers.length}. Data may be misaligned. Line: "${lineText}"`);
+         }
+
+        const rowObject = {};
+        let hasContent = false; // Flag to check if row has any non-empty data
+
+        for (let j = 0; j < headers.length; j++) {
+            const header = headers[j];
+            if (header) { // Ensure header exists
+                // Use parsed value if available, otherwise default to empty string
+                let value = values[j] ?? ''; // Use nullish coalescing
+
+                // Multi-Value Splitting: Check if column is designated AND value is string containing a comma
+                if (multiValCols.includes(header) && typeof value === 'string' && value.includes(',')) {
+                    // Split, trim, filter out empty strings resulting from split (e.g. "val1,,val3")
+                    value = value.split(',')
+                                 .map(part => part.trim())
+                                 .filter(part => part !== '');
+                    // If splitting results in only one item, revert to string for simplicity
+                    if (value.length === 1) {
+                         value = value[0];
+                    } else if (value.length === 0) {
+                         value = ''; // Handle cases like " , , " resulting in empty array
+                    }
+                    // Otherwise, 'value' remains an array of strings
+                }
+
+                rowObject[header] = value;
+                // Check if value (string or array) has content
+                if (value && ((typeof value === 'string' && value.length > 0) || (Array.isArray(value) && value.length > 0))) {
+                     hasContent = true;
+                }
+            }
+        }
+
+        // Add row only if it contains some content based on parsed values
+        if (hasContent) {
+            data.push(rowObject);
+        } else {
+            // console.log(`parseCSV: Skipping row ${i + 1} because it parsed to empty values.`);
+        }
+    }
+    return { data, headers };
+}
+
+
+/**
+ * Fetches CSV data from the specified URL.
+ * @param {string} url The URL to fetch the CSV from.
+ * @returns {Promise<string>} Resolves with the CSV content as a string.
+ * @throws {Error} If fetching fails or response is not ok.
+ */
+async function loadDataFromUrl(url) {
+    console.log(`Attempting to fetch data from: ${url}`);
+    try {
+        const response = await fetch(url);
+
+        if (!response.ok) {
+            // Handle HTTP errors (e.g., 404 Not Found, 500 Server Error)
+            throw new Error(`HTTP error fetching CSV: ${response.status} ${response.statusText} from ${url}`);
+        }
+
+        const csvContent = await response.text();
+        console.log(`Successfully fetched ${csvContent.length} characters from URL.`);
+        return csvContent; // Resolve with the content
+
+    } catch (error) {
+        // Log network errors specifically if possible
+        let errorMsg = `Error loading from URL: ${error.message}.`;
+         if (error instanceof TypeError && error.message.toLowerCase().includes('failed to fetch')) {
+             // Common browser message for network/CORS issues
+              errorMsg += ` Check network connection, URL validity (${url}), and CORS policy on the server hosting the CSV.`;
+         } else if (error.message.includes('HTTP error')) {
+             // Error already contains status/text
+         } else {
+              // Other unexpected errors
+              errorMsg += ` An unexpected error occurred during fetch. Check console.`
+         }
+        console.error("Error in loadDataFromUrl:", errorMsg);
+        // Re-throw a potentially more informative error
+        throw new Error(errorMsg);
+    }
+}
+
+
+/**
+ * Reads CSV content from a user-selected file.
+ * @param {File} file The file object selected by the user.
+ * @returns {Promise<string>} Resolves with the CSV content as a string.
+ * @throws {Error} If file reading fails.
+ */
+function readFileContent(file) {
+    return new Promise((resolve, reject) => {
+        if (!file) {
+            return reject(new Error("No file provided."));
+        }
+        console.log(`readFileContent: Reading file: ${file.name}`);
+
+        const reader = new FileReader();
+
+        reader.onload = function(e) {
+            console.log("FileReader.onload: File read complete.");
+            const csvContent = e.target.result;
+            if (csvContent === null || csvContent === undefined) { // Allow empty string ""
+                 console.error("FileReader.onload: CSV content is null/undefined.");
+                 return reject(new Error("Could not read file content (result was null/undefined)."));
+            }
+            console.log(`FileReader.onload: Read ${csvContent.length} characters.`);
+            resolve(csvContent); // Resolve with the content
+        };
+
+        reader.onerror = function(evt) {
+            console.error("FileReader error:", reader.error);
+            reject(new Error(`Error reading file: ${reader.error.message || 'Unknown error'}`));
+        };
+
+        console.log("readFileContent: Reading file as text...");
+        reader.readAsText(file);
+    });
+}
+
+
+// --- END OF FILE js/data-handler.js ---
+/* --- End: js/data-handler.js --- */
+/* --- Start: js/notes-handler.js --- */
+// --- START OF FILE js/notes-handler.js ---
+
+const NOTES_STORAGE_KEY = 'csvDashboardNotes_v1';
+
+/**
+ * Handles changes to the notes text area and saves to localStorage.
+ * @param {Event} event The input event from the textarea.
+ */
+function handleNotesChange(event) {
+    try {
+        const notesArea = event.target;
+        if (notesArea) {
+            localStorage.setItem(NOTES_STORAGE_KEY, notesArea.value);
+        }
+    } catch (e) {
+        console.warn("Note save error (localStorage might be full or disabled):", e);
+        // Potentially inform user storage failed (e.g., via a non-blocking UI element)
+        // alert("Could not save notes. Browser storage might be full or unavailable.");
+    }
+ }
+
+/**
+ * Loads saved notes from localStorage into the text area.
+ * @param {HTMLTextAreaElement} notesArea The textarea element to load notes into.
+ */
+ function loadNotes(notesArea) {
+     if (!notesArea) return;
+     try {
+         const savedNotes = localStorage.getItem(NOTES_STORAGE_KEY);
+         if (savedNotes) {
+             notesArea.value = savedNotes;
+         }
+     } catch (e) {
+         console.warn("Note load error (localStorage might be unavailable):", e);
+     }
+ }
+
+// --- END OF FILE js/notes-handler.js ---
+/* --- End: js/notes-handler.js --- */
+/* --- Start: js/view-manager.js --- */
+// --- START OF FILE js/view-manager.js ---
+
+
+// Keep track of fetched DOM elements passed from app.js
+let domElements = {};
+let appState = { parsedData: [], currentConfig: {} };
+
+/**
+ * Initializes the View Manager with necessary DOM elements and state reference.
+ * @param {object} elements Object containing references to key DOM elements.
+ * @param {object} state Object containing references to shared state (parsedData, currentConfig).
+ */
+function initViewManager(elements, state) {
+    domElements = elements;
+    appState = state;
+}
+
+/**
+ * Shows the specified view and hides others. Updates tab states. Manages content/message visibility.
+ * @param {string} viewId The ID of the view to show ('table', 'kanban', 'summary', 'counts').
+ */
+function showView(viewId) {
+    const { viewContainers, tabControls, tableBody, kanbanBoard, kanbanMessage, countsView, countsMessage, summaryView } = domElements;
+
+    if (!viewContainers || viewContainers.length === 0) {
+         console.error("showView: No view containers found.");
+         return;
+    }
+
+    // --- Hide all view containers first ---
+    viewContainers.forEach(c => {
+        if (c) {
+            c.classList.remove('active');
+            c.style.display = 'none';
+        }
+    });
+
+    // --- Determine which container to show ---
+    const activeContainer = document.getElementById(viewId + 'View');
+
+    if (activeContainer) {
+        activeContainer.classList.add('active');
+        // Set display type based on view ID (matches CSS)
+        let displayType = 'block'; // Default for table, unknown
+        if (viewId === 'kanban' || viewId === 'counts') {
+            displayType = 'grid';
+        } else if (viewId === 'summary') {
+            displayType = 'flex';
+        }
+        activeContainer.style.display = displayType;
+    } else {
+        console.warn(`showView: Container for viewId '${viewId}View' not found.`);
+        // Fallback: Try showing the first available view based on tabs
+        const firstViewButton = tabControls?.querySelector('.tab-button');
+        const firstViewId = firstViewButton?.getAttribute('data-view');
+        if (firstViewId && firstViewId !== viewId) {
+            console.log(`Falling back to view: ${firstViewId}`);
+            showView(firstViewId); // Recursive call with fallback
+        } else {
+             // Ultimate fallback: show error in table message area if possible
+             if(domElements.tableMessage) showMessage(`View '${viewId}' not found.`, 'tableMessage');
+        }
+        return; // Exit early as the intended view wasn't shown
+    }
+
+    // --- Update tab button styling ---
+    if (tabControls) {
+        tabControls.querySelectorAll('.tab-button').forEach(b => {
+            b.classList.toggle('active', b.getAttribute('data-view') === viewId);
+        });
+    }
+
+     // --- Update message visibility and content display based on data ---
+     // Check if parsedData actually exists and has length > 0
+    const hasData = appState.parsedData && appState.parsedData.length > 0;
+
+    if (!hasData) {
+        // No data: Show "Upload CSV" message ONLY in the active view's placeholder
+        showMessageOnLoad(viewId);
+        // Ensure specific content areas are explicitly hidden
+        if (tableBody) tableBody.style.display = 'none';
+        // Hide Kanban content children (excluding message)
+        if (kanbanBoard && kanbanMessage) {
+            Array.from(kanbanBoard.children).forEach(c => { if (c !== kanbanMessage) c.style.display = 'none'; });
+        }
+        // Hide Counts content children (excluding message)
+        if (countsView && countsMessage) {
+            Array.from(countsView.children).forEach(c => { if (c !== countsMessage) c.style.display = 'none'; });
+        }
+        // Hide summary sections/notes area
+        showSummarySections(false); // Pass false to hide
+    } else {
+        // Data exists: Hide all message placeholders
+         hideMessages();
+        // Ensure content areas are potentially visible (actual display controlled by render funcs/CSS)
+        // Note: Display style (block/grid/flex) is set above when activating container
+        if (viewId === 'table' && tableBody) tableBody.style.display = ''; // Use default display (tbody)
+        if (viewId === 'kanban' && kanbanBoard && kanbanMessage) {
+             Array.from(kanbanBoard.children).forEach(c => { if (c !== kanbanMessage) c.style.display = ''; }); // Show content blocks
+        }
+        if (viewId === 'counts' && countsView && countsMessage) {
+            Array.from(countsView.children).forEach(c => { if (c !== countsMessage) c.style.display = ''; }); // Show content blocks
+        }
+        // Show summary sections/notes only if summary view is active and enabled
+        showSummarySections(viewId === 'summary'); // Pass true only if summary is active
+    }
+}
+
+
+/**
+ * Clears data display areas in all views.
+ * @param {boolean} [keepPlaceholders=false] If true, keeps message placeholders visible.
+ */
+function clearAllViews(keepPlaceholders = false) {
+    console.log("Clearing all views content...");
+    const { tableHeaderRow, tableBody, kanbanBoard, kanbanMessage, summaryView, summaryMessage, notesSection, countsView, countsMessage, iconKeyContainer } = domElements;
+
+    // Clear content areas
+    if(tableHeaderRow) tableHeaderRow.innerHTML='';
+    if(tableBody) { tableBody.innerHTML=''; tableBody.style.display = 'none'; }
+    if(kanbanBoard && kanbanMessage) { kanbanBoard.innerHTML=''; kanbanBoard.appendChild(kanbanMessage); } // Keep placeholder
+    if(summaryView && summaryMessage && notesSection) {
+         // Remove only generated sections, keep message/notes structure
+         Array.from(summaryView.querySelectorAll('.summary-section:not(.summary-notes)')).forEach(el => el.remove());
+         // Ensure placeholder is still there before notes
+         if(!summaryView.contains(summaryMessage)) { summaryView.insertBefore(summaryMessage, notesSection); }
+    }
+    if(countsView && countsMessage) { countsView.innerHTML=''; countsView.appendChild(countsMessage); } // Keep placeholder
+
+    // Reset visibility states
+    showSummarySections(false); // Hide summary content areas specifically
+    if (!keepPlaceholders) {
+        hideMessages(); // Hide messages unless specifically told to keep them
+    }
+    if(iconKeyContainer) iconKeyContainer.style.display = 'none'; // Hide icon key
+}
+
+
+/**
+ * Shows the initial "Upload CSV File" or "Loading..." message in the specified view's placeholder.
+ * If no viewId is provided, attempts to show in all placeholders.
+ * @param {string|null} viewId The ID of the view ('table', 'kanban', etc.) or null for all.
+ * @param {string} [message="Upload CSV File"] The message to display.
+ */
+ function showMessageOnLoad(viewId = null, message = "Upload CSV File") {
+    const { tableMessage, kanbanMessage, summaryMessage, countsMessage } = domElements;
+    const placeholders = {
+        table: tableMessage,
+        kanban: kanbanMessage,
+        summary: summaryMessage,
+        counts: countsMessage
+    };
+
+    // Hide all first to ensure only target(s) show message
+    Object.values(placeholders).forEach(el => {
+        if (el) el.classList.remove('visible');
+    });
+
+    if (viewId && placeholders[viewId]) {
+        // Show in specific target view
+         if(placeholders[viewId]){
+            placeholders[viewId].textContent = message;
+            placeholders[viewId].classList.add('visible');
+         }
+    } else if (viewId === null) {
+         // Show in ALL placeholders
+        Object.values(placeholders).forEach(el => {
+            if (el) {
+                el.textContent = message;
+                el.classList.add('visible');
+            }
+        });
+    }
+    // Else (invalid targetViewId), do nothing, messages remain hidden
+}
+
+
+/**
+ * Displays a message in a specific view's placeholder or the active view's placeholder.
+ * Hides the corresponding content area when showing a message.
+ * @param {string} messageText The message to display.
+ * @param {string|null} targetIdSuffix The ID suffix of the message placeholder (e.g., 'table') or null to use active view.
+ */
+function showMessage(messageText, targetIdSuffix = null) {
+     const { tableMessage, kanbanMessage, summaryMessage, countsMessage, tableBody, kanbanBoard, summaryView, countsView } = domElements;
+     const messages = { table: tableMessage, kanban: kanbanMessage, summary: summaryMessage, counts: countsMessage };
+     let targetEl;
+
+     if (targetIdSuffix && messages[targetIdSuffix]) {
+         targetEl = messages[targetIdSuffix];
+     } else {
+         // Find active placeholder if no specific target
+         const activeView = document.querySelector('.view-container.active');
+         targetEl = activeView ? activeView.querySelector('.message-placeholder') : null;
+         // Fallback to table message if no active view found
+         if (!targetEl) targetEl = tableMessage;
+     }
+
+     if(targetEl) {
+         targetEl.textContent = messageText;
+         targetEl.classList.add('visible');
+
+         // Hide corresponding content area when showing a message IN THAT VIEW
+         if (targetEl === tableMessage && tableBody) { tableBody.style.display = 'none'; }
+         else if (targetEl === kanbanMessage && kanbanBoard) { Array.from(kanbanBoard.children).forEach(c => { if (c !== targetEl) c.style.display = 'none'; }); }
+         else if (targetEl === summaryMessage && summaryView) { showSummarySections(false); } // Use helper to hide sections/notes
+         else if (targetEl === countsMessage && countsView) { Array.from(countsView.children).forEach(c => { if (c !== targetEl) c.style.display = 'none'; }); }
+
+     } else {
+          console.warn("showMessage: Could not find target message element for ID suffix:", targetIdSuffix);
+          alert(`Message: ${messageText}`); // Use alert as last resort
+     }
+ }
+
+ /**
+  * Hides all message placeholders.
+  */
+ function hideMessages() {
+     const { tableMessage, kanbanMessage, summaryMessage, countsMessage } = domElements;
+     // Hide all placeholders
+     [tableMessage, kanbanMessage, summaryMessage, countsMessage].forEach(m => {
+         if (m) m.classList.remove('visible');
+     });
+     // Content visibility is managed by showView based on data presence and active tab
+ }
+
+
+/**
+ * Controls the visibility of summary sections and the notes area based on config and data.
+ * @param {boolean} shouldShow If true, attempts to show sections/notes (if enabled and data exists). If false, hides them.
+ */
+function showSummarySections(shouldShow) {
+    const { summaryView, notesSection, summaryMessage } = domElements;
+    const config = appState.currentConfig; // Get current config from shared state
+    const hasData = appState.parsedData && appState.parsedData.length > 0;
+
+    const summaryEnabled = config.viewSettings?.summaryView?.enabled !== false;
+    const notesEnabled = config.viewSettings?.notesView?.enabled !== false;
+
+    // --- Handle Summary Sections visibility ---
+    if (summaryView) {
+         // Show/hide generated sections based on 'shouldShow' flag AND if summary is enabled
+         Array.from(summaryView.querySelectorAll('.summary-section:not(.summary-notes)')).forEach(el => {
+             el.style.display = (shouldShow && summaryEnabled) ? 'flex' : 'none'; // Use flex as defined in CSS
+         });
+         // Show/hide the main summary message placeholder
+         if(summaryMessage) {
+             // Show placeholder ONLY if summary sections should be hidden (!shouldShow) AND there's NO data
+             summaryMessage.classList.toggle('visible', !shouldShow && !hasData && summaryEnabled);
+         }
+    }
+
+    // --- Handle Notes Section visibility separately ---
+    if(notesSection) {
+         // Show notes ONLY if: summary view is enabled, notes view is enabled,
+         // data exists, AND we are currently supposed to show summary content (shouldShow is true)
+         notesSection.style.display = (summaryEnabled && notesEnabled && hasData && shouldShow) ? 'flex' : 'none';
+    }
+}
+
+
+/**
+ * Renders an icon key based on icon indicators defined in 'indicatorStyles'
+ * AND adds a generic entry for configured link columns.
+ * @param {object} config The application configuration object.
+ */
+function renderIconKey(config) {
+    const { iconKeyContainer } = domElements;
+    if (!iconKeyContainer) { return; }
+    if (!config) { iconKeyContainer.innerHTML = ''; iconKeyContainer.style.display = 'none'; return; }
+
+    const iconEntries = [];
+    const processedKeys = new Set();
+
+    // --- Process indicatorStyles (Existing Logic) ---
+    if (config.indicatorStyles) {
+        for (const columnName in config.indicatorStyles) {
+            const styleConfig = config.indicatorStyles[columnName];
+            if (styleConfig?.type === 'icon') {
+                // 1. Check trueCondition
+                if (styleConfig.trueCondition?.value) {
+                    const entry = {
+                        icon: styleConfig.trueCondition.value,
+                        title: styleConfig.trueCondition.title || `${columnName} is True`,
+                        cssClass: styleConfig.trueCondition.cssClass || ''
+                    };
+                    const key = `${entry.icon}|${entry.title}`;
+                    if (!processedKeys.has(key)) { iconEntries.push(entry); processedKeys.add(key); }
+                }
+                // 2. Check valueMap
+                if (styleConfig.valueMap) {
+                    for (const valueKey in styleConfig.valueMap) {
+                         if (valueKey === 'default') continue;
+                         const mapping = styleConfig.valueMap[valueKey];
+                         if (mapping?.value) {
+                            const entry = {
+                                icon: mapping.value,
+                                title: mapping.title || `${columnName}: ${valueKey}`,
+                                cssClass: mapping.cssClass || ''
+                            };
+                            const key = `${entry.icon}|${entry.title}`;
+                            if (!processedKeys.has(key)) { iconEntries.push(entry); processedKeys.add(key); }
+                         }
+                    }
+                     // 3. Check 'default'
+                    if (styleConfig.valueMap.default?.value) {
+                        const defaultMapping = styleConfig.valueMap.default;
+                        const entry = {
+                            icon: defaultMapping.value,
+                            title: defaultMapping.title || `${columnName}: Default`,
+                            cssClass: defaultMapping.cssClass || ''
+                        };
+                        const key = `${entry.icon}|${entry.title}`;
+                        if (!processedKeys.has(key)) { iconEntries.push(entry); processedKeys.add(key); }
+                    }
+                }
+            }
+        }
+    }
+
+    // --- NEW: Add Link Icon Entry ---
+    const linkColumns = config.generalSettings?.linkColumns || [];
+    if (linkColumns.length > 0) {
+        const linkKeyEntry = { icon: '🔗', title: 'Link to URL', cssClass: 'icon-key-link' }; // Optional class
+        const key = `${linkKeyEntry.icon}|${linkKeyEntry.title}`;
+        // Add only if not already added (e.g., if multiple link columns exist, only add key once)
+        if (!processedKeys.has(key)) {
+            iconEntries.push(linkKeyEntry);
+            processedKeys.add(key);
+        }
+    }
+    // --- END NEW ---
+
+    // --- Sort and Render (Existing Logic) ---
+    iconEntries.sort((a, b) => a.title.localeCompare(b.title));
+
+    if (iconEntries.length > 0) {
+        let keyHTML = '<h4>Icon Key:</h4><ul>';
+        iconEntries.forEach(entry => {
+            keyHTML += `<li><span class="icon ${entry.cssClass || ''}" title="${entry.title}">${entry.icon}</span> = ${entry.title}</li>`;
+        });
+        keyHTML += '</ul>';
+        iconKeyContainer.innerHTML = keyHTML;
+        iconKeyContainer.style.display = '';
+    } else {
+        iconKeyContainer.innerHTML = '';
+        iconKeyContainer.style.display = 'none';
+    }
+}
+
+// --- END OF FILE js/view-manager.js ---
+/* --- End: js/view-manager.js --- */
+/* --- Start: js/renderers/renderer-table.js --- */
+// --- START OF FILE js/renderers/renderer-table.js ---
+
+
+/**
+ * Renders the data into the HTML table.
+ * @param {object[]} data The parsed CSV data.
+ * @param {object} config The application configuration object.
+ * @param {HTMLElement} tableHeaderRow The <thead><tr> element.
+ * @param {HTMLElement} tableBody The <tbody> element.
+ * @param {Function} showMessage Function to display messages (e.g., for errors).
+ */
+function renderTable(data, config, tableHeaderRow, tableBody, showMessage) {
+    if (!tableHeaderRow || !tableBody) {
+        console.error("renderTable: Table header or body element not provided.");
+        return;
+    }
+
+    // Clear previous content
+    tableHeaderRow.innerHTML = '';
+    tableBody.innerHTML = '';
+    tableBody.style.display = 'none'; // Hide body initially
+
+    if (!data || data.length === 0) {
+        // Message display is handled by the main app logic based on data presence
+        return;
+    }
+
+    const validHeaders = config.csvHeaders || [];
+    const columnsToDisplay = config.viewSettings?.tableView?.displayColumns || validHeaders;
+    const linkColumns = config.generalSettings?.linkColumns || []; // Get the list of link columns
+    let displayedHeaderCount = 0; // Calculate this during header rendering as before
+
+    // --- Render Header ---
+    columnsToDisplay.forEach(header => {
+        if (validHeaders.includes(header)) {
+            const th = document.createElement('th');
+            const span = document.createElement('span');
+            span.className = 'vertical-header-text';
+            span.textContent = header;
+            span.title = header;
+            th.appendChild(span);
+            tableHeaderRow.appendChild(th);
+            displayedHeaderCount++;
+        } else {
+            console.warn(`renderTable: Configured displayColumn "${header}" not found in CSV headers.`);
+        }
+    });
+
+    if (displayedHeaderCount === 0) {
+        showMessage("No valid columns found to display. Check 'displayColumns' in config.js against CSV headers.", 'tableMessage');
+        return;
+    }
+
+    // --- Render Body ---
+    data.forEach((row, rowIndex) => {
+        const tr = document.createElement('tr');
+        columnsToDisplay.forEach(header => {
+            // Ensure header is valid before creating cell
+            if (validHeaders.includes(header)) {
+                const td = document.createElement('td');
+                const value = row[header]; // Value might be string OR array
+                let cellHTML = '';
+                let cellTitle = ''; // Tooltip text
+
+                // --- NEW: Link Column Handling FIRST ---
+                if (linkColumns.includes(header)) {
+                    // Treat as a potential link - assumes single value, not array for links
+                    const url = String(value || '').trim();
+                    if (url.startsWith('http://') || url.startsWith('https://')) {
+                        // Use an icon for the link
+                        cellHTML = `<a href="${url}" target="_blank" rel="noopener noreferrer" title="Open Link: ${url}" class="table-link-icon">🔗</a>`;
+                        cellTitle = `Link: ${url}`; // Tooltip for the cell itself
+                    } else if (url) {
+                        cellHTML = url; // Display text if not a valid URL but has content
+                        cellTitle = url;
+                        // Optional: Add a class to style non-URL text in link columns differently
+                        td.classList.add('link-column-invalid-url');
+                    } else {
+                        cellHTML = ''; // Empty cell if no value
+                        cellTitle = '';
+                    }
+                }
+                // --- ELSE: Standard Column Handling (using shared indicator logic) ---
+                else {
+                    // This part remains mostly the same as before
+                    cellHTML = generateIndicatorsHTML(row, header, config); // Handles arrays internally
+
+                    // Generate tooltip title (raw value or joined array)
+                    if (Array.isArray(value)) {
+                        cellTitle = value.join(', ');
+                    } else {
+                        cellTitle = String(value || '');
+                    }
+
+                    // If no indicator HTML, display the raw value/tooltip text
+                    if (!cellHTML?.trim() && cellTitle) {
+                        cellHTML = cellTitle;
+                    } else if (!cellTitle && cellHTML) {
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = cellHTML;
+                        cellTitle = tempDiv.firstChild?.title || header;
+                    }
+                }
+
+                td.innerHTML = cellHTML;
+                td.title = cellTitle; // Set tooltip for the cell
+                tr.appendChild(td);
+            }
+        });
+        // Append row only if it has the expected number of cells
+         if (tr.children.length === displayedHeaderCount) {
+             tableBody.appendChild(tr);
+         } else {
+             console.warn(`renderTable: Row ${rowIndex+1} cell count mismatch. Expected ${displayedHeaderCount}, got ${tr.children.length}. Row Data:`, row);
+         }
+    });
+
+    tableBody.style.display = ''; // Show body after rendering rows
+}
+// --- END OF FILE js/renderers/renderer-table.js ---
+/* --- End: js/renderers/renderer-table.js --- */
+/* --- Start: js/renderers/renderer-kanban.js --- */
+// --- START OF FILE js/renderers/renderer-kanban.js ---
+
+
+/**
+ * Renders the data into the Kanban view.
+ * @param {object[]} data The parsed CSV data.
+ * @param {object} config The application configuration object.
+ * @param {HTMLElement} kanbanBoard The main container element for the Kanban view.
+ * @param {Function} showMessage Function to display messages (e.g., for errors).
+ */
+function renderKanban(data, config, kanbanBoard, showMessage) {
+    if (!kanbanBoard) {
+        console.error("renderKanban: Kanban board element not provided.");
+        return;
+    }
+    const kanbanMessage = kanbanBoard.querySelector('.message-placeholder'); // Find existing placeholder
+
+    // Clear previous content (excluding the message placeholder)
+    kanbanBoard.innerHTML = '';
+    if (kanbanMessage) kanbanBoard.appendChild(kanbanMessage); // Re-add placeholder
+
+    if (!data || data.length === 0) {
+        // Message display is handled by the main app logic
+        return;
+    }
+
+    const viewConf = config.viewSettings?.kanbanView;
+    const groupCol = viewConf?.groupByColumn;
+    const titleCol = viewConf?.cardTitleColumn; // Used within createInitiativeCard
+    const layoutConf = viewConf?.layout;
+    const validHeaders = config.csvHeaders || [];
+
+    // --- Validate Essential Config ---
+    if (!groupCol || !validHeaders.includes(groupCol)) {
+         showMessage(`Kanban 'groupByColumn' ("${groupCol || ''}") invalid or missing in CSV. Check config.js.`, 'kanbanMessage');
+         return;
+    }
+     if (titleCol && !validHeaders.includes(titleCol)) {
+          // Allow proceeding but warn, title fallback logic exists in createInitiativeCard
+          console.warn(`renderKanban: Kanban 'cardTitleColumn' ("${titleCol}") not found in CSV headers. Card titles may fallback.`);
+     }
+
+    // --- Get Layout Settings ---
+    const maxGroupsPerColumn = Math.max(1, parseInt(layoutConf?.maxItemsPerGroupInColumn, 10) || 1);
+    // Default threshold is high to effectively disable it unless explicitly set lower. 0 also disables.
+    const largeGroupThreshold = Math.max(0, parseInt(layoutConf?.preventStackingAboveItemCount, 10) || 10000);
+
+    // --- 1. Group Data ---
+    const grouped = data.reduce((acc, row) => {
+        // Handle potential missing groupCol value gracefully
+        const categoryValue = (validHeaders.includes(groupCol) ? row[groupCol] : undefined) ?? 'Uncategorized';
+        // Ensure category is a string for keying
+        const category = Array.isArray(categoryValue) ? categoryValue.join(', ') : String(categoryValue);
+        if (!acc[category]) acc[category] = [];
+        acc[category].push(row);
+        return acc;
+    }, {});
+
+    // --- 2. Sort Groups by Item Count (Descending) ---
+    const sortedGroupKeys = Object.keys(grouped).sort((keyA, keyB) => {
+        return (grouped[keyB]?.length || 0) - (grouped[keyA]?.length || 0);
+    });
+
+    // --- 3. Render into Columns ---
+    let currentColumnWrapper = null;
+    let groupsInCurrentColumn = 0;
+    let currentColumnIsFull = false;
+
+    sortedGroupKeys.forEach((groupKey) => {
+        const groupData = grouped[groupKey];
+        if (!groupData || groupData.length === 0) return; // Skip empty groups
+
+        const itemCountInGroup = groupData.length;
+        // A group is considered large if threshold > 0 AND count exceeds threshold
+        const isLargeGroup = largeGroupThreshold > 0 && itemCountInGroup > largeGroupThreshold;
+
+        // --- Create new column wrapper if needed ---
+        // Conditions:
+        // 1. It's the first group (currentColumnWrapper is null)
+        // 2. The previous column was marked as full (currentColumnIsFull is true)
+        if (currentColumnWrapper === null || currentColumnIsFull) {
+            currentColumnWrapper = document.createElement('div');
+            currentColumnWrapper.className = 'kanban-column';
+            kanbanBoard.appendChild(currentColumnWrapper); // Append new column to board
+            groupsInCurrentColumn = 0;
+            currentColumnIsFull = false; // Reset flag for the new column
+        }
+
+        // --- Create the group block for the current groupKey ---
+        const groupBlockDiv = document.createElement('div');
+        groupBlockDiv.className = 'kanban-group-block';
+        const header = document.createElement('h3');
+        header.textContent = groupKey;
+        groupBlockDiv.appendChild(header);
+
+        // --- Add cards to the group block ---
+        groupData.forEach(row => {
+            groupBlockDiv.appendChild(createInitiativeCard(row, config, 'kanban-card'));
+        });
+
+        // --- Add the populated group block to the current column ---
+        if (!currentColumnWrapper) {
+             // This should ideally not happen due to the logic above, but safeguard anyway
+             console.error(`renderKanban: Fatal logic error - currentColumnWrapper is null when adding group "${groupKey}". Creating fallback column.`);
+             currentColumnWrapper = document.createElement('div');
+             currentColumnWrapper.className = 'kanban-column';
+             kanbanBoard.appendChild(currentColumnWrapper);
+        }
+        currentColumnWrapper.appendChild(groupBlockDiv);
+        groupsInCurrentColumn++;
+
+        // --- Check if the current column is now full ---
+        // Conditions:
+        // 1. The group just added was a "large" group.
+        // 2. The number of groups in the column has reached the maximum allowed.
+        if (isLargeGroup || groupsInCurrentColumn >= maxGroupsPerColumn) {
+             currentColumnIsFull = true; // Mark column as full, next group will start a new column
+        }
+    });
+
+    // Message placeholder visibility is handled by the main app logic
+}
+// --- END OF FILE js/renderers/renderer-kanban.js ---
+/* --- End: js/renderers/renderer-kanban.js --- */
+/* --- Start: js/renderers/renderer-summary.js --- */
+// --- START OF FILE js/renderers/renderer-summary.js ---
+
+
+/**
+ * Checks if a row matches the filter criteria defined in a summary section configuration.
+ * Handles multi-value columns.
+ * @param {object} row The data row object.
+ * @param {object} sectionConf The configuration object for the summary section.
+ * @param {object} config The main application configuration.
+ * @returns {boolean} True if the row matches the filter criteria.
+ */
+function checkFilter(row, sectionConf, config) {
+     if (!sectionConf || !sectionConf.filterType) return false;
+     // catchAll is handled by the calling function (renderSummaryView) based on processed items
+     if (sectionConf.filterType === 'catchAll') return false;
+
+     const filterColumn = sectionConf.filterColumn;
+     // Allow null filterColumn only if filterType doesn't strictly require it (e.g., future 'alwaysTrue' filter)
+     // For current filters, a column is generally needed.
+     if (!filterColumn) {
+         // Allow filterType 'catchAll' (already handled), otherwise log warning if column missing
+         if (sectionConf.filterType !== 'catchAll') {
+             console.warn(`checkFilter: filterColumn is missing or null for filterType "${sectionConf.filterType}" in section "${sectionConf.title}".`);
+         }
+         return false;
+     }
+
+     if (!config.csvHeaders.includes(filterColumn)) {
+         // console.warn(`checkFilter: filterColumn "${filterColumn}" not in headers for section "${sectionConf.title}".`);
+         return false; // Cannot filter on non-existent column
+     }
+
+     const rowValue = row[filterColumn] ?? ''; // Use nullish coalescing for default empty string
+     const filterVal = sectionConf.filterValue;
+     let result = false;
+
+     // Always work with an array of values from the row for consistent checks
+     const valuesToCheck = Array.isArray(rowValue) ? rowValue : [rowValue];
+     // Filter out empty strings from the array for checks like 'valueNotEmpty' or list checks
+     const meaningfulValues = valuesToCheck.filter(v => v !== null && v !== undefined && v !== '');
+
+     try {
+         switch(sectionConf.filterType) {
+             case 'booleanTrue':
+                 // Check if ANY value in the original array is truthy
+                 result = valuesToCheck.some(v => isTruthy(v, config));
+                 break;
+             case 'valueEquals':
+                  // Check if ANY value equals the filter value (case-insensitive)
+                 result = valuesToCheck.some(v => String(v).toLowerCase() === String(filterVal ?? '').toLowerCase());
+                 break;
+             case 'valueInList':
+                 // Check if ANY row value is present in the filterValue list (case-insensitive)
+                 const filterListLower = Array.isArray(filterVal) ? filterVal.map(fv => String(fv).toLowerCase()) : [];
+                  if (filterListLower.length === 0 && meaningfulValues.length > 0) {
+                      // If filter list is empty, it can never match a non-empty value
+                      result = false;
+                  } else if (filterListLower.length > 0) {
+                      // Check if any meaningful value from the row exists in the filter list
+                      result = meaningfulValues.some(v => filterListLower.includes(String(v).toLowerCase()));
+                  } else {
+                      // Both filter list and meaningful values are empty - arguably not a match
+                      result = false;
+                  }
+                 break;
+             case 'valueNotEmpty':
+                  // Check if there was at least one non-empty/non-null/undefined value
+                 result = meaningfulValues.length > 0;
+                 break;
+             // Add future numeric filters here if needed (would require parsing values)
+             // case 'numericLessThan':
+             // case 'numericGreaterThan':
+             default:
+                 console.warn(`checkFilter: Unknown filterType: ${sectionConf.filterType} in section "${sectionConf.title}"`);
+                 result = false;
+         }
+     } catch (e) {
+          console.error(`Error during filter check for section "${sectionConf.title}", filterType "${sectionConf.filterType}":`, e);
+          result = false;
+     }
+     return result;
+}
+
+
+/**
+ * Renders the entire Summary View, including filtered sections and catch-all.
+ * @param {object[]} data The parsed CSV data.
+ * @param {object} config The application configuration object.
+ * @param {HTMLElement} summaryViewContainer The main container element for the Summary view.
+ * @param {HTMLElement} notesSection The container element for the notes area.
+ */
+function renderSummaryView(data, config, summaryViewContainer, notesSection) {
+    if (!summaryViewContainer) {
+        console.error("renderSummaryView: Summary view container element not provided.");
+        return;
+    }
+    const summaryMessage = summaryViewContainer.querySelector('.message-placeholder'); // Find existing placeholder
+
+    // --- Clear only previously generated sections ---
+    Array.from(summaryViewContainer.querySelectorAll('.summary-section:not(.summary-notes)'))
+         .forEach(el => el.remove());
+
+    // Re-ensure message placeholder exists relative to notes section if needed
+    if (summaryMessage && notesSection && !summaryViewContainer.contains(summaryMessage)) {
+        summaryViewContainer.insertBefore(summaryMessage, notesSection);
+    } else if (summaryMessage && !summaryViewContainer.contains(summaryMessage)) {
+        summaryViewContainer.appendChild(summaryMessage); // Fallback append
+    }
+
+
+    if (!data || data.length === 0) {
+        // Message display handled by main app logic
+        return;
+    }
+
+    const sectionsConfig = config.viewSettings?.summaryView?.sections || [];
+    const summaryGroupByCol = config.viewSettings?.summaryView?.groupByColumn;
+    const internalLayoutConf = config.viewSettings?.summaryView?.internalLayout;
+    const validHeaders = config.csvHeaders || [];
+    let itemsProcessed = new Set(); // Track items included in specific filters for catchAll logic
+
+    // --- Validate Grouping Column (once) ---
+    const isGroupingValid = summaryGroupByCol && validHeaders.includes(summaryGroupByCol);
+    if (summaryGroupByCol && !isGroupingValid) {
+        console.warn(`Summary view groupByColumn "${summaryGroupByCol}" is invalid or missing in CSV headers. Sections will list items directly.`);
+    }
+
+    // --- Helper to create and append a section ---
+    const createSection = (sectionConf, items) => {
+        const sectionDiv = document.createElement('div');
+        sectionDiv.className = 'summary-section';
+        sectionDiv.id = sectionConf.id || `summary-section-${Math.random().toString(36).substr(2, 9)}`;
+        if (sectionConf.bgColor) sectionDiv.style.backgroundColor = sectionConf.bgColor;
+        if (sectionConf.textColor) sectionDiv.style.color = sectionConf.textColor;
+
+        const titleH3 = document.createElement('h3');
+        titleH3.textContent = sectionConf.title || 'Section';
+        sectionDiv.appendChild(titleH3);
+
+        if (items.length === 0) {
+            const emptyMsg = document.createElement('div');
+            emptyMsg.className = 'empty-section-message';
+            emptyMsg.textContent = `No items match criteria.`;
+            sectionDiv.appendChild(emptyMsg);
+        } else {
+            // Grouping logic
+            if (isGroupingValid) {
+                const subGroupedData = items.reduce((acc, row) => {
+                    // Handle potential multi-value or missing value in group column
+                    const catValue = row[summaryGroupByCol] ?? 'Uncategorized';
+                    const cat = Array.isArray(catValue) ? catValue.join(', ') : String(catValue);
+                    if (!acc[cat]) acc[cat] = [];
+                    acc[cat].push(row);
+                    return acc;
+                }, {});
+                const sortedSubGroupKeys = Object.keys(subGroupedData).sort((a, b) => (subGroupedData[b]?.length || 0) - (subGroupedData[a]?.length || 0));
+
+                const gridContainer = document.createElement('div');
+                gridContainer.className = 'summary-section-grid';
+                // Apply layout styles dynamically IF they exist in config
+                 if (internalLayoutConf?.minColumnWidth) gridContainer.style.setProperty('--summary-inner-min-col-width', internalLayoutConf.minColumnWidth);
+                 if (internalLayoutConf?.columnGap) gridContainer.style.gap = internalLayoutConf.columnGap;
+                 // itemGap is applied via the renderGroupedItemsAsGrid function to the wrapper
+
+                renderGroupedItemsAsGrid(
+                    gridContainer, subGroupedData, config, internalLayoutConf,
+                    'summary-card', 'summary-group-block', 'summary-group-column', 'h4', // Use H4 for inner groups
+                    sortedSubGroupKeys
+                );
+                sectionDiv.appendChild(gridContainer);
+            } else {
+                // Fallback to simple list if grouping column is invalid
+                const listContainer = document.createElement('div');
+                listContainer.style.paddingTop = '10px'; // Add space below header
+                items.forEach(item => { listContainer.appendChild(createInitiativeCard(item, config, 'summary-card')); });
+                sectionDiv.appendChild(listContainer);
+            }
+        }
+
+        // Insert section before the notes section (or message placeholder if notes hidden)
+        const insertionPoint = notesSection || summaryMessage;
+        if (insertionPoint && insertionPoint.parentNode === summaryViewContainer) {
+            summaryViewContainer.insertBefore(sectionDiv, insertionPoint);
+        } else {
+            summaryViewContainer.appendChild(sectionDiv); // Fallback append
+        }
+    };
+
+    // --- Pass 1: Render specific filter sections ---
+    sectionsConfig.forEach((sectionConf) => {
+        if (sectionConf.filterType === 'catchAll') return; // Handle in Pass 2
+
+        // Filter items for this section
+        const itemsMatchingFilter = data.filter(row => checkFilter(row, sectionConf, config));
+        // Track items processed for catchAll exclusion
+        itemsMatchingFilter.forEach(item => itemsProcessed.add(item));
+        // Create and append the section
+        createSection(sectionConf, itemsMatchingFilter);
+    });
+
+    // --- Pass 2: Render catchAll section (if configured) ---
+     const catchAllSectionConf = sectionsConfig.find(s => s.filterType === 'catchAll');
+     if (catchAllSectionConf) {
+         const itemsForCatchAll = data.filter(row => !itemsProcessed.has(row));
+         createSection(catchAllSectionConf, itemsForCatchAll);
+     }
+
+    // Visibility of sections/notes is handled by the main app logic (showSummarySections)
+}
+// --- END OF FILE js/renderers/renderer-summary.js ---
+/* --- End: js/renderers/renderer-summary.js --- */
+/* --- Start: js/renderers/renderer-counts.js --- */
+// --- START OF FILE js/renderers/renderer-counts.js ---
+
+
+/**
+ * Checks if a row's value matches a counter's filter criteria.
+ * Handles single values and arrays (multi-value columns).
+ * @param {string|string[]} rowValue The value from the row (can be string or array).
+ * @param {object} counterConfig The specific counter object from config.js.
+ * @param {object} appConfig The main application configuration (for trueValues).
+ * @returns {boolean} True if the row value matches the filter criteria.
+ */
+function checkCounterFilter(rowValue, counterConfig, appConfig) {
+    if (!counterConfig || !counterConfig.filterType) {
+        // console.warn("checkCounterFilter: Invalid counterConfig provided.", counterConfig);
+        return false;
+    }
+
+    const filterType = counterConfig.filterType;
+    const filterVal = counterConfig.filterValue; // Can be undefined, string, or array
+    let result = false;
+
+    // Ensure rowValue is always an array for consistent processing
+    const valuesToCheck = Array.isArray(rowValue) ? rowValue : [rowValue];
+
+    // Check if there's any meaningful data in the array to process
+    // Consider null, undefined, and empty strings as non-meaningful for most filters
+    const hasMeaningfulValue = valuesToCheck.some(v => v !== null && v !== undefined && v !== '');
+
+    // Early exit for most filters if no meaningful value exists
+    // Add exceptions here if needed (e.g., a future 'isEmpty' filter)
+    if (!hasMeaningfulValue && filterType !== 'valueIsEmpty') {
+         return false;
+    }
+
+    try {
+        switch (filterType) {
+            case 'booleanTrue':
+                // Check if ANY value in the array is truthy
+                result = valuesToCheck.some(v => isTruthy(v, appConfig));
+                break;
+            case 'valueEquals':
+                // Check if ANY value equals the filter value (case-insensitive)
+                // Ensure filterVal is treated as string for comparison
+                 result = valuesToCheck.some(v => String(v).toLowerCase() === String(filterVal ?? '').toLowerCase());
+                break;
+            case 'valueInList':
+                // Ensure filterVal is an array and check if ANY row value is in the list (case-insensitive)
+                const filterListLower = Array.isArray(filterVal) ? filterVal.map(fv => String(fv).toLowerCase()) : [];
+                if (filterListLower.length === 0) {
+                     // console.warn(`checkCounterFilter: filterType 'valueInList' used with empty or invalid filterValue for "${counterConfig.title}".`);
+                     result = false; // Cannot match anything in an empty list
+                     break;
+                 }
+                // Check if any value from the row exists in the filter list
+                result = valuesToCheck.some(v => filterListLower.includes(String(v).toLowerCase()));
+                break;
+            case 'valueNotEmpty':
+                // Row value must have at least one non-empty/non-null item
+                result = hasMeaningfulValue;
+                break;
+            // --- Example for potential future filter types ---
+            // case 'valueIsEmpty':
+            //     // Row value must be null, undefined, empty string, or an empty array / array of only empty strings
+            //     result = !hasMeaningfulValue;
+            //     break;
+            // case 'valueContains': // Check if ANY value contains the filterVal string
+            //     const searchTerm = String(filterVal ?? '').toLowerCase();
+            //     if (!searchTerm) { result = false; break; } // Cannot contain empty string meaningfully
+            //     result = valuesToCheck.some(v => String(v).toLowerCase().includes(searchTerm));
+            //     break;
+             // --- End Example ---
+            default:
+                console.warn(`checkCounterFilter: Unknown filterType: ${filterType} for counter "${counterConfig.title}"`);
+                result = false;
+        }
+    } catch (e) {
+        console.error(`Error during counter filter check (Title: "${counterConfig.title}", Type: "${filterType}"):`, e);
+        result = false;
+    }
+    return result;
+}
+
+
+/**
+ * Renders the Counts View based on explicit configuration in config.js.
+ * @param {object[]} data Parsed CSV data.
+ * @param {object} config The application configuration.
+ * @param {HTMLElement} countsViewContainer The main container element for the Counts view.
+ * @param {Function} showMessage Function to display messages (e.g., for errors).
+ */
+function renderCountsView(data, config, countsViewContainer, showMessage) {
+    if (!countsViewContainer) {
+        console.error("renderCountsView: Counts view container element not provided.");
+        return;
+    }
+    const countsMessage = countsViewContainer.querySelector('.message-placeholder'); // Find existing placeholder
+
+    // Clear previous content (excluding the message placeholder)
+    countsViewContainer.innerHTML = '';
+    if (countsMessage) countsViewContainer.appendChild(countsMessage); // Re-add placeholder
+
+
+    if (!data || data.length === 0) {
+        // Message display handled by main app logic
+        return;
+    }
+
+    // --- Get Config Specific to Counts View ---
+    const countsConf = config.viewSettings?.countsView;
+    if (!countsConf || countsConf.enabled === false) {
+        console.log("renderCountsView: Counts view is disabled in config.");
+        return; // View disabled
+    }
+
+    const countsGroupByCol = countsConf.groupByColumn;
+    const counters = countsConf.counters; // Array of counter definitions
+    const validHeaders = config.csvHeaders || [];
+
+    // --- Validate Config ---
+    if (!countsGroupByCol || !validHeaders.includes(countsGroupByCol)) {
+        showMessage(`Counts View 'groupByColumn' ("${countsGroupByCol || ''}") is invalid or missing in CSV headers. Check config.js.`, 'countsMessage');
+        return;
+    }
+    if (!counters || !Array.isArray(counters) || counters.length === 0) {
+        showMessage("Counts View requires a valid 'counters' array in its configuration. Check config.js.", 'countsMessage');
+        return;
+    }
+
+    // --- 1. Calculate Counts ---
+    // Structure: { counterTitle: { groupByValue: count, __total__: total } }
+    const indicatorCounts = {};
+    // Structure: { counterTitle: { displayHTML: '...', title: '...' } } - To store generated header details
+    const indicatorDetails = {};
+
+    data.forEach(row => {
+        // Get the value for grouping (e.g., Domain), handle if column missing or multi-value
+        let groupByValues = ['Uncategorized']; // Default
+        if (validHeaders.includes(countsGroupByCol)) {
+            // Get the raw value from the row for the specified grouping column
+            const rawGroupByValue = row[countsGroupByCol];
+
+            // Check if the raw value is an array (e.g., from multi-value column parsing)
+            if (Array.isArray(rawGroupByValue)) { // <-- CORRECTED: Use rawGroupByValue
+                // If it's an array, process it: join non-empty values or default
+                const meaningfulValues = rawGroupByValue.map(v => String(v || '').trim()).filter(v => v !== '');
+                groupByValues = meaningfulValues.length > 0 ? [meaningfulValues.join(', ')] : ['Uncategorized'];
+            } else if (rawGroupByValue !== null && rawGroupByValue !== undefined && String(rawGroupByValue).trim() !== '') {
+                // If it's a single, non-empty value, use it directly
+                groupByValues = [String(rawGroupByValue)];
+            }
+            // else: it's null, undefined, or empty string, so it stays ['Uncategorized']
+        }
+        // Use the primary (or only) group value determined above for this row's counts
+        const groupByValue = groupByValues[0];
+
+        // --- Iterate through each defined counter in the config ---
+        counters.forEach(counterConfig => {
+            // (The rest of the counter processing logic remains the same...)
+            // Basic validation of counter definition
+            if (!counterConfig.column || !counterConfig.title || !counterConfig.filterType) {
+                console.warn("renderCountsView: Skipping invalid counter config (missing column, title, or filterType):", counterConfig);
+                return;
+            }
+            // Check if the counter's target column exists in the CSV
+            if (!validHeaders.includes(counterConfig.column)) {
+                 // console.warn(`renderCountsView: Counter "${counterConfig.title}" column "${counterConfig.column}" not found in CSV headers. Skipping.`);
+                 return; // Don't spam console, maybe log once per column?
+            }
+
+            const rowValueToCheck = row[counterConfig.column]; // This could be string or array
+
+            // Check if the current row matches this counter's filter criteria
+            if (checkCounterFilter(rowValueToCheck, counterConfig, config)) {
+                const counterTitle = counterConfig.title; // Use the unique title from config
+
+                // Store display details (icon/text) if first time encountering this title
+                if (!indicatorDetails[counterTitle]) {
+                    let displayHTML = '';
+                    const displayConf = counterConfig.display;
+                    const cssClass = displayConf?.cssClass ? ` ${displayConf.cssClass}` : ''; // Add leading space if class exists
+                    const titleAttr = ` title="${counterConfig.title}"`;
+
+                    if (displayConf?.type === 'icon' && displayConf.value) {
+                         displayHTML = `<span class="icon${cssClass}"${titleAttr}>${displayConf.value}</span>`;
+                    } else if (displayConf?.type === 'text' && displayConf.value) {
+                         // Re-use tag icon class for simplicity or create a new one
+                         displayHTML = `<span class="count-header-tag-icon${cssClass}"${titleAttr}>${displayConf.value}</span>`;
+                    }
+                    indicatorDetails[counterTitle] = {
+                        displayHTML: displayHTML, // Store generated HTML
+                        title: counterTitle       // Store original title
+                    };
+                }
+
+                // Initialize count objects if needed
+                if (!indicatorCounts[counterTitle]) {
+                    indicatorCounts[counterTitle] = { "__total__": 0 };
+                }
+                if (!indicatorCounts[counterTitle][groupByValue]) { // Use the correct groupByValue here
+                    indicatorCounts[counterTitle][groupByValue] = 0;
+                }
+
+                // Increment counts
+                indicatorCounts[counterTitle][groupByValue]++; // Use the correct groupByValue here
+                indicatorCounts[counterTitle]["__total__"]++;
+            }
+        }); // End loop through counters
+    }); // End loop through data rows
+
+
+    // --- 2. Render Counts Grid ---
+    // Get the titles of counters that actually had matches
+    const sortedCounterTitles = Object.keys(indicatorCounts).sort((a, b) => a.localeCompare(b));
+
+    if (sortedCounterTitles.length === 0) {
+        showMessage("No items matched the configured counters.", 'countsMessage');
+        return;
+    }
+
+    // Create and append groups for each counter title
+    sortedCounterTitles.forEach(counterTitle => {
+        const groupByData = indicatorCounts[counterTitle]; // e.g., { Ops: 5, Risk: 2, __total__: 7 }
+        const details = indicatorDetails[counterTitle];   // { displayHTML: '...', title: '...' }
+        const totalCount = groupByData["__total__"];
+
+        // Create main container for this counter group
+        const indicatorGroupDiv = document.createElement('div');
+        indicatorGroupDiv.className = 'indicator-domain-group';
+
+        // Create header H3: Icon/Text + Title + Total
+        const groupHeader = document.createElement('h3');
+        groupHeader.innerHTML = `
+            ${details?.displayHTML || ''}
+            <span class="indicator-label">${details?.title || counterTitle}</span>
+            <span class="indicator-total-count">(Total: ${totalCount})</span>
+        `;
+        indicatorGroupDiv.appendChild(groupHeader);
+
+        // Create container for the small boxes (grouped by countsGroupByCol)
+        const boxesContainer = document.createElement('div');
+        boxesContainer.className = 'domain-boxes-container';
+
+        // Get and sort the keys for the grouping column (e.g., 'Ops', 'Risk')
+        const groupByKeys = Object.keys(groupByData)
+                                .filter(key => key !== "__total__") // Exclude the total count entry
+                                .sort((a, b) => a.localeCompare(b)); // Sort group-by values alphabetically
+
+        if (groupByKeys.length > 0) {
+            // Create a box for each group-by value that has a count > 0
+            groupByKeys.forEach(groupByKey => {
+                const count = groupByData[groupByKey];
+                if (count > 0) {
+                    const boxDiv = document.createElement('div');
+                    boxDiv.className = 'domain-count-box';
+                    // Display count and the group-by key (e.g., Domain name)
+                    // Use groupByCol name from config for clarity in label
+                    boxDiv.innerHTML = `<span class="count-number">${count}</span><span class="domain-label">${groupByKey}</span>`;
+                     // Tooltip provides full context: Indicator - GroupingColumn: GroupValue: Count
+                    boxDiv.title = `${details?.title || counterTitle} - ${countsGroupByCol}: ${groupByKey} (${count})`;
+                    boxesContainer.appendChild(boxDiv);
+                }
+            });
+            // Only add the boxes container if it has children
+            if (boxesContainer.children.length > 0) {
+                indicatorGroupDiv.appendChild(boxesContainer);
+            } else {
+                 // This case (total > 0 but no individual group > 0) seems unlikely but handle it
+                 const noCountsMsg = document.createElement('p');
+                 noCountsMsg.textContent = `No counts > 0 for any specific ${countsGroupByCol}.`;
+                 noCountsMsg.className = 'no-counts-message';
+                 indicatorGroupDiv.appendChild(noCountsMsg);
+            }
+        } else {
+            // Message if the counter had a total > 0 but no breakdown by the groupBy column found
+            const noCountsMsg = document.createElement('p');
+            noCountsMsg.textContent = `No breakdown by ${countsGroupByCol} found for this indicator.`;
+            noCountsMsg.className = 'no-counts-message';
+            indicatorGroupDiv.appendChild(noCountsMsg);
+        }
+
+        countsViewContainer.appendChild(indicatorGroupDiv); // Add the completed counter group to the view
+    });
+
+    // Message visibility handled by main app logic
+}
+// --- END OF FILE js/renderers/renderer-counts.js ---
+/* --- End: js/renderers/renderer-counts.js --- */
+/* --- Start: js/app.js --- */
+// --- START OF FILE js/app.js ---
+
+// --- Imports ---
+
+
+
+
+
+
+
+
+
+// --- Wait for DOM ---
+document.addEventListener('DOMContentLoaded', () => {
+    console.log("DOM fully loaded and parsed");
+
+    // --- Get DOM Elements ---
+    const fileInput = document.getElementById('csvFileInput');
+    const uploadContainer = document.getElementById('uploadContainer');
+    const tabControls = document.getElementById('tabControls');
+    const viewContainers = document.querySelectorAll('.view-container');
+    const tableHeaderRow = document.getElementById('tableHeaderRow');
+    const tableBody = document.getElementById('dataTableBody');
+    const kanbanBoard = document.getElementById('kanbanView');
+    const summaryView = document.getElementById('summaryView');
+    const notesArea = document.getElementById('summaryNotesArea');
+    const notesSection = document.getElementById('notesSection');
+    const tableMessage = document.getElementById('tableMessage');
+    const kanbanMessage = document.getElementById('kanbanMessage');
+    const summaryMessage = document.getElementById('summaryMessage');
+    const countsView = document.getElementById('countsView');
+    const countsMessage = document.getElementById('countsMessage');
+    const mainHeading = document.querySelector('h1');
+    const iconKeyContainer = document.getElementById('iconKeyContainer');
+
+    // Check if essential elements were found
+    if (!fileInput || !tabControls || !tableBody || !kanbanBoard || !summaryView || !countsView || !mainHeading) {
+        console.error("Essential DOM elements missing. Dashboard cannot initialize.");
+        // Display a critical error message to the user
+        document.body.innerHTML = '<h1 style="color: red; text-align: center; margin-top: 50px;">Critical Error: Required HTML elements are missing. Cannot load dashboard.</h1>';
+        return; // Stop execution
+    }
+
+    // Collect DOM elements for View Manager
+    const domElements = {
+        fileInput, uploadContainer, tabControls, viewContainers,
+        tableHeaderRow, tableBody, kanbanBoard, summaryView, notesArea, notesSection,
+        tableMessage, kanbanMessage, summaryMessage, countsView, countsMessage,
+        mainHeading, iconKeyContainer, kanbanMessage, countsMessage // Ensure placeholders are included
+    };
+
+
+    // --- State ---
+    // Use defaultConfig from config.js (loaded globally) as the initial base
+    let currentConfig = JSON.parse(JSON.stringify(defaultConfig));
+    let parsedData = [];
+    // csvHeaders will be populated in currentConfig by parseCSV
+    let currentView = 'table'; // Default starting view
+
+    // --- State Object for View Manager ---
+    // Provides access to shared state without passing everything individually
+    const appState = {
+        get parsedData() { return parsedData; },
+        get currentConfig() { return currentConfig; }
+    };
+
+    // --- Initialization ---
+    initViewManager(domElements, appState); // Pass elements & state ref to View Manager
+    initializeDashboard();
+
+    // --- Event Listeners ---
+    if (fileInput) fileInput.addEventListener('change', handleFileSelectEvent);
+    if (tabControls) tabControls.addEventListener('click', handleTabClick);
+    if (notesArea) notesArea.addEventListener('input', handleNotesChange); // Uses handler from notes-handler.js
+
+
+    // --- Core Application Functions ---
+
+    /**
+     * Initializes the dashboard: applies config, loads notes, attempts URL load or enables upload.
+     */
+    function initializeDashboard() {
+        console.log("Initializing Dashboard...");
+        // Apply base settings from config
+        applyCustomTitle(currentConfig, mainHeading);
+        applyConfigStyles(currentConfig); // Apply dynamic styles like widths/gaps
+        loadNotes(notesArea);             // Load notes using handler
+        renderIconKey(currentConfig);     // Render icon key based on initial config
+
+        const csvUrl = currentConfig.generalSettings?.csvUrl?.trim();
+
+        if (csvUrl) {
+            console.log(`Configuration specifies CSV URL: ${csvUrl}`);
+            updateUiForLoadMode('url'); // Hide file input etc.
+            // Show loading message in the default view's placeholder
+            showMessageOnLoad(currentView, 'Loading data from URL...');
+            loadAndProcessData( () => loadDataFromUrl(csvUrl) ); // Pass URL loading function
+        } else {
+            console.log("No CSV URL configured. Enabling file upload.");
+            updateUiForLoadMode('file'); // Ensure file input is visible
+            // Show initial state (placeholders in the current default view)
+             showMessageOnLoad(currentView); // Shows "Upload CSV" message
+            showView(currentView); // Ensure the correct initial view is displayed
+        }
+    }
+
+    /**
+     * Central function to trigger data loading (from URL or File), parse, and render.
+     * @param {Function} loadFunction Async function that returns CSV content string (e.g., loadDataFromUrl(url) or readFileContent(file)).
+     */
+    async function loadAndProcessData(loadFunction) {
+        clearAllViews(true); // Clear previous view content, keep placeholders visible
+        // Show processing message in the currently active view placeholder
+        showMessage("Processing data...", getActiveMessagePlaceholderId());
+
+        try {
+            // 1. Load Data (URL or File)
+            const csvContent = await loadFunction();
+            console.log("loadAndProcessData: CSV content loaded.");
+
+            const { data, headers } = parseCSV(csvContent, currentConfig); // parseCSV returns parsed headers
+            parsedData = data; // Update global state
+            currentConfig.csvHeaders = headers; // <--- ADD THIS LINE to update config state
+
+            console.log(`loadAndProcessData: CSV parsed. Headers: ${headers.length}, Rows: ${parsedData.length}.`);
+            // Optional: Log the stored headers to confirm
+            // console.log('Stored config headers:', currentConfig.csvHeaders);
+
+            // 3. Render Views
+            if (parsedData.length > 0 || headers.length > 0) { // Render even if only headers exist
+                console.log("loadAndProcessData: Rendering all views...");
+                renderAllViews(); // Uses global parsedData and currentConfig
+                renderIconKey(currentConfig); // Re-render icon key in case config affects it? (Optional)
+                hideMessages(); // Hide "Processing..." message
+                console.log("loadAndProcessData: Render successful.");
+            } else {
+                // Handle case where CSV is empty or parsing resulted in nothing usable
+                console.warn("loadAndProcessData: CSV parsed but resulted in 0 data rows and 0 headers.");
+                const parseFailMsg = `CSV empty or data could not be extracted. Check delimiter ("${currentConfig.generalSettings?.csvDelimiter || ','}") in config.js and file/URL content.`;
+                // Show error message in all placeholders for visibility
+                showMessageOnLoad(null, parseFailMsg); // Show in all placeholders
+                clearAllViews(true); // Ensure views are clear but placeholders show message
+            }
+
+        } catch (error) {
+             console.error("ERROR during data loading or processing:", error);
+             parsedData = []; // Reset data on error
+             currentConfig.csvHeaders = []; // Reset headers in config
+             const errorMsg = `Error: ${error.message}. Check console (F12) and verify CSV format/config.js.`;
+             // Show error in all placeholders for visibility
+             showMessageOnLoad(null, errorMsg);
+             clearAllViews(true); // Keep placeholders visible with error
+             alert(errorMsg); // Simple alert for immediate user visibility
+
+        } finally {
+             // Ensure the correct view is visible after processing attempt (success or fail)
+             showView(currentView);
+             // Reset file input value if it exists, to allow re-uploading the same file name
+             if (fileInput) fileInput.value = '';
+        }
+    }
+
+    /**
+     * Renders all configured views using the current data and config.
+     */
+    function renderAllViews() {
+        const tvConf = currentConfig.viewSettings?.tableView;
+        const kvConf = currentConfig.viewSettings?.kanbanView;
+        const svConf = currentConfig.viewSettings?.summaryView;
+        const cvConf = currentConfig.viewSettings?.countsView;
+
+        // Note: Clearing is handled before calling renderAllViews in loadAndProcessData
+
+        // Render enabled views, passing necessary elements and the showMessage utility
+        if (tvConf?.enabled !== false) { renderTable(parsedData, currentConfig, tableHeaderRow, tableBody, showMessage); }
+        if (kvConf?.enabled !== false) { renderKanban(parsedData, currentConfig, kanbanBoard, showMessage); }
+        if (svConf?.enabled !== false) { renderSummaryView(parsedData, currentConfig, summaryView, notesSection); }
+        if (cvConf?.enabled !== false) { renderCountsView(parsedData, currentConfig, countsView, showMessage); }
+
+        // Notes visibility is handled within showView/showSummarySections based on active view and data
+    }
+
+
+    // --- Event Handlers ---
+
+    /**
+     * Handles the file selection event.
+     * @param {Event} event The file input change event.
+     */
+    function handleFileSelectEvent(event) {
+        console.log("handleFileSelectEvent: File selected.");
+        const file = event.target.files[0];
+        if (!file) {
+            console.log("handleFileSelectEvent: No file selected.");
+            return;
+        }
+
+        // Reset config to default when loading a *new* file via upload
+        // This ensures consistency if the user uploads multiple different files.
+        console.log("handleFileSelectEvent: Resetting to default config for new file upload.");
+        currentConfig = JSON.parse(JSON.stringify(defaultConfig));
+        applyConfigStyles(currentConfig); // Re-apply styles from (potentially reset) config
+
+        // Show loading message
+        showMessageOnLoad(currentView, `Reading file: ${file.name}...`);
+
+        // Start the loading/processing flow, passing the file reading function
+        loadAndProcessData( () => readFileContent(file) );
+    }
+
+    /**
+     * Handles clicks on the tab buttons.
+     * @param {Event} event The click event.
+     */
+    function handleTabClick(event) {
+         if (event.target.classList.contains('tab-button')) {
+             const viewId = event.target.getAttribute('data-view');
+             if (viewId && viewId !== currentView) {
+                 console.log(`Switching view to: ${viewId}`);
+                 currentView = viewId;
+                 showView(currentView); // Let showView handle visibility updates
+             }
+         }
+     }
+
+    // --- UI Update Functions ---
+
+    /**
+     * Updates the UI elements in the upload area based on load mode (URL vs File).
+     * @param {'url' | 'file'} mode The loading mode.
+     */
+    function updateUiForLoadMode(mode) {
+        if (!uploadContainer || !fileInput) {
+            console.warn("updateUiForLoadMode: Upload container or file input not found.");
+            return;
+        }
+        const fileLabel = uploadContainer.querySelector('label[for="csvFileInput"]');
+
+        if (mode === 'url') {
+            // Hide file input and its label if they exist
+            if (fileLabel) fileLabel.style.display = 'none';
+            fileInput.style.display = 'none';
+        } else { // mode === 'file'
+            // Show file input and its label if they exist
+            if (fileLabel) fileLabel.style.display = '';
+            fileInput.style.display = '';
+        }
+    }
+
+    /**
+     * Gets the ID attribute of the message placeholder in the currently active view.
+     * Used to target messages correctly.
+     * @returns {string} The ID suffix ('table', 'kanban', etc.) or 'table' as default.
+     */
+    function getActiveMessagePlaceholderId() {
+        const activeView = document.querySelector('.view-container.active');
+        if (!activeView) return 'table'; // Default if no view is active
+        // Extract suffix from view ID (e.g., "tableView" -> "table")
+        const viewId = activeView.id;
+        if (viewId && viewId.endsWith('View')) {
+            return viewId.substring(0, viewId.length - 4); // Remove "View" suffix
+        }
+        return 'table'; // Default fallback
+    }
+
+
+}); // End of DOMContentLoaded listener
+// --- END OF FILE js/app.js ---
+/* --- End: js/app.js --- */
+
+/* --- Combined Application Modules End --- */
+</script>
+
+</body>
+</html>

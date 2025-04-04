@@ -1,0 +1,788 @@
+﻿/* --- Combined Stylesheet --- */
+/* --- Start: css/base.css --- */
+/* --- Variables & Basic Styles --- */
+:root {
+    /* Color Palette */
+    --color-bg: #f4f4f4;
+    --color-container-bg: #fff;
+    --color-kanban-col-bg: #e9e9e9; /* Background for the visual column wrapper (subtle) */
+    --color-domain-block-bg: #f8f8f8; /* Background for Kanban/Summary Group Blocks (slightly lighter) */
+    --color-domain-block-border: #e0e0e0;
+    --color-card-bg: #fff;
+    --color-card-border: #ddd;
+    --color-text-dark: #333;
+    --color-text-light: #fff;
+    --color-accent: #0056b3; /* Used for card titles */
+    --color-error: #d9534f; /* Red */
+    --color-success: #5cb85c; /* Green */
+    --color-warning: #f0ad4e; /* Yellow/Orange */
+    --color-info: #5bc0de;    /* Light Blue */
+
+    /* Default Indicator/Tag Colors */
+    --color-indicator-default: var(--color-text-dark);
+    --color-tag-default-bg: #eee;
+    --color-tag-default-text: #555;
+    --color-tag-default-border: #ccc;
+
+
+    /* Spacing & Fonts */
+    --base-font-size: 0.9rem;
+    --card-font-size: 0.85rem;
+    --card-padding: 6px 8px;
+    --container-padding: 15px;
+    --gap-size: 15px;
+
+     /* Kanban Layout Variables (Set by JS) */
+    --kanban-min-col-width: 280px; /* Default */
+    --kanban-gap: 15px;           /* Default - Gap between visual columns */
+    --kanban-item-gap: 12px;      /* Default - Gap between group blocks within a column */
+    /* Summary Layout Variables (Set by JS) */
+    --summary-inner-min-col-width: 260px; /* Default */
+    --summary-inner-column-gap: 15px;     /* Default - Gap between grid items (group blocks or wrappers) */
+    --summary-inner-item-gap: 10px;       /* Default - Gap between stacked group blocks if using wrappers */
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    margin: 20px;
+    background-color: var(--color-bg);
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 40px); /* Full height minus margins */
+    font-size: var(--base-font-size);
+    color: var(--color-text-dark);
+    line-height: 1.4;
+    min-height: 400px; /* Prevent extreme collapse */
+}
+
+h1 {
+    text-align: center;
+    margin-top: 0;
+    margin-bottom: var(--gap-size);
+    flex-shrink: 0;
+    font-size: 1.6rem;
+    font-weight: 500;
+    color: var(--color-text-dark);
+}
+
+h3 { /* Used for Group Block Titles (Kanban) & Section Titles (Summary) */
+    font-size: 1.05em;
+    margin-top: 0;
+    margin-bottom: 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #ccc;
+    font-weight: 600; /* Slightly bolder group titles */
+    color: inherit; /* Inherit color from parent */
+}
+h4 { /* Used for inner group titles in Summary */
+    font-size: 0.95em;
+    margin-top: 0;
+    margin-bottom: 8px;
+    padding-bottom: 3px;
+    border-bottom: 1px solid #ddd;
+    font-weight: 500;
+    color: inherit;
+}
+/* --- End: css/base.css --- */
+/* --- Start: css/layout.css --- */
+/* --- Upload Area --- */
+#uploadContainer {
+    margin-bottom: var(--gap-size);
+    padding: var(--container-padding);
+    background-color: var(--color-container-bg);
+    border-radius: 5px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+#uploadContainer label {
+     font-weight: 500;
+}
+
+/* --- Icon Key Styles --- */
+#iconKeyContainer {
+    background-color: var(--color-container-bg);
+    padding: 8px var(--container-padding); /* Slightly less vertical padding */
+    margin-top: 0; /* Remove top margin */
+    margin-bottom: var(--gap-size); /* Add space below before tabs */
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    font-size: 0.85em;
+    display: none; /* Hidden by default until populated */
+    margin-left: auto; /* Push key to the right */
+    flex-shrink: 1; /* Allow it to shrink if needed */
+    min-width: 150px; /* Give it some min width */
+}
+
+#iconKeyContainer h4 {
+    margin: 0 0 5px 0; /* Remove top margin, add small bottom margin */
+    padding-bottom: 3px;
+    border-bottom: 1px solid #eee;
+    font-size: 1.0em; /* Smaller title */
+    font-weight: 600;
+    display: inline-block; /* Allow it to sit naturally */
+    margin-right: 15px; /* Space after title if needed */
+}
+
+#iconKeyContainer ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex; /* Make the UL a flex container */
+    flex-wrap: wrap; /* Allow items to wrap to the next line */
+    gap: 10px 15px; /* Row and Column gaps between key items */
+    align-items: center; /* Vertically center items if they wrap */
+}
+
+#iconKeyContainer li {
+    /* Li is now a flex item */
+    margin-bottom: 0; /* Remove bottom margin, gap handles spacing */
+    display: flex;
+    align-items: center;
+    gap: 5px; /* Smaller gap between icon and text */
+}
+
+#iconKeyContainer li .icon {
+    font-size: 1.1em; /* Slightly smaller key icons */
+    display: inline-block;
+    text-align: center;
+    flex-shrink: 0;
+    vertical-align: middle; /* Ensure vertical alignment */
+}
+
+
+/* --- Tabs --- */
+#tabControls {
+    margin-bottom: 0; /* Remove space below tabs */
+    flex-shrink: 0;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: -1px; /* Overlap border slightly */
+}
+.tab-button {
+    padding: 9px 14px; /* Adjusted padding */
+    cursor: pointer;
+    border: 1px solid #ccc;
+    background-color: #f0f0f0; /* Lighter inactive tab */
+    margin-right: 4px;
+    border-radius: 5px 5px 0 0;
+    border-bottom: none;
+    position: relative;
+    bottom: -1px; /* Align with border */
+    font-size: 0.95em;
+    color: #555;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+.tab-button:hover {
+     background-color: #e5e5e5;
+     color: #333;
+}
+.tab-button.active {
+    background-color: var(--color-container-bg);
+    border-color: #ccc;
+    border-bottom: 1px solid var(--color-container-bg); /* Hide bottom border */
+    font-weight: 600; /* Bolder active tab */
+    color: var(--color-text-dark);
+    z-index: 1;
+}
+
+/* --- View Containers --- */
+.view-container {
+    background-color: var(--color-container-bg);
+    padding: var(--container-padding);
+    border: 1px solid #ccc;
+    border-top: none; /* Tab border serves as top border */
+    border-radius: 0 5px 5px 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    overflow: auto; /* Primary scroll for the view */
+    flex-grow: 1;
+    display: none; /* Hidden by default */
+    position: relative; /* Needed for absolute positioning of messages? */
+}
+.view-container.active {
+    /* display is set dynamically by JS (block, grid, or flex) */
+}
+/* --- End: css/layout.css --- */
+/* --- Start: css/components.css --- */
+/* --- Card Styles (Shared) --- */
+.kanban-card, .summary-card {
+    background-color: var(--color-card-bg);
+    color: var(--color-text-dark);
+    border: 1px solid var(--color-card-border);
+    border-radius: 4px;
+    padding: var(--card-padding);
+    margin-bottom: 8px; /* Space between cards within a group block */
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    cursor: default;
+    font-size: var(--card-font-size);
+    transition: box-shadow 0.2s ease;
+    overflow: hidden; /* Prevent content spilling */
+}
+.kanban-card:last-child, .summary-card:last-child {
+    margin-bottom: 0; /* No margin on the last card in a block */
+}
+.kanban-card:hover, .summary-card:hover {
+     box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+     border-color: #c8c8c8;
+}
+
+/* Summary cards might be slightly smaller */
+.summary-card {
+    font-size: calc(var(--card-font-size) * 0.95);
+}
+.summary-card .card-title {
+     font-size: 1.0em; /* Keep title readable */
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline; /* Align title and indicators baseline */
+    flex-wrap: wrap; /* Allow indicators to wrap below title on narrow cards */
+    gap: 4px 8px; /* Row and column gap */
+    /* margin-bottom: 4px; /* Removed - Rely on gap */
+}
+.card-title {
+    font-weight: 500;
+    color: var(--color-accent);
+    margin-right: 5px; /* Reduced margin */
+    flex-grow: 1; /* Allow title to take space */
+    flex-shrink: 1; /* Allow title to shrink */
+    font-size: 1.05em; /* Relative to card font */
+    /* Ensure title doesn't overlap indicators excessively */
+    min-width: 50%; /* Give title at least half the space initially */
+    word-break: break-word; /* Allow breaking long titles */
+}
+
+/* Styling for the anchor tag when title is linked */
+a.card-title-link {
+    color: inherit; /* Inherit color from card-title */
+    text-decoration: none; /* Remove default underline */
+    font-weight: inherit; /* Inherit font weight */
+    /* Other inherited properties like flex-grow/shrink will apply to the span inside */
+    display: inline; /* Treat link itself like inline text */
+     /* Ensure it doesn't break flex layout */
+     flex-grow: 1;
+     flex-shrink: 1;
+     min-width: 50%;
+}
+
+a.card-title-link:hover .card-title {
+    text-decoration: underline; /* Underline the inner span on hover */
+    color: #003d82; /* Optional: Slightly darken color on hover */
+}
+
+.card-indicators {
+    text-align: right;
+    flex-shrink: 0; /* Don't shrink indicators container */
+    white-space: nowrap; /* Prevent icons/tags wrapping mid-indicator */
+}
+.card-indicators .icon,
+.card-indicators .tag {
+     vertical-align: middle;
+     margin-left: 3px; /* Space between indicators */
+}
+ .card-indicators .tag:first-child,
+ .card-indicators .icon:first-child {
+     margin-left: 0;
+ }
+
+
+/* --- Indicator/Tag Base Styles --- */
+.icon {
+    font-size: 1.1em; /* Relative to card font */
+    line-height: 1;
+    display: inline-block;
+    color: var(--color-indicator-default); /* Default color if no class */
+    vertical-align: middle; /* Align with text better */
+    /* margin-left is handled by parent .card-indicators */
+}
+.tag {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 10px; /* Pill shape */
+    font-size: 0.9em; /* Relative to card font */
+    font-weight: 500;
+    line-height: 1.3;
+    border: 1px solid transparent; /* Border color set by inline style or default */
+    vertical-align: middle;
+    text-align: center;
+    white-space: nowrap;
+    /* Background and text color are set via inline style by JS */
+    /* margin-left is handled by parent .card-indicators */
+}
+/* Default tag style class (used by JS if no specific style applies) */
+.tag.tag-default {
+    background-color: var(--color-tag-default-bg);
+    color: var(--color-tag-default-text);
+    border-color: var(--color-tag-default-border);
+}
+
+
+/* --- Specific ICON Indicator Styles (From Config Classes) --- */
+/* Add classes here matching the 'cssClass' values in your config */
+.indicator-style-alert     { color: var(--color-error); }
+.indicator-style-campaign  { color: var(--color-warning); }
+.indicator-style-regulatory{ color: var(--color-info); }
+.indicator-style-complete  { color: var(--color-success); }
+.indicator-style-high-priority { color: var(--color-error); }
+.indicator-style-medium-priority { color: var(--color-warning); }
+.indicator-style-low-priority { color: var(--color-info); }
+.indicator-style-featured {
+    color: #ffc107; /* Gold/Yellow color for the star */
+}
+/* Add any other icon style classes referenced in your config */
+
+/* For Exoplanet Showcase */
+.indicator-style-confirmed {
+    color: var(--color-success); /* Green check */
+}
+.indicator-style-unconfirmed {
+    color: var(--color-warning); /* Orange/Yellow question mark */
+}
+.indicator-style-habitable-high {
+    /* color: #29a329; /* Slightly darker green */
+    /* No color needed if using emoji directly */
+}
+.indicator-style-habitable-medium {
+   /* color: #e6e600; /* Yellow */
+   /* No color needed if using emoji directly */
+}
+
+
+/* --- Messages --- */
+ .message-placeholder {
+     text-align: center;
+     padding: 40px 20px;
+     color: #888;
+     font-style: italic;
+     display: none; /* Hidden by default, shown by JS */
+     width: 100%;
+     font-size: 1.1em;
+     box-sizing: border-box; /* Ensure padding is included in width */
+ }
+ .message-placeholder.visible {
+     display: block;
+ }
+
+ .empty-section-message { /* Used inside Summary sections */
+     font-size: 0.9em;
+     color: inherit; /* Inherit color from section */
+     opacity: 0.7; /* Make it less prominent */
+     padding: 15px 10px;
+     text-align: center;
+     font-style: italic;
+     width: 100%; /* Ensure it takes full width */
+     box-sizing: border-box;
+ }
+
+ /* In components.css or similar */
+
+/* Style for link icons in table cells */
+.table-link-icon {
+    display: inline-block;
+    text-align: center;
+    text-decoration: none;
+    color: var(--color-accent); /* Use accent color */
+    font-size: 1.1em; /* Make icon slightly larger */
+    cursor: pointer;
+    width: 100%; /* Ensure it takes cell width for centering */
+}
+.table-link-icon:hover {
+    color: #003d82; /* Darken on hover */
+    text-decoration: none;
+}
+
+/* Style for link icons on cards (adjust as needed) */
+.card-link-icon {
+    text-decoration: none;
+    color: var(--color-accent);
+    font-size: 1.0em; /* Slightly smaller on cards? */
+    vertical-align: middle;
+    margin-left: 3px; /* Consistent with other card indicators */
+}
+.card-link-icon:hover {
+     color: #003d82;
+}
+
+/* Style for cells in link columns that contain non-URL text */
+td.link-column-invalid-url {
+    font-style: italic;
+    color: #888;
+    /* Add other styles as desired */
+}
+
+/* Style for link icon in the key */
+.icon-key-link {
+    /* Add specific styles if needed, otherwise inherits from .icon */
+    color: var(--color-accent);
+}
+/* --- End: css/components.css --- */
+/* --- Start: css/view-table.css --- */
+/* --- Table View --- */
+#tableView { /* Default display: block set by JS */ }
+#tableView table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 0;
+    table-layout: auto; /* Allow content to influence width */
+}
+
+#tableView th,
+#tableView td {
+    border: 1px solid #ddd;
+    padding: 8px 10px;
+    text-align: center;
+    vertical-align: middle;
+    white-space: nowrap; /* Prevent wrapping by default */
+    overflow: hidden;    /* Hide overflow */
+    text-overflow: ellipsis; /* Show ... for overflow */
+    max-width: 200px; /* Add a max-width to prevent extreme stretching */
+}
+
+#tableView th {
+    background-color: #f1f1f1;
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    font-size: 0.95em;
+}
+
+#tableView tbody tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+#tableView tbody tr:hover {
+    background-color: #f0f5ff;
+}
+
+/* Style First Column (Title) Differently */
+#tableView th:first-child,
+#tableView td:first-child,
+#tableView td:nth-child(2) { /* Adjust nth-child as needed */
+    text-align: left;   /* Keep Title left-aligned */
+    /* Allow title to wrap if needed, but prioritize width */
+    white-space: normal;
+    word-break: break-word; /* Break long words if necessary */
+    min-width: 150px;   /* Give title some minimum space */
+    max-width: 300px;   /* More generous max width */
+    /* Consider width % if layout needs more control */
+    /* width: 30%; */
+}
+
+/* Style for the link icon in table cells */
+.table-link-icon {
+    display: inline-block; /* Allows centering via text-align */
+    text-align: center;
+    text-decoration: none;
+    color: var(--color-accent); /* Use accent color */
+    font-size: 1.1em; /* Make icon slightly larger */
+    cursor: pointer;
+    width: 100%; /* Ensure it takes cell width for centering */
+}
+.table-link-icon:hover {
+    color: #003d82; /* Darken on hover */
+    text-decoration: none; /* Keep underline off */
+}
+
+#tableView th {
+    /* Override default alignment and padding for vertical headers */
+    vertical-align: bottom; /* Align rotated text container towards the bottom */
+    text-align: left; /* Align text container to the left */
+    /* Adjust height - this determines the vertical space */
+    height: 140px;
+    /* Adjust width - make headers narrow */
+    width: 35px; /* Example width, adjust as needed */
+    min-width: 35px;
+    max-width: 50px;
+    white-space: nowrap; /* Prevent TH from wrapping itself */
+    padding: 5px; /* Basic padding */
+    position: relative; /* Needed for absolute positioning of the span */
+}
+
+/* Exclude the first header if you want it to remain horizontal */
+/* Adjust ':first-child' if your non-vertical column isn't the first */
+#tableView th:first-child,
+#tableView th:nth-child(2) { /* Example: Keep first two horizontal */
+     /* Reset to default horizontal styles */
+     height: auto;
+     width: auto; /* Let it size normally */
+     min-width: 150px; /* Or your previous min-width */
+     max-width: 300px; /* Or your previous max-width */
+     vertical-align: middle;
+     text-align: left;
+     white-space: normal; /* Allow wrapping for horizontal headers */
+     position: static; /* Reset position */
+     padding: 8px 10px; /* Restore original padding */
+}
+/* Reset the span inside horizontal headers */
+#tableView th:first-child .vertical-header-text,
+#tableView th:nth-child(2) .vertical-header-text {
+    position: static;
+    display: inline; /* Display normally */
+    transform: none; /* Remove rotation */
+    white-space: normal; /* Allow wrapping */
+    writing-mode: initial;
+    width: auto;
+    height: auto;
+}
+
+
+#tableView th .vertical-header-text {
+    display: block; /* Treat span as a block */
+    position: absolute; /* Position relative to the th */
+    bottom: 5px; /* Distance from bottom border */
+    left: 50%; /* Center horizontally */
+
+    /* Key rotation properties */
+    transform-origin: center left; /* Rotate around the bottom-left corner */
+    transform: translateX(-5px) rotate(-90deg); /* Move slightly left then rotate */
+
+    /* Control text appearance */
+    white-space: nowrap; /* Prevent text wrapping */
+    width: 125px; /* This now controls the *vertical* extent before cutoff */
+                 /* Adjust this based on the 'height' of the th */
+    overflow: hidden;
+    text-overflow: ellipsis; /* Add '...' if text overflows vertically */
+}
+
+/* Style data cells under vertical headers differently if needed */
+#tableView td {
+    /* You might want centered text alignment for data under narrow vertical headers */
+    /* text-align: center; */ /* Uncomment if desired */
+}
+
+/* Keep text left-aligned under the excluded horizontal headers */
+#tableView td:first-child,
+#tableView td:nth-child(2) { /* Must match the excluded th selectors */
+    text-align: left;
+}
+/* --- End: css/view-table.css --- */
+/* --- Start: css/view-kanban.css --- */
+/* --- Kanban View --- */
+#kanbanView {
+    /* display: grid is set by JS when active */
+    grid-template-columns: repeat(auto-fill, minmax(var(--kanban-min-col-width, 280px), 1fr));
+    gap: var(--kanban-gap, 15px); /* Gap between columns */
+    align-items: start; /* Align columns to the top */
+    padding-bottom: 10px; /* Space at bottom */
+ }
+
+/* This is the visual column wrapper - IT IS THE GRID ITEM */
+.kanban-column {
+    display: flex;
+    flex-direction: column;
+    /* Gap between stacked group blocks WITHIN this column */
+    gap: var(--kanban-item-gap, 12px);
+    min-width: 0; /* Prevents overflow issues in grid */
+    /* Optional: Add a subtle background/border to visualize the column */
+    /* background-color: var(--color-kanban-col-bg); */
+    /* border: 1px dashed #ccc; */
+    /* padding: 5px; */
+    /* border-radius: 3px; */
+}
+
+/* This is the block for a specific group (e.g., Domain), nested inside .kanban-column */
+.kanban-group-block {
+     background-color: var(--color-domain-block-bg);
+     border: 1px solid var(--color-domain-block-border);
+     box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+     border-radius: 4px;
+     padding: 10px 12px;
+}
+.kanban-group-block h3 { /* Style specific to Kanban group headers */
+    border-bottom-color: #ccc;
+    margin-bottom: 10px;
+    font-weight: 500; /* Slightly less bold than summary section titles */
+}
+/* --- End: css/view-kanban.css --- */
+/* --- Start: css/view-summary.css --- */
+/* --- Summary View --- */
+#summaryView {
+    /* display: flex is set by JS when active */
+    flex-direction: column;
+    gap: var(--gap-size);
+}
+
+.summary-section {
+    border-radius: 5px;
+    padding: 10px 15px;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.08);
+    display: flex; /* Changed by JS if not active */
+    flex-direction: column;
+    background-color: #f0f0f0; /* Default background */
+    color: var(--color-text-dark); /* Default text */
+    border: 1px solid #e0e0e0;
+}
+.summary-section h3 { /* Style specific to Summary section titles */
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+    margin-bottom: 10px;
+    font-weight: 600; /* Bolder section titles */
+}
+/* Specific section colors are applied via inline style from config */
+
+/* Container for the grid INSIDE a summary section */
+.summary-section-grid {
+   display: grid;
+   grid-template-columns: repeat(auto-fill, minmax(var(--summary-inner-min-col-width, 260px), 1fr));
+   gap: var(--summary-inner-column-gap, 15px); /* Gap between grid items (blocks or wrappers) */
+   align-items: start;
+   width: 100%;
+   padding-top: 10px; /* Space below section header */
+}
+
+/* Wrapper for stacked groups within a summary grid column (if internalLayout.maxItemsPerGroupInColumn > 1) */
+.summary-group-column {
+    display: flex;
+    flex-direction: column;
+    gap: var(--summary-inner-item-gap, 10px); /* Gap between stacked blocks */
+    min-width: 0; /* Prevent overflow */
+}
+
+/* Block for a specific group (e.g., "Domain") inside a summary section */
+/* This is the grid item if internalLayout.maxItemsPerGroupInColumn = 1 */
+.summary-group-block {
+    background-color: rgba(255,255,255, 0.7); /* Slightly more opaque */
+    border: 1px solid rgba(0,0,0,0.08);
+    box-shadow: 0 1px 1px rgba(0,0,0,0.04);
+    border-radius: 3px;
+    padding: 8px 10px;
+}
+/* h4 is used for inner group titles by default in renderGroupedItemsAsGrid */
+
+/* Notes Section Styling */
+.summary-notes { /* The section container */
+     background-color: #efefef; /* Lighter note background */
+     padding: 0;
+     border: 1px solid #dcdcdc;
+     min-height: 100px; /* Ensure it has some minimum height */
+     max-height: 300px; /* Prevent it from becoming excessively tall */
+     display: flex; /* Use flex to make textarea fill */
+     flex-direction: column;
+     margin-top: var(--gap-size); /* Add space above notes */
+}
+#notesSection { /* Inner container (might be redundant now) */
+     flex-grow: 1;
+     display: flex;
+     flex-direction: column;
+     padding: 5px; /* Padding around the textarea */
+}
+#summaryNotesArea { /* Textarea itself */
+     width: 100%;
+     border: none;
+     padding: 8px 10px; /* Inner padding for text */
+     box-sizing: border-box;
+     font-family: inherit;
+     font-size: 0.95em;
+     resize: none; /* Disable user resizing */
+     background-color: transparent;
+     color: var(--color-text-dark);
+     flex-grow: 1; /* Fill available space */
+     outline: none; /* Remove default focus outline */
+}
+#summaryNotesArea:focus {
+     /* Optional: Add a subtle focus indicator */
+     box-shadow: inset 0 0 0 1px var(--color-accent);
+}
+/* --- End: css/view-summary.css --- */
+/* --- Start: css/view-counts.css --- */
+/* --- Counts View (Indicator-First) --- */
+#countsView {
+    /* display: grid is set by JS when active */
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); /* Adjust min-width as needed */
+    gap: var(--gap-size, 15px);
+    align-items: start;
+}
+
+/* Container for one Indicator Type */
+.indicator-domain-group {
+    background-color: var(--color-domain-block-bg);
+    border: 1px solid var(--color-domain-block-border);
+    border-radius: 5px;
+    padding: 12px 15px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+/* Header for the Indicator Type */
+.indicator-domain-group h3 {
+    margin-top: 0;
+    margin-bottom: 12px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #ddd;
+    font-size: 1.1em;
+    font-weight: 600;
+    display: flex; /* Align icon, label, total */
+    align-items: center;
+    gap: 8px;
+}
+.indicator-domain-group h3 .icon {
+    font-size: 1.2em; /* Icon in the header */
+    line-height: 1;
+    flex-shrink: 0;
+}
+.indicator-domain-group h3 .indicator-label {
+    flex-grow: 1; /* Allow label to take space */
+}
+.indicator-domain-group h3 .indicator-total-count {
+    font-size: 0.85em;
+    font-weight: 400;
+    color: #666;
+    flex-shrink: 0;
+}
+
+
+/* Container for the small domain count boxes */
+.domain-boxes-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px; /* Gap between domain boxes */
+}
+
+/* Individual box showing count for a specific domain */
+.domain-count-box {
+    background-color: #f8f9fa; /* Slightly lighter box */
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 5px 8px;
+    min-width: 60px; /* Smaller minimum width */
+    text-align: center;
+    font-size: 0.9em;
+}
+
+.domain-count-box .count-number {
+    display: block; /* Number on its own line */
+    font-size: 1.3em;
+    font-weight: 600;
+    color: var(--color-text-dark);
+    line-height: 1.1;
+}
+
+.domain-count-box .domain-label {
+    display: block; /* Label on its own line */
+    font-size: 0.85em;
+    color: #555;
+    margin-top: 1px;
+    word-break: break-all; /* Break long domain names if necessary */
+}
+
+.count-header-tag-icon {
+    display: inline-block;
+    font-size: 1.1em; /* Match icon size roughly */
+    line-height: 1;
+    /* Optional: Add slight padding/margin if needed */
+    /* padding: 0 2px; */
+    /* You could potentially add background/border here for a mini-tag look, */
+    /* but simple text is often cleaner in a header */
+}
+
+.no-counts-message { /* Style for message within indicator group */
+    font-size: 0.9em;
+    color: #888;
+    font-style: italic;
+    text-align: center;
+    padding: 10px 0;
+}
+/* --- End: css/view-counts.css --- */
+
