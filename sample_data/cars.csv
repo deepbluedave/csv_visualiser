@@ -1,0 +1,16 @@
+Make,Model,Year,Type,Engine,FuelType,Rating,Featured,Website
+Ford,Mustang Mach-E,2023,SUV,Electric Motor,Electric,High,TRUE,https://www.ford.com/suvs/mach-e/
+Toyota,Camry,2024,Sedan,2.5L I4,Gasoline,Medium,FALSE,https://www.toyota.com/camry/
+Honda,CR-V,2023,SUV,1.5L Turbo,Gasoline,High,yes,https://automobiles.honda.com/cr-v
+Tesla,Model 3,2024,Sedan,Electric Motor,Electric,High,TRUE,https://www.tesla.com/model3
+Chevrolet,Silverado 1500,2023,Truck,5.3L V8,Gasoline,Medium,no,https://www.chevrolet.com/trucks/silverado/1500
+BMW,3 Series,2024,Sedan,"3.0L Turbo I6",Gasoline,High,FALSE,https://www.bmwusa.com/vehicles/3-series/sedan/overview.html
+Jeep,Wrangler,2023,SUV,3.6L V6,Gasoline,Medium,y,https://www.jeep.com/wrangler.html
+Hyundai,Ioniq 5,2023,SUV,Electric Motor,Electric,High,TRUE,https://www.hyundaiusa.com/us/en/vehicles/ioniq-5
+Subaru,Outback,2024,Wagon,2.5L H4,Gasoline,Medium,FALSE,https://www.subaru.com/vehicles/outback.html
+Porsche,911,2024,Coupe,"3.0L Turbo H6",Gasoline,High,yes,https://www.porsche.com/usa/models/911/
+Kia,Telluride,2024,SUV,3.8L V6,Gasoline,High,TRUE,https://www.kia.com/us/en/telluride
+Toyota,Prius,2024,Sedan,1.8L I4 Hybrid,Hybrid,Medium,no,https://www.toyota.com/prius/
+Ford,F-150 Lightning,2023,Truck,Electric Motor,Electric,High,TRUE,https://www.ford.com/trucks/f150/f150-lightning/
+Mazda,MX-5 Miata,2023,Convertible,2.0L I4,Gasoline,Medium,yes,https://www.mazdausa.com/vehicles/mx-5-miata
+Volvo,XC90 Recharge,2024,SUV,2.0L Turbo Hybrid,Hybrid,High,FALSE,https://www.volvocars.com/us/cars/xc90-hybrid/

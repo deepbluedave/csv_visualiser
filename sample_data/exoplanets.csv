@@ -1,0 +1,13 @@
+PlanetName,HostStar,DiscoveryMethod,DiscoveryYear,PlanetType,HabitabilityPotential,Distance(ly),Mass(EU),Radius(EU),Confirmed,ResearchLink
+Kepler-186f,Kepler-186,Transit,2014,Super-Earth,High,580,1.71,1.17,TRUE,http://example.com/exoplanets/Kepler-186f
+Gliese 581g,"Gliese 581",Radial Velocity,2010,Super-Earth,Medium,20.5,3.1,1.5,FALSE,http://example.com/exoplanets/Gliese-581g
+PSO J318.5-22,PSO J318.5-22,Imaging,2013,Gas Giant (Rogue),None,80.2,2000,12.5,TRUE,http://example.com/exoplanets/PSOJ318
+TRAPPIST-1e,"TRAPPIST-1",Transit,2017,Terrestrial,High,40.7,0.77,0.91,TRUE,http://example.com/exoplanets/TRAPPIST-1e
+HD 209458 b (Osiris),HD 209458,Transit,1999,Hot Jupiter,None,159,220,1.38,TRUE,http://example.com/exoplanets/HD209458b
+Proxima Centauri b,"Proxima Centauri",Radial Velocity,2016,Super-Earth,Medium,4.24,1.07,1.03,TRUE,
+51 Pegasi b (Dimidium),51 Pegasi,Radial Velocity,1995,Hot Jupiter,None,50.5,150,1.9,TRUE,http://example.com/exoplanets/51Pegasib
+Kepler-452b,Kepler-452,Transit,2015,Super-Earth,Medium,1827,5.0,1.63,TRUE,http://example.com/exoplanets/Kepler-452b
+WASP-121b,WASP-121,Transit,2015,Ultra-hot Jupiter,None,855,380,1.87,TRUE,http://example.com/exoplanets/WASP-121b
+Fomalhaut b,Fomalhaut,Imaging,2008,Gas Giant,None,25.1,100,11,TRUE,http://example.com/exoplanets/Fomalhautb
+LHS 1140 b,LHS 1140,Transit,2017,Super-Earth,Medium,48.7,6.6,1.73,TRUE,http://example.com/exoplanets/LHS1140b
+GJ 1214 b,GJ 1214,Transit,2009,"Mini-Neptune",Low,47.8,8.17,2.85,TRUE,http://example.com/exoplanets/GJ1214b
