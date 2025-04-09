@@ -1,0 +1,83 @@
+/* --- START OF FILE css/base.css --- */
+/* --- Variables & Basic Styles --- */
+:root {
+    /* Color Palette */
+    --color-bg: #f4f4f4;
+    --color-container-bg: #fff;
+    --color-kanban-col-bg: #e9e9e9;
+    --color-domain-block-bg: #f8f8f8;
+    --color-domain-block-border: #e0e0e0;
+    --color-card-bg: #fff;
+    --color-card-border: #ddd;
+    --color-text-dark: #333;
+    --color-text-light: #fff;
+    --color-accent: #0056b3;
+    --color-error: #d9534f;
+    --color-success: #5cb85c;
+    --color-warning: #f0ad4e;
+    --color-info: #5bc0de;
+
+    /* Default Indicator/Tag Colors */
+    --color-indicator-default: var(--color-text-dark);
+    --color-tag-default-bg: #eee;
+    --color-tag-default-text: #555;
+    --color-tag-default-border: #ccc;
+
+    /* Spacing & Fonts */
+    --base-font-size: 1.1rem;
+    --card-font-size: 0.85rem;
+    --card-padding: 6px 8px;
+    --container-padding: 15px;
+    --gap-size: 15px;
+
+     /* Layout Variables (Can be overridden per tab container by JS) */
+    --kanban-min-col-width: 280px;
+    --kanban-gap: 15px;        /* Gap between visual columns */
+    --kanban-item-gap: 12px;   /* Gap between group blocks within a column */
+    --summary-inner-min-col-width: 260px;
+    --summary-inner-column-gap: 15px;
+    --summary-inner-item-gap: 10px;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    margin: 20px;
+    background-color: var(--color-bg);
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 40px);
+    font-size: var(--base-font-size);
+    color: var(--color-text-dark);
+    line-height: 1.12; /* Base line height */
+    min-height: 400px;
+}
+
+h1 {
+    text-align: center;
+    margin-top: 0;
+    margin-bottom: var(--gap-size);
+    flex-shrink: 0;
+    font-size: 1.6rem;
+    font-weight: 500;
+    color: var(--color-text-dark);
+}
+
+h3 { /* Group Block Titles (Kanban), Section Titles (Summary), Counter Group Titles (Counts) */
+    font-size: 1.05em;
+    margin-top: 0;
+    margin-bottom: 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #ccc;
+    font-weight: 600;
+    color: inherit;
+}
+h4 { /* Inner group titles in Summary */
+    font-size: 0.95em;
+    margin-top: 0;
+    margin-bottom: 8px;
+    padding-bottom: 3px;
+    border-bottom: 1px solid #ddd;
+    font-weight: 500;
+    color: inherit;
+}
+/* --- END OF FILE css/base.css --- */

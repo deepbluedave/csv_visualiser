@@ -1,0 +1,190 @@
+/* --- START OF FILE css/components.css --- */
+/* --- Card Styles (Shared) --- */
+.kanban-card, .summary-card {
+    background-color: var(--color-card-bg);
+    color: var(--color-text-dark);
+    border: 1px solid var(--color-card-border);
+    border-radius: 4px;
+    padding: var(--card-padding);
+    margin-bottom: 8px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    cursor: default;
+    font-size: var(--card-font-size);
+    transition: box-shadow 0.2s ease;
+    overflow: hidden;
+}
+.kanban-card:last-child, .summary-card:last-child {
+    margin-bottom: 0;
+}
+.kanban-card:hover, .summary-card:hover {
+     box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+     border-color: #c8c8c8;
+}
+
+.summary-card {
+    font-size: calc(var(--card-font-size) * 0.95);
+}
+.summary-card .card-title {
+     font-size: 1.0em;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline; /* Align text baselines */
+    flex-wrap: wrap;
+    gap: 4px 8px;
+}
+.card-title {
+    font-weight: 500;
+    color: var(--color-accent);
+    margin-right: 5px;
+    flex-grow: 1;
+    flex-shrink: 1;
+    font-size: 1.05em;
+    min-width: 50%;
+    word-break: break-word;
+}
+
+a.card-title-link {
+    color: inherit;
+    text-decoration: none;
+    font-weight: inherit;
+    display: inline; /* Allows flex behavior */
+     flex-grow: 1;
+     flex-shrink: 1;
+     min-width: 50%;
+}
+a.card-title-link:hover .card-title {
+    text-decoration: underline;
+    color: #003d82;
+}
+
+.card-indicators {
+    text-align: right;
+    flex-shrink: 0;
+    white-space: normal; /* Allow indicators to wrap if needed */
+    line-height: 1.3; /* Ensure consistent line height for wrapped indicators */
+}
+.card-indicators .icon,
+.card-indicators .tag {
+     vertical-align: middle;
+     margin-left: 3px;
+     margin-bottom: 2px; /* Small gap for wrapped items */
+}
+ .card-indicators .tag:first-child,
+ .card-indicators .icon:first-child {
+     margin-left: 0;
+ }
+
+/* --- Indicator/Tag Base Styles --- */
+.icon {
+    font-size: 1.1em; /* Base icon size */
+    line-height: 1;   /* Prevent extra line height */
+    display: inline-block;
+    color: var(--color-indicator-default);
+    vertical-align: middle; /* Align with adjacent text/tags */
+}
+.tag {
+    display: inline-block;
+    padding: 1px 4px; /* DENSITY CHANGE: Reduce tag padding */
+    border-radius: 10px;
+    font-size: 0.9em; /* Slightly smaller than base text */
+    font-weight: 500;
+    line-height: 1.1; /* DENSITY CHANGE: Minimum line height for tags */
+    border: 1px solid transparent;
+    vertical-align: baseline; /* DENSITY CHANGE: Align tags with baseline */
+    text-align: center;
+    white-space: nowrap; /* Prevent text wrapping inside tag */
+    margin: 2px; /* DENSITY CHANGE: Remove margin */
+}
+.tag.tag-default {
+    background-color: var(--color-tag-default-bg);
+    color: var(--color-tag-default-text);
+    border-color: var(--color-tag-default-border);
+}
+
+/* --- Specific ICON Indicator Styles (From Config Classes) --- */
+/* Slightly smaller boolean icons in table */
+.view-container[data-view-type="table"] td .icon.indicator-style-boolean-true {
+    font-size: 1.0em;
+    line-height: 1;
+    vertical-align: baseline; /* DENSITY CHANGE: baseline align icons */
+}
+/* Base boolean icon style */
+.icon.indicator-style-boolean-true {
+    color: var(--color-success); /* Example: green check */
+}
+/* Other specific icon styles */
+.indicator-style-alert     { color: var(--color-error); }
+.indicator-style-campaign  { color: var(--color-warning); }
+.indicator-style-regulatory{ color: var(--color-info); }
+.indicator-style-complete  { color: var(--color-success); }
+.indicator-style-high-priority { color: var(--color-error); }
+.indicator-style-medium-priority { color: var(--color-warning); }
+.indicator-style-low-priority { color: var(--color-info); }
+.indicator-style-featured { color: #ffc107; }
+.indicator-style-confirmed { color: var(--color-success); }
+.indicator-style-unconfirmed { color: var(--color-warning); }
+/* Add other specific indicator styles here */
+
+
+/* --- Messages --- */
+ .message-placeholder {
+     text-align: center;
+     padding: 40px 20px;
+     color: #888;
+     font-style: italic;
+     display: none; /* Hidden by default */
+     width: 100%;
+     font-size: 1.1em;
+     box-sizing: border-box;
+ }
+ .message-placeholder.visible {
+     display: block;
+ }
+
+ .empty-section-message { /* Used inside Summary sections */
+     font-size: 0.9em;
+     color: inherit;
+     opacity: 0.7;
+     padding: 5px 10px;
+     text-align: center;
+     font-style: italic;
+     width: 100%;
+     box-sizing: border-box;
+ }
+
+ /* --- Link Styles --- */
+.table-link-icon,
+.card-link-icon {
+    display: inline-block;
+    text-align: center;
+    text-decoration: none;
+    color: var(--color-accent);
+    font-size: 1.0em; /* DENSITY CHANGE: Slightly smaller link icon */
+    cursor: pointer;
+    line-height: 1; /* Prevent extra line height */
+    vertical-align: baseline; /* DENSITY CHANGE: baseline align links */
+}
+.table-link-icon {
+    width: 100%; /* Fill cell for centering */
+}
+.card-link-icon {
+     vertical-align: middle; /* Keep middle align in cards */
+     margin-left: 3px;
+     font-size: 1.0em;
+}
+.table-link-icon:hover,
+.card-link-icon:hover {
+    color: #003d82;
+    text-decoration: none;
+}
+td.link-column-invalid-url {
+    font-style: italic;
+    color: #888;
+}
+.icon-key-link { /* Icon key link style */
+    color: var(--color-accent);
+}
+/* --- END OF FILE css/components.css --- */

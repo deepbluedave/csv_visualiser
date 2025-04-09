@@ -1,0 +1,133 @@
+/* --- START OF FILE css/layout.css --- */
+/* --- Upload Area --- */
+#uploadContainer {
+    margin-bottom: var(--gap-size);
+    padding: var(--container-padding);
+    background-color: var(--color-container-bg);
+    border-radius: 5px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+#uploadContainer label {
+     font-weight: 500;
+}
+
+/* --- Icon Key Styles (Global) --- */
+#iconKeyContainer {
+    background-color: var(--color-container-bg);
+    padding: 8px var(--container-padding);
+    margin-bottom: var(--gap-size);
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    font-size: 0.85em;
+    display: none; /* Hidden by default */
+    margin-left: auto;
+    flex-shrink: 1;
+    min-width: 150px;
+}
+
+#iconKeyContainer h4 {
+    margin: 0 0 5px 0;
+    padding-bottom: 3px;
+    border-bottom: 1px solid #eee;
+    font-size: 1.0em;
+    font-weight: 600;
+    display: inline-block;
+    margin-right: 15px;
+}
+
+#iconKeyContainer ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 15px;
+    align-items: center;
+}
+
+#iconKeyContainer li {
+    margin-bottom: 0;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+#iconKeyContainer li .icon {
+    font-size: 1.1em;
+    display: inline-block;
+    text-align: center;
+    flex-shrink: 0;
+    vertical-align: middle;
+}
+
+
+/* --- Tabs --- */
+#tabControls {
+    margin-bottom: 0;
+    flex-shrink: 0;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: -1px; /* Creates overlap effect */
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px; /* Gap between tab buttons */
+}
+.tab-button {
+    padding: 9px 14px;
+    cursor: pointer;
+    border: 1px solid #ccc;
+    background-color: #f0f0f0;
+    border-radius: 5px 5px 0 0;
+    border-bottom: none;
+    position: relative;
+    bottom: -1px;
+    font-size: 0.95em;
+    color: #555;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    white-space: nowrap; /* Prevent button text wrapping */
+}
+.tab-button:hover {
+     background-color: #e5e5e5;
+     color: #333;
+}
+.tab-button.active {
+    background-color: var(--color-container-bg);
+    border-color: #ccc;
+    border-bottom: 1px solid var(--color-container-bg);
+    font-weight: 600;
+    color: var(--color-text-dark);
+    z-index: 1;
+}
+
+/* --- Dynamic View Content Area --- */
+.view-content-area {
+    flex-grow: 1; /* Take remaining vertical space */
+    position: relative; /* Needed for positioning view containers */
+    overflow: hidden; /* Prevent containers from overflowing this area */
+    display: flex; /* Use flex to manage the single active container */
+    flex-direction: column; /* Stack elements if needed (shouldn't be) */
+}
+
+/* Style for each dynamically generated view container */
+.view-container {
+    background-color: var(--color-container-bg);
+    padding: var(--container-padding);
+    border: 1px solid #ccc;
+    border-top: none;
+    border-radius: 0 5px 5px 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    overflow: auto; /* Each view scrolls independently */
+    flex-grow:1; /* Allow the active container to fill the space */
+    display: none; /* Hidden by default, shown by JS */
+    position: relative; /* For absolute positioning of messages? */
+    min-height: 50px; /* Give it some minimum height */
+}
+.view-container.active {
+    /* display is set dynamically by JS (block, grid, or flex) */
+    display: block; /* Fallback display if JS fails */
+}
+/* --- END OF FILE css/layout.css --- */

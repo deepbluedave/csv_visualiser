@@ -1,16 +1,19 @@
-TaskID,TaskName,Project,Assignee,Status,Priority,DueDate,EffortEst(h),LinkToTask,LinkToDocs
-T001,Design Landing Page Mockups,Website Relaunch,Alice,In Progress,High,2024-09-15,16,http://example.com/tasks/T001
-T002,"API Integration: User Auth",Mobile App,Bob,Blocked,High,2024-09-20,24,http://example.com/tasks/T002
-T003,Develop User Testing Plan,Website Relaunch,Charlie,Not Started,Medium,2024-09-10,8,http://example.com/tasks/T003
-T004,Write API Documentation,Mobile App,Alice,In Progress,Low,2024-10-01,12,http://example.com/tasks/T004
-T005,Deploy Website to Staging,Website Relaunch,Bob,Complete,Medium,2024-08-30,4,http://example.com/tasks/T005
-T006,Fix Login Bug #123,Mobile App,Charlie,"In Progress",High,2024-09-08,6,http://example.com/tasks/T006
-T007,Create Marketing Graphics,Marketing Campaign,Diana,Not Started,Medium,2024-09-18,10,http://example.com/tasks/T007
-T008,Content Migration (Homepage),Website Relaunch,Alice,Complete,Low,2024-08-25,12,http://example.com/tasks/T008
-T009,"Setup Push Notifications","Mobile App,Website Relaunch",Bob,Not Started,Medium,2024-10-05,16,http://example.com/tasks/T009
-T010,Final Project Review,Website Relaunch,Charlie,Not Started,High,2024-09-28,4,http://example.com/tasks/T010
-T011,Draft Blog Post Announcement,Marketing Campaign,Diana,In Progress,Medium,2024-09-22,6,http://example.com/tasks/T011
-T012,Accessibility Audit (Mobile),Mobile App,Alice,Not Started,Low,2024-10-15,8,http://example.com/tasks/T012
-T013,Server Maintenance,Infrastructure,Bob,Complete,High,2024-08-15,2,
-T014,Update Dependencies,Website Relaunch,Charlie,Blocked,Medium,2024-09-12,4,http://example.com/tasks/T014
-T015,Onboarding Guide Draft,Mobile App,Alice,In Progress,Medium,2024-09-25,10,http://example.com/tasks/T015,http://example.com/docs/D1
+TaskID,TaskName,Project,Assignee,Status,Priority,DueDate,EffortEst(h),LinkToTask,LinkToDocs,RelatedTicketURL
+T001,Design Landing Page Mockups,Website Relaunch,Alice,In Progress,High,2024-09-15,16,http://example.com/tasks/T001,,
+T002,"API Integration: User Auth",Mobile App,Bob,Blocked,High,2024-09-20,24,http://example.com/tasks/T002,,http://jira.example.com/browse/MOB-101
+T003,Develop User Testing Plan,Website Relaunch,Charlie,Not Started,Medium,2024-09-10,8,http://example.com/tasks/T003,http://example.com/docs/D003A,
+T004,Write API Documentation,Mobile App,Alice,In Progress,Low,2024-10-01,12,http://example.com/tasks/T004,http://example.com/docs/D004B,
+T005,Deploy Website to Staging,Website Relaunch,Bob,Complete,Medium,2024-08-30,4,http://example.com/tasks/T005,,
+T006,Fix Login Bug #123,Mobile App,Charlie,"In Progress",High,2024-09-08,6,http://example.com/tasks/T006,,http://jira.example.com/browse/MOB-115
+T007,Create Marketing Graphics,Marketing Campaign,Diana,Not Started,Medium,2024-09-18,10,http://example.com/tasks/T007,,
+T008,Content Migration (Homepage),Website Relaunch,Alice,Complete,Low,2024-08-25,12,http://example.com/tasks/T008,,
+T009,"Setup Push Notifications","Mobile App,Website Relaunch",Bob,Not Started,Medium,2024-10-05,16,http://example.com/tasks/T009,,
+T010,Final Project Review,Website Relaunch,Charlie,Not Started,High,2024-09-28,4,http://example.com/tasks/T010,,
+T011,Draft Blog Post Announcement,Marketing Campaign,Diana,In Progress,Medium,2024-09-22,6,http://example.com/tasks/T011,http://example.com/docs/D011C,
+T012,Accessibility Audit (Mobile),Mobile App,Alice,Not Started,Low,2024-10-15,8,http://example.com/tasks/T012,,
+T013,Server Maintenance,Infrastructure,Bob,Complete,High,2024-08-15,2,,,http://jira.example.com/browse/INF-050
+T014,Update Dependencies,Website Relaunch,Charlie,Blocked,Medium,2024-09-12,4,http://example.com/tasks/T014,,
+T015,Onboarding Guide Draft,Mobile App,Alice,In Progress,Medium,2024-09-25,10,http://example.com/tasks/T015,http://example.com/docs/D015D,
+T016,Performance Testing (API),Mobile App,Bob,"Not Started",Medium,2024-10-10,16,http://example.com/tasks/T016,,
+T017,Design Email Templates,Marketing Campaign,Diana,Complete,Low,2024-09-05,8,http://example.com/tasks/T017,,
+T018,Security Audit Plan,Infrastructure,Alice,Blocked,High,2024-10-20,12,http://example.com/tasks/T018,http://example.com/docs/D018E,http://jira.example.com/browse/INF-065
