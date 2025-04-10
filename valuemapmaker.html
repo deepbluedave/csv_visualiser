@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ValueMap Config Generator</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            padding: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        h1, h2 {
+            margin-top: 0;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            color: #0056b3;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        textarea, input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box; /* Include padding and border in the element's total width and height */
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        button {
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.2s ease;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #outputContainer pre {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid #ced4da;
+            overflow-x: auto;
+            white-space: pre-wrap; /* Allow wrapping */
+            word-wrap: break-word; /* Break long words */
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .options-grid label {
+            margin-bottom: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .options-grid input[type="range"] {
+            width: 100%;
+            margin-top: 5px;
+        }
+
+        .item-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            background-color: #fdfdfd;
+            flex-wrap: wrap; /* Allow wrapping on smaller screens */
+        }
+
+        .item-color-swatch {
+            width: 30px;
+            height: 30px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+
+        .item-key {
+            font-weight: bold;
+            font-family: monospace;
+            background-color: #f0f0f0;
+            padding: 3px 6px;
+            border-radius: 3px;
+            flex-shrink: 0;
+            min-width: 80px; /* Give it some minimum space */
+            text-align: right;
+            margin-right: 10px;
+        }
+
+        .item-inputs {
+            display: flex;
+            gap: 10px;
+            flex-grow: 1;
+            flex-wrap: wrap; /* Allow inputs to wrap */
+        }
+        .item-inputs label {
+             display: flex;
+             flex-direction: column;
+             font-weight: normal;
+             font-size: 0.85em;
+             color: #555;
+             min-width: 60px; /* Minimum width for input groups */
+             flex-basis: 100px; /* Base width before growing */
+             flex-grow: 1;
+        }
+         .item-inputs label span {
+             margin-bottom: 2px;
+         }
+        .item-inputs input[type="text"] {
+            margin-bottom: 0;
+            padding: 4px 6px;
+            font-size: 0.9rem;
+            width: 100%; /* Take full width of label container */
+        }
+        .copy-button {
+             margin-left: 10px;
+             background-color: #6c757d;
+        }
+         .copy-button:hover {
+             background-color: #5a6268;
+         }
+    </style>
+</head>
+<body>
+
+    <h1>ValueMap Config Generator</h1>
+
+    <div class="container">
+        <h2>1. Input Values</h2>
+        <label for="inputValues">Paste your unique values (one per line):</label>
+        <textarea id="inputValues" placeholder="Value One
+Value Two
+Another Value"></textarea>
+    </div>
+
+    <div class="container">
+        <h2>2. Color Options</h2>
+        <div class="options-grid">
+            <div>
+                <label for="hueStart">Hue Start: <span id="hueStartValue">10</span></label>
+                <input type="range" id="hueStart" min="0" max="360" value="10">
+            </div>
+            <div>
+                <label for="hueRange">Hue Range: <span id="hueRangeValue">300</span></label>
+                <input type="range" id="hueRange" min="10" max="360" value="300">
+            </div>
+            <div>
+                <label for="saturation">Saturation (%): <span id="saturationValue">75</span></label>
+                <input type="range" id="saturation" min="0" max="100" value="75">
+            </div>
+            <div>
+                <label for="lightness">Lightness (%): <span id="lightnessValue">85</span></label>
+                <input type="range" id="lightness" min="0" max="100" value="85">
+            </div>
+        </div>
+         <button id="generateButton">Generate Preview & Config</button>
+    </div>
+
+    <div class="container">
+        <h2>3. Customize Items (Optional)</h2>
+        <div id="itemsContainer">
+            <p>Click "Generate Preview & Config" above to see items here.</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>4. Generated valueMap Config
+             <button id="copyButton" class="copy-button" title="Copy to Clipboard" style="display: none;">Copy</button>
+        </h2>
+        <div id="outputContainer">
+            <pre><code id="outputCode">{}</code></pre>
+        </div>
+    </div>
+
+    <script>
+        const inputValuesEl = document.getElementById('inputValues');
+        const generateButtonEl = document.getElementById('generateButton');
+        const itemsContainerEl = document.getElementById('itemsContainer');
+        const outputCodeEl = document.getElementById('outputCode');
+        const copyButtonEl = document.getElementById('copyButton');
+
+        // Color Option Elements
+        const hueStartEl = document.getElementById('hueStart');
+        const hueRangeEl = document.getElementById('hueRange');
+        const saturationEl = document.getElementById('saturation');
+        const lightnessEl = document.getElementById('lightness');
+        const hueStartValueEl = document.getElementById('hueStartValue');
+        const hueRangeValueEl = document.getElementById('hueRangeValue');
+        const saturationValueEl = document.getElementById('saturationValue');
+        const lightnessValueEl = document.getElementById('lightnessValue');
+
+        // --- Event Listeners ---
+        generateButtonEl.addEventListener('click', generateValueMap);
+        copyButtonEl.addEventListener('click', copyOutputToClipboard);
+
+        // Update slider value displays
+        hueStartEl.addEventListener('input', () => hueStartValueEl.textContent = hueStartEl.value);
+        hueRangeEl.addEventListener('input', () => hueRangeValueEl.textContent = hueRangeEl.value);
+        saturationEl.addEventListener('input', () => saturationValueEl.textContent = saturationEl.value);
+        lightnessEl.addEventListener('input', () => lightnessValueEl.textContent = lightnessEl.value);
+
+        // --- Core Logic ---
+
+        function generateValueMap() {
+            const lines = inputValuesEl.value.split('\n');
+            const uniqueValues = [...new Set(lines.map(line => line.trim()).filter(line => line !== ''))];
+
+            itemsContainerEl.innerHTML = ''; // Clear previous items
+            outputCodeEl.textContent = '{}'; // Clear previous output
+            copyButtonEl.style.display = 'none'; // Hide copy button initially
+
+            if (uniqueValues.length === 0) {
+                itemsContainerEl.innerHTML = '<p>Please enter some values in the textarea above.</p>';
+                return;
+            }
+
+            const colorOptions = {
+                hueStart: parseInt(hueStartEl.value, 10),
+                hueRange: parseInt(hueRangeEl.value, 10),
+                saturation: parseInt(saturationEl.value, 10),
+                lightness: parseInt(lightnessEl.value, 10)
+            };
+
+            uniqueValues.forEach(value => {
+                const colors = generateColors(value, colorOptions);
+                createItemRow(value, colors);
+            });
+
+            // Also generate the output string immediately after creating rows
+            generateOutputString();
+             copyButtonEl.style.display = 'inline-block'; // Show copy button
+        }
+
+        function createItemRow(value, colors) {
+            const row = document.createElement('div');
+            row.className = 'item-row';
+            row.dataset.key = value; // Store key for later retrieval
+
+            const swatch = document.createElement('div');
+            swatch.className = 'item-color-swatch';
+            swatch.style.backgroundColor = colors.bgColor;
+            swatch.style.borderColor = colors.textColor; // Use text color for border for visibility
+            row.appendChild(swatch);
+
+            const keyLabel = document.createElement('span');
+            keyLabel.className = 'item-key';
+            keyLabel.textContent = `"${value}"`; // Show quotes for clarity
+            row.appendChild(keyLabel);
+
+            const inputsDiv = document.createElement('div');
+            inputsDiv.className = 'item-inputs';
+
+            // Optional Inputs
+            const inputs = [
+                { name: 'icon', placeholder: 'Icon (e.g., ⭐)', type: 'text'},
+                { name: 'text', placeholder: 'Display Text', type: 'text'},
+                { name: 'title', placeholder: 'Tooltip Title', type: 'text'}
+            ];
+
+            inputs.forEach(inputInfo => {
+                 const label = document.createElement('label');
+                 const span = document.createElement('span');
+                 span.textContent = inputInfo.name.charAt(0).toUpperCase() + inputInfo.name.slice(1) + ':'; // Capitalize
+                 const input = document.createElement('input');
+                 input.type = inputInfo.type;
+                 input.placeholder = inputInfo.placeholder;
+                 input.dataset.field = inputInfo.name; // Identify field type
+                 // Re-generate output on input change for instant feedback
+                 input.addEventListener('input', generateOutputString);
+                 label.appendChild(span);
+                 label.appendChild(input);
+                 inputsDiv.appendChild(label);
+            });
+
+
+            row.appendChild(inputsDiv);
+            itemsContainerEl.appendChild(row);
+        }
+
+        function generateOutputString() {
+            let output = `"valueMap": {\n`;
+            const rows = itemsContainerEl.querySelectorAll('.item-row');
+            const items = [];
+
+            rows.forEach(row => {
+                const key = row.dataset.key;
+                const swatch = row.querySelector('.item-color-swatch');
+                const bgColor = swatch.style.backgroundColor; // This will be rgb() or hsl()
+                const textColor = calculateContrastColor(bgColor); // Recalculate to be sure
+
+                const itemConfig = {
+                    bgColor: bgColor,
+                    textColor: textColor
+                };
+
+                // Get optional values
+                const inputs = row.querySelectorAll('.item-inputs input');
+                inputs.forEach(input => {
+                    const field = input.dataset.field;
+                    const value = input.value.trim();
+                    if (value !== '') {
+                        itemConfig[field] = value;
+                    }
+                });
+                items.push({ key, config: itemConfig });
+            });
+
+            items.forEach((item, index) => {
+                output += `    ${JSON.stringify(item.key)}: { `;
+                const props = [];
+                // Ensure specific order if desired, otherwise order might vary
+                if (item.config.icon) props.push(`"icon": ${JSON.stringify(item.config.icon)}`);
+                if (item.config.text) props.push(`"text": ${JSON.stringify(item.config.text)}`);
+                props.push(`"bgColor": "${item.config.bgColor}"`); // Keep colors as strings
+                props.push(`"textColor": "${item.config.textColor}"`);
+                if (item.config.title) props.push(`"title": ${JSON.stringify(item.config.title)}`);
+
+                output += props.join(', ');
+                output += ` }`;
+                if (index < items.length - 1) {
+                    output += ',';
+                }
+                output += '\n';
+            });
+
+             // Add default entry
+            output += `    "default": { "bgColor": "#eeeeee", "textColor": "#555" }\n`;
+
+            output += `}`;
+            outputCodeEl.textContent = output;
+        }
+
+         function copyOutputToClipboard() {
+            const codeToCopy = outputCodeEl.textContent;
+            navigator.clipboard.writeText(codeToCopy).then(() => {
+                // Optional: Show feedback
+                const originalText = copyButtonEl.textContent;
+                copyButtonEl.textContent = 'Copied!';
+                setTimeout(() => {
+                    copyButtonEl.textContent = originalText;
+                }, 1500);
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
+                 alert('Failed to copy text. Please copy manually.');
+            });
+        }
+
+        // --- Color Generation & Hashing ---
+
+        // Simple djb2 hash function
+        function stringToHash(str) {
+            let hash = 5381;
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) + hash) + char; /* hash * 33 + c */
+            }
+            return hash;
+        }
+
+        function generateColors(value, options) {
+            const hash = stringToHash(value);
+            // Ensure positive value before modulo
+            const positiveHash = hash & 0x7FFFFFFF;
+            const hue = options.hueStart + (positiveHash % options.hueRange);
+            const bgColor = `hsl(${hue}, ${options.saturation}%, ${options.lightness}%)`;
+            const textColor = calculateContrastColor(bgColor);
+
+            return { bgColor, textColor };
+        }
+
+         function calculateContrastColor(hslColor) {
+             // Need to convert HSL to RGB first to calculate luminance
+             const rgb = hslToRgb(hslColor);
+             if (!rgb) return '#000000'; // Fallback
+
+             const luminance = getLuminance(rgb.r, rgb.g, rgb.b);
+             // Threshold can be adjusted, 0.5 is common, sometimes ~0.18 is used based on WCAG contrast ratios against pure white/black
+             return luminance > 0.4 ? '#000000' : '#ffffff';
+         }
+
+        // --- Color Conversion Helpers ---
+
+        function hslToRgb(hsl) {
+            // Extract H, S, L values (assuming format like "hsl(H, S%, L%)")
+            const match = hsl.match(/hsl\((\d+),\s*(\d+)%,\s*(\d+)%\)/);
+            if (!match) return null;
+
+            let h = parseInt(match[1], 10);
+            let s = parseInt(match[2], 10) / 100;
+            let l = parseInt(match[3], 10) / 100;
+
+            let c = (1 - Math.abs(2 * l - 1)) * s;
+            let x = c * (1 - Math.abs((h / 60) % 2 - 1));
+            let m = l - c / 2;
+            let r = 0, g = 0, b = 0;
+
+            if (0 <= h && h < 60) { r = c; g = x; b = 0; }
+            else if (60 <= h && h < 120) { r = x; g = c; b = 0; }
+            else if (120 <= h && h < 180) { r = 0; g = c; b = x; }
+            else if (180 <= h && h < 240) { r = 0; g = x; b = c; }
+            else if (240 <= h && h < 300) { r = x; g = 0; b = c; }
+            else if (300 <= h && h < 360) { r = c; g = 0; b = x; }
+
+            r = Math.round((r + m) * 255);
+            g = Math.round((g + m) * 255);
+            b = Math.round((b + m) * 255);
+
+            return { r, g, b };
+        }
+
+        function getLuminance(r, g, b) {
+            // Formula from WCAG standard - uses sRGB values
+            const a = [r, g, b].map(function (v) {
+                v /= 255;
+                return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+            });
+            return a[0] * 0.2126 + a[1] * 0.7152 + a[2] * 0.0722;
+        }
+
+    </script>
+
+</body>
+</html>
