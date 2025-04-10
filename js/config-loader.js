@@ -47,12 +47,9 @@
                 tabContentElement.style.setProperty('--summary-inner-column-gap', layout.columnGap || '15px');
                 tabContentElement.style.setProperty('--summary-inner-item-gap', layout.itemGap || '10px');
             }
-
             // Apply Counts layout styles (if any defined in future)
             // if (tab.type === 'counts' && tab.config?.layout) { ... }
-
         });
-
     } catch (e) {
         console.error("Error applying config styles:", e);
     }

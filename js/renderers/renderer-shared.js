@@ -136,7 +136,7 @@ function isTruthy(value, config) {
 
     // --- Standard Indicator Style Logic ---
     if (!styleConfig || styleConfig.type === 'none') return ''; // No styling configured or explicitly none
-
+    
     const valuesToProcess = Array.isArray(value) ? value : [value];
     let generatedHtmlArray = []; // Store HTML for each item before joining
 
@@ -152,7 +152,7 @@ function isTruthy(value, config) {
 
                 // 1. Check trueCondition
                 if (styleConfig.trueCondition && !iconApplied && isTruthy(currentValue, config)) {
-                    currentIconHtml = `<span class="icon ${styleConfig.trueCondition.cssClass || ''}" title="${styleConfig.trueCondition.title || columnName}">${styleConfig.trueCondition.value || '?'}</span>`;
+                    currentIconHtml = `<span class="csv-dashboard-icon ${styleConfig.trueCondition.cssClass || ''}" title="${styleConfig.trueCondition.title || columnName}">${styleConfig.trueCondition.value || '?'}</span>`;
                     iconApplied = true;
                 }
 
@@ -187,7 +187,7 @@ function isTruthy(value, config) {
                     // Apply mapping if found and not the default, and it has a 'value' defined
                     if (mapping && mapping !== styleConfig.valueMap.default && mapping.value !== undefined) {
                         if (mapping.value !== "") { // Only add span if value is not empty
-                             currentIconHtml = `<span class="icon ${mapping.cssClass || ''}" title="${mapping.title || columnName + ': ' + currentValue}">${mapping.value}</span>`;
+                             currentIconHtml = `<span class="csv-dashboard-icon ${mapping.cssClass || ''}" title="${mapping.title || columnName + ': ' + currentValue}">${mapping.value}</span>`;
                         } else {
                              currentIconHtml = ""; // Explicitly empty output
                         }
@@ -197,7 +197,7 @@ function isTruthy(value, config) {
                     else if (styleConfig.valueMap.default && !iconApplied && styleConfig.valueMap.default.value !== undefined) {
                         const defaultMapping = styleConfig.valueMap.default;
                          if (defaultMapping.value !== "") {
-                           currentIconHtml = `<span class="icon ${defaultMapping.cssClass || ''}" title="${defaultMapping.title || columnName + ': ' + currentValue}">${defaultMapping.value}</span>`;
+                           currentIconHtml = `<span class="csv-dashboard-icon ${defaultMapping.cssClass || ''}" title="${defaultMapping.title || columnName + ': ' + currentValue}">${defaultMapping.value}</span>`;
                            iconApplied = true;
                          }
                     }

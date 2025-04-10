@@ -57,7 +57,7 @@
     gap: 5px;
 }
 
-#cdg-dashboard-wrapper #cdg-iconKeyContainer li .icon { /* Scope .icon within key */
+#cdg-dashboard-wrapper #cdg-iconKeyContainer li .csv-dashboard-icon { /* Scope .icon within key */
     font-size: 1.1em;
     display: inline-block;
     text-align: center;

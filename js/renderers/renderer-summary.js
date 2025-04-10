@@ -137,7 +137,7 @@ function checkSummarySectionFilter(row, sectionConf, globalConfig) {
             } else {
                 // Fallback list (no grouping)
                  const listContainer = document.createElement('div'); listContainer.className = 'summary-section-list';
-                 items.forEach(item => { listContainer.appendChild(createInitiativeCard(item, tabConfig.config, globalConfig, 'summary-card')); }); // Use imported createInitiativeCard
+                 items.forEach(item => { listContainer.appendChild(createInitiativeCard(item, tabConfig.config, globalConfig, 'summary-card').replace(" icon", " csv-dashboard-icon")); }); // Use imported createInitiativeCard
                  sectionDiv.appendChild(listContainer);
             }
         }

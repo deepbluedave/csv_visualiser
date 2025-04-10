@@ -247,7 +247,7 @@ document.addEventListener('DOMContentLoaded', () => {
      * @param {Event} event The click event.
      */
     function handleTabClick(event) {
-         const button = event.target.closest('.tab-button'); // Find the button element
+         const button = event.target.closest('.tab-button'); // Find the button element  
          if (button) {
              const tabId = button.getAttribute('data-tab-id');
              if (tabId && tabId !== appState.activeTabId) {

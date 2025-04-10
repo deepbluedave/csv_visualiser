@@ -90,7 +90,7 @@ function checkCounterFilter(rowValue, counterConfig, globalConfig) {
                      const cssClass = displayConf?.cssClass ? ` ${displayConf.cssClass}` : '';
                      const titleAttr = ` title="${counterConfig.title}"`;
                      if (displayConf?.type === 'icon' && displayConf.value) {
-                          displayHTML = `<span class="icon${cssClass}"${titleAttr}>${displayConf.value}</span>`;
+                          displayHTML = `<span class="csv-dashboard-icon${cssClass}"${titleAttr}>${displayConf.value}</span>`;
                      } else if (displayConf?.type === 'text' && displayConf.value) {
                           displayHTML = `<span class="count-header-tag-icon${cssClass}"${titleAttr}>${displayConf.value}</span>`;
                      }

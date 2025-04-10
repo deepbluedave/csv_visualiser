@@ -28,7 +28,7 @@
     align-items: center;
     gap: 8px;
 }
-#cdg-dashboard-wrapper .indicator-domain-group h3 .icon, /* Scope icon */
+#cdg-dashboard-wrapper .indicator-domain-group h3 .csv-dashboard-icon, /* Scope icon */
 #cdg-dashboard-wrapper .indicator-domain-group h3 .count-header-tag-icon { /* Scope custom class */
     font-size: 1.2em;
     line-height: 1;

@@ -100,8 +100,8 @@
     line-height: 1;
 }
 /* Icon (boolean etc) styling */
-#cdg-dashboard-wrapper .view-container[data-view-type="table"] td > .icon:only-child, /* Scope .icon */
-#cdg-dashboard-wrapper .view-container[data-view-type="table"] td > .icon { /* Scope .icon */
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] td > .csv-dashboard-icon:only-child, /* Scope .icon */
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] td > .csv-dashboard-icon { /* Scope .icon */
     display: inline-block;
     margin: 0 auto; /* Center horizontally if alone */
     text-align: center;
@@ -130,7 +130,7 @@
 
 /* Centering for specific content (JS applies text-align: center) */
 #cdg-dashboard-wrapper .view-container[data-view-type="table"] td[style*="text-align: center"] .cell-text,
-#cdg-dashboard-wrapper .view-container[data-view-type="table"] td[style*="text-align: center"] > .icon,
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] td[style*="text-align: center"] > .csv-dashboard-icon,
 #cdg-dashboard-wrapper .view-container[data-view-type="table"] td[style*="text-align: center"] > .tag {
      display: inline-block;
      text-align: center;

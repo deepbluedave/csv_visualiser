@@ -102,7 +102,7 @@ function renderTable(filteredData, tabConfig, globalConfig, targetElement, showM
                 if (linkColumns.includes(header)) {
                     const url = String(value || '').trim();
                     if (url.startsWith('http://') || url.startsWith('https://')) {
-                        cellHTML = `<a href="${url}" target="_blank" rel="noopener noreferrer" title="Open Link: ${url}" class="table-link-icon">🔗</a>`;
+                        cellHTML = `<a href="${url}" target="_blank" rel="noopener noreferrer" title="Open Link: ${url}" class="table-link-csv-dashboard-icon">🔗</a>`;
                         cellTitle = `Link: ${url}`;
                         cellTextAlign = 'center'; // Center link icons
                     } else if (url) {

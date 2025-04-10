@@ -325,7 +325,7 @@ let appState = { parsedData: [], currentConfig: {}, activeTabId: null }; // Defa
     if (iconEntries.length > 0) {
         let keyHTML = '<h4>Icon Key:</h4><ul>';
         iconEntries.forEach(entry => {
-            keyHTML += `<li><span class="icon ${entry.cssClass || ''}" title="${entry.title}">${entry.icon}</span> = ${entry.title}</li>`;
+            keyHTML += `<li><span class="csv-dashboard-icon ${entry.cssClass || ''}" title="${entry.title}">${entry.icon}</span> = ${entry.title}</li>`;
         });
         keyHTML += '</ul>';
         iconKeyContainer.innerHTML = keyHTML;

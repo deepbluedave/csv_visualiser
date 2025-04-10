@@ -56,7 +56,7 @@
     /* Ensure flex context if needed for internal layout, but usually layout.css handles it */
     display: flex;
     flex-direction: column;
-    /* Set a height or min-height if needed within the embedded context */
+    /* Set a height or min-height if needed withi the embedded context */
     /* Example: min-height: 500px; */
 }
 /* Ensure children also use border-box */

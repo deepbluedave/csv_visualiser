@@ -181,7 +181,7 @@ function parseCSVLine(line, delimiter = ',') {
  * @param {object} row The data row object.
  * @param {object} condition The filter condition object {column, filterType, filterValue}.
  * @param {object} globalConfig The global application configuration (for trueValues, headers).
- * @returns {boolean} True if the row matches the condition.
+ * @returns {boolean} True if the row matches the condition. 
  */
 //  this if needed by renderers directly, otherwise keep internal
 /*  */ function checkCondition(row, condition, globalConfig) {

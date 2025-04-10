@@ -93,7 +93,7 @@
 
         // Add cards (passing tab config and global config)
         groupData.forEach(row => {
-            groupBlockDiv.appendChild(createInitiativeCard(row, tabConfig.config, globalConfig, 'kanban-card'));
+            groupBlockDiv.appendChild(createInitiativeCard(row, tabConfig.config, globalConfig, 'kanban-card', 'csv-dashboard-icon'));
         });
 
         if (!currentColumnWrapper) {
