@@ -1,0 +1,41 @@
+Category,Icon,Description
+Business as Usual,⚙️,Ongoing operations / steady-state processes
+Business as Usual,🔁,"Routine, repeating cycles"
+Business as Usual,📄,Standard documentation or reporting
+Business as Usual,🛠️,Maintenance tasks
+Business as Usual,🧱,Foundational / core work
+Business as Usual,🟦,Stable / default status (if colour coding)
+High-Priority Initiative,🌟,Flagship or strategic initiative
+High-Priority Initiative,🎯,Key objective / goal alignment
+High-Priority Initiative,🚀,"High-urgency, transformation, or launch"
+High-Priority Initiative,🔥,"Hot topic, urgent priority"
+High-Priority Initiative,👑,Premium / top-tier initiative
+High-Priority Initiative,📣,"Public-facing, high visibility"
+High-Priority Initiative,🏆,High-impact or success-focused
+High-Priority Initiative,🌐,Global / cross-functional scope
+High-Priority Initiative,✨,"Standout, innovative or new"
+Magnifying / Hyper Focus,🔍,"Scrutiny, detail review, deep dive"
+Magnifying / Hyper Focus,🔎,"Scrutiny, detail review, deep dive"
+Magnifying / Hyper Focus,🎯,Laser-focus on specific target
+Magnifying / Hyper Focus,🧠,"Deep cognitive focus, problem-solving"
+Magnifying / Hyper Focus,👁️,"Observation, close monitoring"
+Magnifying / Hyper Focus,🧐,Analytical thinking or audit mindset
+Cyber Security,🛡️,"Protection, secure environment"
+Cyber Security,🔐,Authentication / identity management
+Cyber Security,🔒,"Locked, secure system"
+Cyber Security,🧑‍💻,"Cyber activity, SOC operations"
+Cyber Security,🕵️‍♂️,"Investigation, threat hunting"
+Cyber Security,👁️‍🗨️,Monitoring or surveillance
+Cyber Security,🧱,Firewall / perimeter defence
+Cyber Security,🧬,"Sensitive data / privacy (e.g. genetics, healthcare)"
+Project Management,📊,Dashboard or KPIs
+Project Management,📈,Trends (up)
+Project Management,📉,Trends (down)
+Project Management,📅,Calendar / milestones
+Project Management,🗂️,Project folders / categorisation
+Project Management,✅,Task/milestone complete
+Project Management,🔄,Iteration / updates
+Project Management,⏳,In-progress or nearing deadline
+Project Management,🧭,Strategic direction / alignment
+Project Management,📋,Task list or checklist
+Project Management,🧾,Log / audit trail
