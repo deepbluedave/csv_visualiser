@@ -1,6 +1,6 @@
 /* --- START OF FILE css/layout.css --- */
 /* --- Upload Area --- */
-#uploadContainer {
+#cdg-dashboard-wrapper #cdg-uploadContainer { /* Use ID selector */
     margin-bottom: var(--gap-size);
     padding: var(--container-padding);
     background-color: var(--color-container-bg);
@@ -11,26 +11,26 @@
     align-items: center;
     gap: 15px;
 }
-#uploadContainer label {
+#cdg-dashboard-wrapper #cdg-uploadContainer label {
      font-weight: 500;
 }
 
 /* --- Icon Key Styles (Global) --- */
-#iconKeyContainer {
+#cdg-dashboard-wrapper #cdg-iconKeyContainer { /* Use ID selector */
     background-color: var(--color-container-bg);
     padding: 8px var(--container-padding);
-    margin-bottom: var(--gap-size);
+    /* margin-bottom: var(--gap-size); REMOVED - Use gap from parent flex */
     border: 1px solid #ccc;
     border-radius: 5px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     font-size: 0.85em;
-    display: none; /* Hidden by default */
-    margin-left: auto;
+    display: none; /* Hidden by default, shown by JS */
+    margin-left: auto; /* Pushes to the right */
     flex-shrink: 1;
     min-width: 150px;
 }
 
-#iconKeyContainer h4 {
+#cdg-dashboard-wrapper #cdg-iconKeyContainer h4 {
     margin: 0 0 5px 0;
     padding-bottom: 3px;
     border-bottom: 1px solid #eee;
@@ -40,7 +40,7 @@
     margin-right: 15px;
 }
 
-#iconKeyContainer ul {
+#cdg-dashboard-wrapper #cdg-iconKeyContainer ul {
     list-style: none;
     padding: 0;
     margin: 0;
@@ -50,14 +50,14 @@
     align-items: center;
 }
 
-#iconKeyContainer li {
+#cdg-dashboard-wrapper #cdg-iconKeyContainer li {
     margin-bottom: 0;
     display: flex;
     align-items: center;
     gap: 5px;
 }
 
-#iconKeyContainer li .icon {
+#cdg-dashboard-wrapper #cdg-iconKeyContainer li .icon { /* Scope .icon within key */
     font-size: 1.1em;
     display: inline-block;
     text-align: center;
@@ -67,7 +67,7 @@
 
 
 /* --- Tabs --- */
-#tabControls {
+#cdg-dashboard-wrapper #cdg-tabControls { /* Use ID selector */
     margin-bottom: 0;
     flex-shrink: 0;
     border-bottom: 1px solid #ccc;
@@ -76,7 +76,7 @@
     flex-wrap: wrap;
     gap: 4px; /* Gap between tab buttons */
 }
-.tab-button {
+#cdg-dashboard-wrapper .tab-button { /* Style buttons based on class added by JS */
     padding: 9px 14px;
     cursor: pointer;
     border: 1px solid #ccc;
@@ -90,11 +90,11 @@
     transition: background-color 0.2s ease, color 0.2s ease;
     white-space: nowrap; /* Prevent button text wrapping */
 }
-.tab-button:hover {
+#cdg-dashboard-wrapper .tab-button:hover {
      background-color: #e5e5e5;
      color: #333;
 }
-.tab-button.active {
+#cdg-dashboard-wrapper .tab-button.active { /* Style active button based on class added by JS */
     background-color: var(--color-container-bg);
     border-color: #ccc;
     border-bottom: 1px solid var(--color-container-bg);
@@ -104,16 +104,16 @@
 }
 
 /* --- Dynamic View Content Area --- */
-.view-content-area {
-    flex-grow: 1; /* Take remaining vertical space */
-    position: relative; /* Needed for positioning view containers */
+#cdg-dashboard-wrapper .cdg-view-content-area { /* Use class from HTML */
+    flex-grow: 1; /* Take remaining vertical space within the wrapper */
+    position: relative;
     overflow: hidden; /* Prevent containers from overflowing this area */
     display: flex; /* Use flex to manage the single active container */
-    flex-direction: column; /* Stack elements if needed (shouldn't be) */
+    flex-direction: column;
 }
 
 /* Style for each dynamically generated view container */
-.view-container {
+#cdg-dashboard-wrapper .view-container { /* Style containers by class added by JS */
     background-color: var(--color-container-bg);
     padding: var(--container-padding);
     border: 1px solid #ccc;
@@ -123,10 +123,10 @@
     overflow: auto; /* Each view scrolls independently */
     flex-grow:1; /* Allow the active container to fill the space */
     display: none; /* Hidden by default, shown by JS */
-    position: relative; /* For absolute positioning of messages? */
-    min-height: 50px; /* Give it some minimum height */
+    position: relative;
+    min-height: 50px;
 }
-.view-container.active {
+#cdg-dashboard-wrapper .view-container.active { /* Style active container based on class added by JS */
     /* display is set dynamically by JS (block, grid, or flex) */
     display: block; /* Fallback display if JS fails */
 }

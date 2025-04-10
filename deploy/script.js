@@ -1714,12 +1714,12 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log("DOM fully loaded and parsed");
 
     // --- Get STATIC DOM Elements ---
-    const fileInput = document.getElementById('csvFileInput');
-    const uploadContainer = document.getElementById('uploadContainer');
-    const tabControls = document.getElementById('tabControls'); // Container for dynamic buttons
-    const viewContentContainer = document.getElementById('viewContentContainer'); // Container for dynamic views
+    const fileInput = document.getElementById('cdg-csvFileInput');
+    const uploadContainer = document.getElementById('cdg-uploadContainer');
+    const tabControls = document.getElementById('cdg-tabControls'); // Container for dynamic buttons
+    const viewContentContainer = document.getElementById('cdg-viewContentContainer'); // Container for dynamic views
     const mainHeading = document.querySelector('h1');
-    const iconKeyContainer = document.getElementById('iconKeyContainer'); // Keep global icon key
+    const iconKeyContainer = document.getElementById('cdg-iconKeyContainer'); // Keep global icon key
 
     // Check if essential containers were found
     if (!fileInput || !tabControls || !viewContentContainer || !mainHeading) {

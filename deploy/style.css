@@ -1,5 +1,6 @@
 /* --- START OF FILE css/base.css --- */
 /* --- Variables & Basic Styles --- */
+/* :root variables remain global and accessible */
 :root {
     /* Color Palette */
     --color-bg: #f4f4f4;
@@ -24,54 +25,59 @@
     --color-tag-default-border: #ccc;
 
     /* Spacing & Fonts */
-    --base-font-size: 1.1rem;
+    --base-font-size: 1.1rem; /* Base for calculations */
     --card-font-size: 0.85rem;
     --card-padding: 6px 8px;
     --container-padding: 15px;
     --gap-size: 15px;
 
-     /* Layout Variables (Can be overridden per tab container by JS) */
+     /* Layout Variables (Defined globally, used within scoped rules) */
     --kanban-min-col-width: 280px;
-    --kanban-gap: 15px;        /* Gap between visual columns */
-    --kanban-item-gap: 12px;   /* Gap between group blocks within a column */
+    --kanban-gap: 15px;
+    --kanban-item-gap: 12px;
     --summary-inner-min-col-width: 260px;
     --summary-inner-column-gap: 15px;
     --summary-inner-item-gap: 10px;
 }
 
-body {
+/* REMOVED direct body styles as per previous instruction */
+
+/* Apply essential base styles to the wrapper */
+#cdg-dashboard-wrapper {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-    margin: 20px;
-    background-color: var(--color-bg);
+    font-size: var(--base-font-size, 1rem); /* Use the variable, provide fallback */
+    line-height: 1.12;
+    color: var(--color-text-dark, #333);
+    background-color: var(--color-bg, #f4f4f4); /* Set background for the dashboard area */
+    padding: 15px; /* Add padding to the wrapper */
+    border: 1px solid #ccc; /* Optional border */
+    border-radius: 5px; /* Optional */
+    box-sizing: border-box;
+    /* Ensure flex context if needed for internal layout, but usually layout.css handles it */
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 40px);
-    font-size: var(--base-font-size);
-    color: var(--color-text-dark);
-    line-height: 1.12; /* Base line height */
-    min-height: 400px;
+    /* Set a height or min-height if needed within the embedded context */
+    /* Example: min-height: 500px; */
+}
+/* Ensure children also use border-box */
+#cdg-dashboard-wrapper *,
+#cdg-dashboard-wrapper *::before,
+#cdg-dashboard-wrapper *::after {
+     box-sizing: inherit;
 }
 
-h1 {
-    text-align: center;
-    margin-top: 0;
-    margin-bottom: var(--gap-size);
-    flex-shrink: 0;
-    font-size: 1.6rem;
-    font-weight: 500;
-    color: var(--color-text-dark);
-}
 
-h3 { /* Group Block Titles (Kanban), Section Titles (Summary), Counter Group Titles (Counts) */
+/* Scope heading styles (h1 is outside wrapper) */
+#cdg-dashboard-wrapper h3 {
     font-size: 1.05em;
     margin-top: 0;
     margin-bottom: 8px;
     padding-bottom: 4px;
     border-bottom: 1px solid #ccc;
     font-weight: 600;
-    color: inherit;
+    color: inherit; /* Inherit color from wrapper */
 }
-h4 { /* Inner group titles in Summary */
+#cdg-dashboard-wrapper h4 {
     font-size: 0.95em;
     margin-top: 0;
     margin-bottom: 8px;
@@ -83,7 +89,7 @@ h4 { /* Inner group titles in Summary */
 /* --- END OF FILE css/base.css --- */
 /* --- START OF FILE css/layout.css --- */
 /* --- Upload Area --- */
-#uploadContainer {
+#cdg-dashboard-wrapper #cdg-uploadContainer { /* Use ID selector */
     margin-bottom: var(--gap-size);
     padding: var(--container-padding);
     background-color: var(--color-container-bg);
@@ -94,26 +100,26 @@ h4 { /* Inner group titles in Summary */
     align-items: center;
     gap: 15px;
 }
-#uploadContainer label {
+#cdg-dashboard-wrapper #cdg-uploadContainer label {
      font-weight: 500;
 }
 
 /* --- Icon Key Styles (Global) --- */
-#iconKeyContainer {
+#cdg-dashboard-wrapper #cdg-iconKeyContainer { /* Use ID selector */
     background-color: var(--color-container-bg);
     padding: 8px var(--container-padding);
-    margin-bottom: var(--gap-size);
+    /* margin-bottom: var(--gap-size); REMOVED - Use gap from parent flex */
     border: 1px solid #ccc;
     border-radius: 5px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     font-size: 0.85em;
-    display: none; /* Hidden by default */
-    margin-left: auto;
+    display: none; /* Hidden by default, shown by JS */
+    margin-left: auto; /* Pushes to the right */
     flex-shrink: 1;
     min-width: 150px;
 }
 
-#iconKeyContainer h4 {
+#cdg-dashboard-wrapper #cdg-iconKeyContainer h4 {
     margin: 0 0 5px 0;
     padding-bottom: 3px;
     border-bottom: 1px solid #eee;
@@ -123,7 +129,7 @@ h4 { /* Inner group titles in Summary */
     margin-right: 15px;
 }
 
-#iconKeyContainer ul {
+#cdg-dashboard-wrapper #cdg-iconKeyContainer ul {
     list-style: none;
     padding: 0;
     margin: 0;
@@ -133,14 +139,14 @@ h4 { /* Inner group titles in Summary */
     align-items: center;
 }
 
-#iconKeyContainer li {
+#cdg-dashboard-wrapper #cdg-iconKeyContainer li {
     margin-bottom: 0;
     display: flex;
     align-items: center;
     gap: 5px;
 }
 
-#iconKeyContainer li .icon {
+#cdg-dashboard-wrapper #cdg-iconKeyContainer li .icon { /* Scope .icon within key */
     font-size: 1.1em;
     display: inline-block;
     text-align: center;
@@ -150,7 +156,7 @@ h4 { /* Inner group titles in Summary */
 
 
 /* --- Tabs --- */
-#tabControls {
+#cdg-dashboard-wrapper #cdg-tabControls { /* Use ID selector */
     margin-bottom: 0;
     flex-shrink: 0;
     border-bottom: 1px solid #ccc;
@@ -159,7 +165,7 @@ h4 { /* Inner group titles in Summary */
     flex-wrap: wrap;
     gap: 4px; /* Gap between tab buttons */
 }
-.tab-button {
+#cdg-dashboard-wrapper .tab-button { /* Style buttons based on class added by JS */
     padding: 9px 14px;
     cursor: pointer;
     border: 1px solid #ccc;
@@ -173,11 +179,11 @@ h4 { /* Inner group titles in Summary */
     transition: background-color 0.2s ease, color 0.2s ease;
     white-space: nowrap; /* Prevent button text wrapping */
 }
-.tab-button:hover {
+#cdg-dashboard-wrapper .tab-button:hover {
      background-color: #e5e5e5;
      color: #333;
 }
-.tab-button.active {
+#cdg-dashboard-wrapper .tab-button.active { /* Style active button based on class added by JS */
     background-color: var(--color-container-bg);
     border-color: #ccc;
     border-bottom: 1px solid var(--color-container-bg);
@@ -187,16 +193,16 @@ h4 { /* Inner group titles in Summary */
 }
 
 /* --- Dynamic View Content Area --- */
-.view-content-area {
-    flex-grow: 1; /* Take remaining vertical space */
-    position: relative; /* Needed for positioning view containers */
+#cdg-dashboard-wrapper .cdg-view-content-area { /* Use class from HTML */
+    flex-grow: 1; /* Take remaining vertical space within the wrapper */
+    position: relative;
     overflow: hidden; /* Prevent containers from overflowing this area */
     display: flex; /* Use flex to manage the single active container */
-    flex-direction: column; /* Stack elements if needed (shouldn't be) */
+    flex-direction: column;
 }
 
 /* Style for each dynamically generated view container */
-.view-container {
+#cdg-dashboard-wrapper .view-container { /* Style containers by class added by JS */
     background-color: var(--color-container-bg);
     padding: var(--container-padding);
     border: 1px solid #ccc;
@@ -206,17 +212,18 @@ h4 { /* Inner group titles in Summary */
     overflow: auto; /* Each view scrolls independently */
     flex-grow:1; /* Allow the active container to fill the space */
     display: none; /* Hidden by default, shown by JS */
-    position: relative; /* For absolute positioning of messages? */
-    min-height: 50px; /* Give it some minimum height */
+    position: relative;
+    min-height: 50px;
 }
-.view-container.active {
+#cdg-dashboard-wrapper .view-container.active { /* Style active container based on class added by JS */
     /* display is set dynamically by JS (block, grid, or flex) */
     display: block; /* Fallback display if JS fails */
 }
 /* --- END OF FILE css/layout.css --- */
 /* --- START OF FILE css/components.css --- */
 /* --- Card Styles (Shared) --- */
-.kanban-card, .summary-card {
+#cdg-dashboard-wrapper .kanban-card,
+#cdg-dashboard-wrapper .summary-card {
     background-color: var(--color-card-bg);
     color: var(--color-text-dark);
     border: 1px solid var(--color-card-border);
@@ -229,29 +236,31 @@ h4 { /* Inner group titles in Summary */
     transition: box-shadow 0.2s ease;
     overflow: hidden;
 }
-.kanban-card:last-child, .summary-card:last-child {
+#cdg-dashboard-wrapper .kanban-card:last-child,
+#cdg-dashboard-wrapper .summary-card:last-child {
     margin-bottom: 0;
 }
-.kanban-card:hover, .summary-card:hover {
+#cdg-dashboard-wrapper .kanban-card:hover,
+#cdg-dashboard-wrapper .summary-card:hover {
      box-shadow: 0 2px 4px rgba(0,0,0,0.08);
      border-color: #c8c8c8;
 }
 
-.summary-card {
+#cdg-dashboard-wrapper .summary-card {
     font-size: calc(var(--card-font-size) * 0.95);
 }
-.summary-card .card-title {
+#cdg-dashboard-wrapper .summary-card .card-title {
      font-size: 1.0em;
 }
 
-.card-header {
+#cdg-dashboard-wrapper .card-header {
     display: flex;
     justify-content: space-between;
     align-items: baseline; /* Align text baselines */
     flex-wrap: wrap;
     gap: 4px 8px;
 }
-.card-title {
+#cdg-dashboard-wrapper .card-title {
     font-weight: 500;
     color: var(--color-accent);
     margin-right: 5px;
@@ -262,7 +271,7 @@ h4 { /* Inner group titles in Summary */
     word-break: break-word;
 }
 
-a.card-title-link {
+#cdg-dashboard-wrapper a.card-title-link {
     color: inherit;
     text-decoration: none;
     font-weight: inherit;
@@ -271,50 +280,50 @@ a.card-title-link {
      flex-shrink: 1;
      min-width: 50%;
 }
-a.card-title-link:hover .card-title {
+#cdg-dashboard-wrapper a.card-title-link:hover .card-title {
     text-decoration: underline;
     color: #003d82;
 }
 
-.card-indicators {
+#cdg-dashboard-wrapper .card-indicators {
     text-align: right;
     flex-shrink: 0;
     white-space: normal; /* Allow indicators to wrap if needed */
     line-height: 1.3; /* Ensure consistent line height for wrapped indicators */
 }
-.card-indicators .icon,
-.card-indicators .tag {
+#cdg-dashboard-wrapper .card-indicators .icon,
+#cdg-dashboard-wrapper .card-indicators .tag {
      vertical-align: middle;
      margin-left: 3px;
      margin-bottom: 2px; /* Small gap for wrapped items */
 }
- .card-indicators .tag:first-child,
- .card-indicators .icon:first-child {
+#cdg-dashboard-wrapper .card-indicators .tag:first-child,
+#cdg-dashboard-wrapper .card-indicators .icon:first-child {
      margin-left: 0;
  }
 
 /* --- Indicator/Tag Base Styles --- */
-.icon {
+#cdg-dashboard-wrapper .icon {
     font-size: 1.1em; /* Base icon size */
     line-height: 1;   /* Prevent extra line height */
     display: inline-block;
     color: var(--color-indicator-default);
     vertical-align: middle; /* Align with adjacent text/tags */
 }
-.tag {
+#cdg-dashboard-wrapper .tag {
     display: inline-block;
-    padding: 1px 4px; /* DENSITY CHANGE: Reduce tag padding */
+    padding: 1px 4px;
     border-radius: 10px;
-    font-size: 0.9em; /* Slightly smaller than base text */
+    font-size: 0.9em;
     font-weight: 500;
-    line-height: 1.1; /* DENSITY CHANGE: Minimum line height for tags */
+    line-height: 1.1;
     border: 1px solid transparent;
-    vertical-align: baseline; /* DENSITY CHANGE: Align tags with baseline */
+    vertical-align: baseline;
     text-align: center;
-    white-space: nowrap; /* Prevent text wrapping inside tag */
-    margin: 2px; /* DENSITY CHANGE: Remove margin */
+    white-space: nowrap;
+    margin: 2px;
 }
-.tag.tag-default {
+#cdg-dashboard-wrapper .tag.tag-default {
     background-color: var(--color-tag-default-bg);
     color: var(--color-tag-default-text);
     border-color: var(--color-tag-default-border);
@@ -322,31 +331,24 @@ a.card-title-link:hover .card-title {
 
 /* --- Specific ICON Indicator Styles (From Config Classes) --- */
 /* Slightly smaller boolean icons in table */
-.view-container[data-view-type="table"] td .icon.indicator-style-boolean-true {
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] td .icon.indicator-style-boolean-true {
     font-size: 1.0em;
     line-height: 1;
-    vertical-align: baseline; /* DENSITY CHANGE: baseline align icons */
+    vertical-align: baseline;
 }
 /* Base boolean icon style */
-.icon.indicator-style-boolean-true {
-    color: var(--color-success); /* Example: green check */
+#cdg-dashboard-wrapper .icon.indicator-style-boolean-true { /* Matches class from config */
+    color: var(--color-success);
 }
-/* Other specific icon styles */
-.indicator-style-alert     { color: var(--color-error); }
-.indicator-style-campaign  { color: var(--color-warning); }
-.indicator-style-regulatory{ color: var(--color-info); }
-.indicator-style-complete  { color: var(--color-success); }
-.indicator-style-high-priority { color: var(--color-error); }
-.indicator-style-medium-priority { color: var(--color-warning); }
-.indicator-style-low-priority { color: var(--color-info); }
-.indicator-style-featured { color: #ffc107; }
-.indicator-style-confirmed { color: var(--color-success); }
-.indicator-style-unconfirmed { color: var(--color-warning); }
-/* Add other specific indicator styles here */
+/* Other specific icon styles - ensure class names here match config's cssClass */
+#cdg-dashboard-wrapper .icon.indicator-style-alert     { color: var(--color-error); }
+#cdg-dashboard-wrapper .icon.indicator-style-campaign  { color: var(--color-warning); }
+#cdg-dashboard-wrapper .icon.indicator-style-regulatory{ color: var(--color-info); }
+/* ... etc ... */
 
 
 /* --- Messages --- */
- .message-placeholder {
+ #cdg-dashboard-wrapper .message-placeholder { /* Select based on JS className */
      text-align: center;
      padding: 40px 20px;
      color: #888;
@@ -356,11 +358,11 @@ a.card-title-link:hover .card-title {
      font-size: 1.1em;
      box-sizing: border-box;
  }
- .message-placeholder.visible {
+ #cdg-dashboard-wrapper .message-placeholder.visible { /* Select based on JS className */
      display: block;
  }
 
- .empty-section-message { /* Used inside Summary sections */
+ #cdg-dashboard-wrapper .empty-section-message { /* Used inside Summary sections */
      font-size: 0.9em;
      color: inherit;
      opacity: 0.7;
@@ -372,117 +374,110 @@ a.card-title-link:hover .card-title {
  }
 
  /* --- Link Styles --- */
-.table-link-icon,
-.card-link-icon {
+#cdg-dashboard-wrapper .table-link-icon, /* Style links based on their class */
+#cdg-dashboard-wrapper .card-link-icon { /* Style links based on their class */
     display: inline-block;
     text-align: center;
     text-decoration: none;
     color: var(--color-accent);
-    font-size: 1.0em; /* DENSITY CHANGE: Slightly smaller link icon */
+    font-size: 1.0em;
     cursor: pointer;
-    line-height: 1; /* Prevent extra line height */
-    vertical-align: baseline; /* DENSITY CHANGE: baseline align links */
+    line-height: 1;
+    vertical-align: baseline;
 }
-.table-link-icon {
+#cdg-dashboard-wrapper .table-link-icon {
     width: 100%; /* Fill cell for centering */
 }
-.card-link-icon {
+#cdg-dashboard-wrapper .card-link-icon {
      vertical-align: middle; /* Keep middle align in cards */
      margin-left: 3px;
      font-size: 1.0em;
 }
-.table-link-icon:hover,
-.card-link-icon:hover {
+#cdg-dashboard-wrapper .table-link-icon:hover,
+#cdg-dashboard-wrapper .card-link-icon:hover {
     color: #003d82;
     text-decoration: none;
 }
-td.link-column-invalid-url {
+#cdg-dashboard-wrapper td.link-column-invalid-url { /* Style specific TD */
     font-style: italic;
     color: #888;
 }
-.icon-key-link { /* Icon key link style */
+#cdg-dashboard-wrapper .icon-key-link { /* Style link within icon key */
     color: var(--color-accent);
 }
 /* --- END OF FILE css/components.css --- */
 /* --- START OF FILE css/view-table.css --- */
 /* --- Table View Styles (Applied within .view-container[data-view-type="table"]) --- */
-.view-container[data-view-type="table"] {
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] {
     /* Table specific container styles if needed */
 }
 
-.view-container[data-view-type="table"] table {
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 0;
     table-layout: fixed;
 }
 
-.view-container[data-view-type="table"] th,
-.view-container[data-view-type="table"] td {
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] th,
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] td {
     border: 1px solid #ddd;
-    padding: 1px 3px; /* Keep minimal padding */
-    /* DENSITY CHANGE: Use baseline alignment for tighter packing */
+    padding: 1px 3px;
     vertical-align: baseline;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-/* DENSITY CHANGE: Aggressive font size and line height reduction */
-.view-container[data-view-type="table"] td {
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] td {
     font-size: 1.0rem;
-    line-height: 1.1; /* Attempt minimum possible line height */
+    line-height: 1.1;
 }
 
-.view-container[data-view-type="table"] th {
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] th {
     background-color: #f1f1f1;
     font-weight: 600;
     position: sticky;
     top: 0;
     z-index: 10;
-    font-size: 0.85em; /* DENSITY CHANGE: Smaller header font */
-    /* DENSITY CHANGE: Reduce header padding */
+    font-size: 0.85em;
     padding: 2px 4px;
-    vertical-align: middle; /* Keep headers middle aligned for now */
-    text-align: center; /* Keep centered */
+    vertical-align: middle;
+    text-align: center;
 }
 
-.view-container[data-view-type="table"] tbody tr:nth-child(even) {
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] tbody tr:nth-child(even) {
     background-color: #f9f9f9;
 }
-.view-container[data-view-type="table"] tbody tr:hover {
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] tbody tr:hover {
     background-color: #f0f5ff;
 }
 
 /* --- Header Orientation and Wrapping --- */
-/* Base for all header cells */
-.view-container[data-view-type="table"] th {
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] th {
     position: relative;
 }
-/* Base for the text span inside header */
-.view-container[data-view-type="table"] th .header-text {
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] th .header-text {
     display: block;
     line-height: 1.2;
     white-space: normal;
     word-break: break-word;
 }
-/* Horizontal Header Styles */
-.view-container[data-view-type="table"] th.header-horizontal {
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] th.header-horizontal {
     height: auto;
     vertical-align: middle;
     padding: 2px 4px;
     text-align: center;
 }
-.view-container[data-view-type="table"] th.header-horizontal .header-text {
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] th.header-horizontal .header-text {
     position: static; transform: none; width: auto; writing-mode: initial;
 }
-/* Vertical Header Styles (REVISED) */
-.view-container[data-view-type="table"] th.header-vertical {
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] th.header-vertical {
     height: 150px;
-    vertical-align: middle; 
+    vertical-align: middle;
     padding: 1px;
     text-align: center;
 }
-.view-container[data-view-type="table"] th.header-vertical .header-text {
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] th.header-vertical .header-text {
     position: absolute; bottom: 1px; left: 50%; transform-origin: center left;
     transform: translateX(-3px) rotate(-90deg); white-space: nowrap; overflow: hidden;
     text-overflow: ellipsis; width: 146px; writing-mode: initial; text-align: center;
@@ -490,67 +485,74 @@ td.link-column-invalid-url {
 
 
 /* Cell Content Alignment & Wrapping */
-.view-container[data-view-type="table"] td {
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] td {
     text-align: left; /* Default alignment */
-    vertical-align: middle; /* DENSITY CHANGE: Use baseline */
-    white-space: normal; /* Allow wrapping for things like RA Action */
+    vertical-align: baseline;
+    white-space: normal;
     word-break: break-word;
-    line-height: 1.1; /* Ensure tight line height applied */
+    line-height: 1.1;
 }
 /* Span inside TD for better control if needed */
-.view-container[data-view-type="table"] td .cell-text {
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] td .cell-text { /* Scope class */
     display: block;
-    line-height: inherit; /* Inherit tight line height from td */
-    margin: 0; padding: 0; /* DENSITY CHANGE: Remove any potential default spacing */
-    vertical-align: middle; /* Align with other baseline elements */
+    line-height: inherit;
+    margin: 0; padding: 0;
+    vertical-align: baseline; /* Align with other baseline elements */
 }
 /* Link icon styling */
-.view-container[data-view-type="table"] td .table-link-icon {
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] td .table-link-icon { /* Scope class */
     font-size: 1.0em;
-    vertical-align: baseline; /* DENSITY CHANGE: Align with baseline */
-    display: inline-block; /* Allow centering via text-align on parent */
+    vertical-align: baseline;
+    display: inline-block;
     margin: 0 auto;
-    line-height: 1; /* Tight line height */
+    line-height: 1;
 }
 /* Icon (boolean etc) styling */
-.view-container[data-view-type="table"] td > .icon:only-child,
-.view-container[data-view-type="table"] td > .icon { /* Apply to all icons */
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] td > .icon:only-child, /* Scope .icon */
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] td > .icon { /* Scope .icon */
     display: inline-block;
     margin: 0 auto; /* Center horizontally if alone */
     text-align: center;
-    vertical-align: baseline; /* DENSITY CHANGE: Align with baseline */
-    line-height: 1; /* Tight line height */
-    font-size: 1.0em; /* Match link size */
+    vertical-align: baseline;
+    line-height: 1;
+    font-size: 1.0em;
 }
 /* Stacked Tag Styling */
-.view-container[data-view-type="table"] td .tag {
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] td .tag { /* Scope .tag */
     display: block;
-    margin-bottom: 0px; /* DENSITY CHANGE: No gap between stacked tags */
+    margin-bottom: 0px;
     width: fit-content;
     margin-left: auto;
     margin-right: auto;
-    vertical-align: baseline; /* Align tag block with baseline */
-    line-height: 1.1; /* DENSITY CHANGE: Minimum line height for tags */
-    padding: 0 4px; /* DENSITY CHANGE: Reduce tag padding */
+    vertical-align: baseline;
+    line-height: 1.1;
+    padding: 0 4px;
 }
+/* Stacked indicator wrapper */
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] td .stacked-indicator-wrapper { /* Scope wrapper */
+    /* Add styling if needed, e.g., alignment within the TD */
+    display: inline-block; /* Or block depending on desired alignment */
+    text-align: center; /* If block */
+    vertical-align: baseline;
+}
+
 /* Centering for specific content (JS applies text-align: center) */
-.view-container[data-view-type="table"] td[style*="text-align: center"] .cell-text,
-.view-container[data-view-type="table"] td[style*="text-align: center"] > .icon,
-.view-container[data-view-type="table"] td[style*="text-align: center"] > .tag {
-    /* Ensure block or inline-block elements center correctly */
-     display: inline-block; /* Allow centering */
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] td[style*="text-align: center"] .cell-text,
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] td[style*="text-align: center"] > .icon,
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] td[style*="text-align: center"] > .tag {
+     display: inline-block;
      text-align: center;
 }
-.view-container[data-view-type="table"] td[style*="text-align: center"] .tag {
-     display: block; /* Keep stacked tags block */
-     margin-left: auto; margin-right: auto; /* Re-apply auto margins for block centering */
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] td[style*="text-align: center"] .tag {
+     display: block;
+     margin-left: auto; margin-right: auto;
 }
 
 
 /* --- END OF FILE css/view-table.css --- */
 /* --- START OF FILE css/view-kanban.css --- */
 /* --- Kanban View Styles (Applied within .view-container[data-view-type="kanban"]) --- */
-.view-container[data-view-type="kanban"] {
+#cdg-dashboard-wrapper .view-container[data-view-type="kanban"] {
     /* display: grid is set by JS */
     grid-template-columns: repeat(auto-fill, minmax(var(--kanban-min-col-width, 280px), 1fr));
     gap: var(--kanban-gap, 15px);
@@ -559,7 +561,7 @@ td.link-column-invalid-url {
  }
 
 /* Visual column wrapper (Grid Item) */
-.kanban-column {
+#cdg-dashboard-wrapper .kanban-column {
     display: flex;
     flex-direction: column;
     gap: var(--kanban-item-gap, 12px);
@@ -567,14 +569,14 @@ td.link-column-invalid-url {
 }
 
 /* Block for a specific group (nested inside .kanban-column) */
-.kanban-group-block {
+#cdg-dashboard-wrapper .kanban-group-block {
      background-color: var(--color-domain-block-bg);
      border: 1px solid var(--color-domain-block-border);
      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
      border-radius: 4px;
      padding: 10px 12px;
 }
-.kanban-group-block h3 {
+#cdg-dashboard-wrapper .kanban-group-block h3 {
     border-bottom-color: #ccc;
     margin-bottom: 10px;
     font-weight: 500;
@@ -582,11 +584,11 @@ td.link-column-invalid-url {
 /* --- END OF FILE css/view-kanban.css --- */
 /* --- START OF FILE css/view-summary.css --- */
 /* --- Summary View Styles (Applied within .view-container[data-view-type="summary"]) --- */
-.view-container[data-view-type="summary"] {
+#cdg-dashboard-wrapper .view-container[data-view-type="summary"] {
     /* display: flex; flex-direction: column; gap: var(--gap-size) are set by JS */
 }
 
-.summary-section {
+#cdg-dashboard-wrapper .summary-section {
     border-radius: 5px;
     padding: 10px 15px;
     box-shadow: inset 0 1px 3px rgba(0,0,0,0.08);
@@ -596,14 +598,14 @@ td.link-column-invalid-url {
     color: var(--color-text-dark);
     border: 1px solid #e0e0e0;
 }
-.summary-section h3 {
+#cdg-dashboard-wrapper .summary-section h3 {
     border-bottom: 1px solid rgba(0,0,0,0.1);
     margin-bottom: 10px;
     font-weight: 600;
 }
 
 /* Container for the grid INSIDE a summary section */
-.summary-section-grid {
+#cdg-dashboard-wrapper .summary-section-grid {
    display: grid;
    grid-template-columns: repeat(auto-fill, minmax(var(--summary-inner-min-col-width, 260px), 1fr));
    gap: var(--summary-inner-column-gap, 15px);
@@ -613,7 +615,7 @@ td.link-column-invalid-url {
 }
 
 /* Simple list container (fallback if no grouping) */
-.summary-section-list {
+#cdg-dashboard-wrapper .summary-section-list {
     padding-top: 10px;
     display: flex;
     flex-direction: column;
@@ -622,7 +624,7 @@ td.link-column-invalid-url {
 
 
 /* Wrapper for stacked groups within a summary grid column */
-.summary-group-column {
+#cdg-dashboard-wrapper .summary-group-column {
     display: flex;
     flex-direction: column;
     gap: var(--summary-inner-item-gap, 10px);
@@ -630,18 +632,23 @@ td.link-column-invalid-url {
 }
 
 /* Block for a specific group inside a summary section */
-.summary-group-block {
+#cdg-dashboard-wrapper .summary-group-block {
     background-color: rgba(255,255,255, 0.7);
     border: 1px solid rgba(0,0,0,0.08);
     box-shadow: 0 1px 1px rgba(0,0,0,0.04);
     border-radius: 3px;
     padding: 8px 10px;
 }
+/* Summary Group Block Heading (uses h4 by default) */
+#cdg-dashboard-wrapper .summary-group-block h4 {
+    /* Add specific styling for h4 within summary group block if needed */
+    border-bottom-color: rgba(0,0,0,0.1); /* Lighter border */
+}
 
 /* --- END OF FILE css/view-summary.css --- */
 /* --- START OF FILE css/view-counts.css --- */
 /* --- Counts View Styles (Applied within .view-container[data-view-type="counts"]) --- */
-.view-container[data-view-type="counts"] {
+#cdg-dashboard-wrapper .view-container[data-view-type="counts"] {
     /* display: grid is set by JS */
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: var(--gap-size, 15px);
@@ -649,7 +656,7 @@ td.link-column-invalid-url {
 }
 
 /* Container for one Indicator Type */
-.indicator-domain-group {
+#cdg-dashboard-wrapper .indicator-domain-group {
     background-color: var(--color-domain-block-bg);
     border: 1px solid var(--color-domain-block-border);
     border-radius: 5px;
@@ -658,7 +665,7 @@ td.link-column-invalid-url {
 }
 
 /* Header for the Indicator Type */
-.indicator-domain-group h3 {
+#cdg-dashboard-wrapper .indicator-domain-group h3 {
     margin-top: 0;
     margin-bottom: 12px;
     padding-bottom: 5px;
@@ -669,16 +676,16 @@ td.link-column-invalid-url {
     align-items: center;
     gap: 8px;
 }
-.indicator-domain-group h3 .icon,
-.indicator-domain-group h3 .count-header-tag-icon {
+#cdg-dashboard-wrapper .indicator-domain-group h3 .icon, /* Scope icon */
+#cdg-dashboard-wrapper .indicator-domain-group h3 .count-header-tag-icon { /* Scope custom class */
     font-size: 1.2em;
     line-height: 1;
     flex-shrink: 0;
 }
-.indicator-domain-group h3 .indicator-label {
+#cdg-dashboard-wrapper .indicator-domain-group h3 .indicator-label {
     flex-grow: 1;
 }
-.indicator-domain-group h3 .indicator-total-count {
+#cdg-dashboard-wrapper .indicator-domain-group h3 .indicator-total-count {
     font-size: 0.85em;
     font-weight: 400;
     color: #666;
@@ -687,14 +694,14 @@ td.link-column-invalid-url {
 
 
 /* Container for the small domain count boxes */
-.domain-boxes-container {
+#cdg-dashboard-wrapper .domain-boxes-container {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
 }
 
 /* Individual box showing count for a specific domain */
-.domain-count-box {
+#cdg-dashboard-wrapper .domain-count-box {
     background-color: #f8f9fa;
     border: 1px solid #dee2e6;
     border-radius: 4px;
@@ -704,7 +711,7 @@ td.link-column-invalid-url {
     font-size: 0.9em;
 }
 
-.domain-count-box .count-number {
+#cdg-dashboard-wrapper .domain-count-box .count-number {
     display: block;
     font-size: 1.3em;
     font-weight: 600;
@@ -712,7 +719,7 @@ td.link-column-invalid-url {
     line-height: 1.1;
 }
 
-.domain-count-box .domain-label {
+#cdg-dashboard-wrapper .domain-count-box .domain-label {
     display: block;
     font-size: 0.85em;
     color: #555;
@@ -720,7 +727,7 @@ td.link-column-invalid-url {
     word-break: break-all;
 }
 
-.no-counts-message {
+#cdg-dashboard-wrapper .no-counts-message {
     font-size: 0.9em;
     color: #888;
     font-style: italic;

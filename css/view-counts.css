@@ -1,6 +1,6 @@
 /* --- START OF FILE css/view-counts.css --- */
 /* --- Counts View Styles (Applied within .view-container[data-view-type="counts"]) --- */
-.view-container[data-view-type="counts"] {
+#cdg-dashboard-wrapper .view-container[data-view-type="counts"] {
     /* display: grid is set by JS */
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: var(--gap-size, 15px);
@@ -8,7 +8,7 @@
 }
 
 /* Container for one Indicator Type */
-.indicator-domain-group {
+#cdg-dashboard-wrapper .indicator-domain-group {
     background-color: var(--color-domain-block-bg);
     border: 1px solid var(--color-domain-block-border);
     border-radius: 5px;
@@ -17,7 +17,7 @@
 }
 
 /* Header for the Indicator Type */
-.indicator-domain-group h3 {
+#cdg-dashboard-wrapper .indicator-domain-group h3 {
     margin-top: 0;
     margin-bottom: 12px;
     padding-bottom: 5px;
@@ -28,16 +28,16 @@
     align-items: center;
     gap: 8px;
 }
-.indicator-domain-group h3 .icon,
-.indicator-domain-group h3 .count-header-tag-icon {
+#cdg-dashboard-wrapper .indicator-domain-group h3 .icon, /* Scope icon */
+#cdg-dashboard-wrapper .indicator-domain-group h3 .count-header-tag-icon { /* Scope custom class */
     font-size: 1.2em;
     line-height: 1;
     flex-shrink: 0;
 }
-.indicator-domain-group h3 .indicator-label {
+#cdg-dashboard-wrapper .indicator-domain-group h3 .indicator-label {
     flex-grow: 1;
 }
-.indicator-domain-group h3 .indicator-total-count {
+#cdg-dashboard-wrapper .indicator-domain-group h3 .indicator-total-count {
     font-size: 0.85em;
     font-weight: 400;
     color: #666;
@@ -46,14 +46,14 @@
 
 
 /* Container for the small domain count boxes */
-.domain-boxes-container {
+#cdg-dashboard-wrapper .domain-boxes-container {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
 }
 
 /* Individual box showing count for a specific domain */
-.domain-count-box {
+#cdg-dashboard-wrapper .domain-count-box {
     background-color: #f8f9fa;
     border: 1px solid #dee2e6;
     border-radius: 4px;
@@ -63,7 +63,7 @@
     font-size: 0.9em;
 }
 
-.domain-count-box .count-number {
+#cdg-dashboard-wrapper .domain-count-box .count-number {
     display: block;
     font-size: 1.3em;
     font-weight: 600;
@@ -71,7 +71,7 @@
     line-height: 1.1;
 }
 
-.domain-count-box .domain-label {
+#cdg-dashboard-wrapper .domain-count-box .domain-label {
     display: block;
     font-size: 0.85em;
     color: #555;
@@ -79,7 +79,7 @@
     word-break: break-all;
 }
 
-.no-counts-message {
+#cdg-dashboard-wrapper .no-counts-message {
     font-size: 0.9em;
     color: #888;
     font-style: italic;

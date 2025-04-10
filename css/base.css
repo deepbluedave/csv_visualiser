@@ -1,5 +1,6 @@
 /* --- START OF FILE css/base.css --- */
 /* --- Variables & Basic Styles --- */
+/* :root variables remain global and accessible */
 :root {
     /* Color Palette */
     --color-bg: #f4f4f4;
@@ -24,54 +25,59 @@
     --color-tag-default-border: #ccc;
 
     /* Spacing & Fonts */
-    --base-font-size: 1.1rem;
+    --base-font-size: 1.1rem; /* Base for calculations */
     --card-font-size: 0.85rem;
     --card-padding: 6px 8px;
     --container-padding: 15px;
     --gap-size: 15px;
 
-     /* Layout Variables (Can be overridden per tab container by JS) */
+     /* Layout Variables (Defined globally, used within scoped rules) */
     --kanban-min-col-width: 280px;
-    --kanban-gap: 15px;        /* Gap between visual columns */
-    --kanban-item-gap: 12px;   /* Gap between group blocks within a column */
+    --kanban-gap: 15px;
+    --kanban-item-gap: 12px;
     --summary-inner-min-col-width: 260px;
     --summary-inner-column-gap: 15px;
     --summary-inner-item-gap: 10px;
 }
 
-body {
+/* REMOVED direct body styles as per previous instruction */
+
+/* Apply essential base styles to the wrapper */
+#cdg-dashboard-wrapper {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-    margin: 20px;
-    background-color: var(--color-bg);
+    font-size: var(--base-font-size, 1rem); /* Use the variable, provide fallback */
+    line-height: 1.12;
+    color: var(--color-text-dark, #333);
+    background-color: var(--color-bg, #f4f4f4); /* Set background for the dashboard area */
+    padding: 15px; /* Add padding to the wrapper */
+    border: 1px solid #ccc; /* Optional border */
+    border-radius: 5px; /* Optional */
+    box-sizing: border-box;
+    /* Ensure flex context if needed for internal layout, but usually layout.css handles it */
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 40px);
-    font-size: var(--base-font-size);
-    color: var(--color-text-dark);
-    line-height: 1.12; /* Base line height */
-    min-height: 400px;
+    /* Set a height or min-height if needed within the embedded context */
+    /* Example: min-height: 500px; */
+}
+/* Ensure children also use border-box */
+#cdg-dashboard-wrapper *,
+#cdg-dashboard-wrapper *::before,
+#cdg-dashboard-wrapper *::after {
+     box-sizing: inherit;
 }
 
-h1 {
-    text-align: center;
-    margin-top: 0;
-    margin-bottom: var(--gap-size);
-    flex-shrink: 0;
-    font-size: 1.6rem;
-    font-weight: 500;
-    color: var(--color-text-dark);
-}
 
-h3 { /* Group Block Titles (Kanban), Section Titles (Summary), Counter Group Titles (Counts) */
+/* Scope heading styles (h1 is outside wrapper) */
+#cdg-dashboard-wrapper h3 {
     font-size: 1.05em;
     margin-top: 0;
     margin-bottom: 8px;
     padding-bottom: 4px;
     border-bottom: 1px solid #ccc;
     font-weight: 600;
-    color: inherit;
+    color: inherit; /* Inherit color from wrapper */
 }
-h4 { /* Inner group titles in Summary */
+#cdg-dashboard-wrapper h4 {
     font-size: 0.95em;
     margin-top: 0;
     margin-bottom: 8px;

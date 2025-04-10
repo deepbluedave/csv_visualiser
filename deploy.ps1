@@ -1,243 +1,199 @@
 <#
 .SYNOPSIS
-  Creates a deployment package for the CSV Dashboard Generator.
-  Copies essential files, merges all JS files into script.js, merges all CSS files into style.css,
-  and updates index.html to reference the merged files. Ensures UTF-8 without BOM encoding for generated files.
+  Creates deployment assets for embedding the CSV Dashboard Generator in a Confluence HTML Macro.
+  Merges CSS and JS, updates references, removes original script/link tags, and extracts the necessary HTML fragment.
+  Explicitly handles UTF-8 encoding WITHOUT BOM for all file operations.
 
 .DESCRIPTION
-  This script prepares the project for deployment by:
-  1. Creating a 'deploy' subfolder (or removing the existing one).
-  2. Copying config.js to the 'deploy' folder. (index.html is copied initially but then modified).
-  3. Reading the original index.html to determine the correct load order for CSS and JS files (assuming UTF-8).
-  4. Finding all .css files linked within the 'css/' directory in index.html.
-  5. Concatenating the content of these .css files into a single 'deploy/style.css' (UTF-8 without BOM).
-  6. Finding all .js files linked within the 'js/' directory in index.html.
-  7. Concatenating the content of these .js files into a single 'deploy/script.js' (UTF-8 without BOM).
-  8. Modifying 'deploy/index.html' (read as UTF-8) to:
-     - Remove individual <link rel="stylesheet"> tags for files under 'css/' and replace them with a single tag for 'style.css'.
-     - Remove individual <script> tags for files under 'js/' and replace them with a single tag for 'script.js'.
-  9. Saving the modified index.html as UTF-8 without BOM.
+  This script prepares the project for Confluence embedding by:
+  1. Defining UTF-8 encoding without BOM.
+  2. Creating/cleaning the 'deploy' subfolder.
+  3. Copying config.js using binary copy (avoids encoding issues).
+  4. Reading the original index.html explicitly as UTF-8.
+  5. Merging linked CSS files (read as UTF-8) into 'deploy/style.css' (written as UTF-8 without BOM).
+  6. Merging linked JS files (read as UTF-8, excluding config.js) into 'deploy/script.js' (written as UTF-8 without BOM).
+  7. Extracting body content from index.html.
+  8. Removing original <link> and <script> tags from the extracted body content.
+  9. Creating 'deploy/dashboard_fragment.html' (written as UTF-8 without BOM) containing the cleaned fragment structure.
 
 .NOTES
-  Run this script from the root directory of the project (where index.html resides).
-  Ensure source files (JS, CSS, HTML) are saved as UTF-8 for best results.
-  Uses .NET methods for file writing to ensure UTF-8 without BOM, compatible with PS 5.1+.
+  Run from the project root. Assumes source files are UTF-8 (ideally without BOM).
+  Uses .NET methods for precise UTF-8 without BOM writing. Requires PS 5.1+.
+  Update paths in 'dashboard_fragment.html' based on Confluence hosting before use.
 #>
 
 # --- Configuration ---
-$SourceDirectory = $PSScriptRoot # Assumes script is in the project root
+$SourceDirectory = $PSScriptRoot
 $DeployDirectoryName = "deploy"
 $DeployDirectoryPath = Join-Path -Path $SourceDirectory -ChildPath $DeployDirectoryName
 $MergedScriptName = "script.js"
 $MergedCssName = "style.css"
+$FragmentFileName = "dashboard_fragment.html"
+$ConfigFileName = "config.js"
 
 # --- Script Body ---
-Write-Host "Starting deployment process..." -ForegroundColor Cyan
+Write-Host "Starting Confluence fragment deployment process (UTF-8 No BOM Enforcement)..." -ForegroundColor Cyan
 
-# Define the UTF-8 Encoding *without* BOM
+# 1. Define the UTF-8 Encoding *without* BOM (Crucial!)
 $utf8NoBomEncoding = New-Object System.Text.UTF8Encoding($false)
 
-# 1. Create/Clean Deploy Directory
+# 2. Create/Clean Deploy Directory
+# (No changes needed here)
 if (Test-Path -Path $DeployDirectoryPath) {
-    Write-Host "Removing existing deploy directory: $DeployDirectoryPath" -ForegroundColor Yellow
-    try {
-        Remove-Item -Path $DeployDirectoryPath -Recurse -Force -ErrorAction Stop
-    } catch {
-        Write-Error "Failed to remove existing deploy directory. Please check permissions or close any open files/handles. Error: $($_.Exception.Message)"
-        exit 1
-    }
+    Write-Host "Removing existing deploy directory..." -ForegroundColor Yellow
+    try { Remove-Item -Path $DeployDirectoryPath -Recurse -Force -ErrorAction Stop }
+    catch { Write-Error "Failed to remove existing deploy directory. Error: $($_.Exception.Message)"; exit 1 }
 }
-
 Write-Host "Creating deploy directory: $DeployDirectoryPath"
 New-Item -Path $DeployDirectoryPath -ItemType Directory -ErrorAction Stop | Out-Null
 
-# 2. Copy Config and Initial Index.html
-# style.css is NOT copied, it will be generated. index.html is copied then modified.
-$FilesToCopy = @(
-    "index.html",
-    "config.js"
-)
+# 3. Copy Config using Binary Copy (Safest for encoding)
+Write-Host "Copying $ConfigFileName..."
+$sourceConfigFile = Join-Path -Path $SourceDirectory -ChildPath $ConfigFileName
+$destConfigFile = Join-Path -Path $DeployDirectoryPath -ChildPath $ConfigFileName
+if (Test-Path $sourceConfigFile) {
+    # Use Copy-Item without -Encoding; it performs a binary copy preserving original encoding (or lack thereof)
+    try {
+        Copy-Item -Path $sourceConfigFile -Destination $destConfigFile -Force -ErrorAction Stop
+        Write-Host "  Copied $ConfigFileName."
+    } catch {
+        Write-Error "Failed to copy $ConfigFileName. Error: $($_.Exception.Message)"; exit 1
+    }
+} else { Write-Warning "Source file not found: $sourceConfigFile. Skipping." }
 
-Write-Host "Copying essential files..."
-foreach ($file in $FilesToCopy) {
-    $sourceFile = Join-Path -Path $SourceDirectory -ChildPath $file
-    $destFile = Join-Path -Path $DeployDirectoryPath -ChildPath $file
-    if (Test-Path $sourceFile) {
-        Write-Host "  Copying $file..."
-        Copy-Item -Path $sourceFile -Destination $destFile -ErrorAction Stop
-    } else {
-        Write-Warning "  Source file not found: $sourceFile. Skipping."
+
+# 4. Read Original index.html (Explicit UTF-8 Read)
+$originalIndexPath = Join-Path -Path $SourceDirectory -ChildPath "index.html"
+if (-not (Test-Path $originalIndexPath)) { Write-Error "Original index.html not found."; exit 1 }
+Write-Host "Reading original index.html as UTF-8..."
+try {
+    # Use .NET method for potentially more reliable UTF-8 reading if Get-Content causes issues
+    $originalIndexContent = [System.IO.File]::ReadAllText($originalIndexPath, [System.Text.Encoding]::UTF8)
+    # Fallback to Get-Content if needed, though ReadAllText is often robust
+    # $originalIndexContent = Get-Content -Path $originalIndexPath -Raw -Encoding UTF8 -ErrorAction Stop
+} catch {
+    Write-Error "Failed to read original index.html. Error: $($_.Exception.Message)"; exit 1
+}
+
+# --- Helper Function to Read Files Explicitly as UTF-8 ---
+# Reduces repetition and ensures consistency
+function Get-Utf8FileContent {
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$FilePath
+    )
+    try {
+        # Use .NET method for reading
+        return [System.IO.File]::ReadAllText($FilePath, [System.Text.Encoding]::UTF8)
+    } catch {
+        Write-Warning "  Failed to read '$FilePath' as UTF-8. Error: $($_.Exception.Message)"
+        return $null # Return null on failure
     }
 }
 
-# 3. Read Original index.html to Get File Order
-$originalIndexPath = Join-Path -Path $SourceDirectory -ChildPath "index.html"
-if (-not (Test-Path $originalIndexPath)) {
-    Write-Error "Original index.html not found at $originalIndexPath. Cannot determine CSS/JS order."
-    exit 1
-}
-
-Write-Host "Reading original index.html as UTF-8 to determine file order..."
-try {
-    $originalIndexContent = Get-Content -Path $originalIndexPath -Raw -Encoding UTF8 -ErrorAction Stop
-} catch {
-    Write-Error "Failed to read original index.html '$originalIndexPath' as UTF8. Error: $($_.Exception.Message)"
-    exit 1
-}
-
-# 4. & 5. Identify CSS Files in Order and Merge Them
+# 5. Merge CSS Files (Read UTF-8, Write UTF-8 No BOM)
 Write-Host "Merging CSS files..." -ForegroundColor Cyan
 $mergedCssPath = Join-Path -Path $DeployDirectoryPath -ChildPath $MergedCssName
 $cssFilesContent = [System.Collections.Generic.List[string]]::new()
-
-# Regex to find link tags loading from the 'css/' directory
 $cssLinkRegex = '<link\s+rel="stylesheet"\s+href="(css/[^"]+\.css)".*?>'
 $cssMatches = [regex]::Matches($originalIndexContent, $cssLinkRegex)
-
-if ($cssMatches.Count -eq 0) {
-    Write-Warning "No stylesheet links loading from 'css/' found in original index.html. Merged CSS file will be empty."
-} else {
-    Write-Host "Found $($cssMatches.Count) CSS files to merge in order:"
+if ($cssMatches.Count -eq 0) { Write-Warning "No CSS links found." }
+else {
+    Write-Host "Found $($cssMatches.Count) CSS files to merge:"
     foreach ($match in $cssMatches) {
-        $cssRelativePath = $match.Groups[1].Value
-        $cssFullPath = Join-Path -Path $SourceDirectory -ChildPath $cssRelativePath
+        $cssFullPath = Join-Path -Path $SourceDirectory -ChildPath $match.Groups[1].Value
         if (Test-Path $cssFullPath) {
-            Write-Host "  Merging: $cssRelativePath (reading as UTF-8)"
-            try {
-                 $cssFileContent = Get-Content -Path $cssFullPath -Raw -Encoding UTF8 -ErrorAction Stop
-                 # Add content + a newline for separation in the merged file
-                 $cssFilesContent.Add($cssFileContent + "`n")
-            } catch {
-                 Write-Warning "  Failed to read CSS file '$cssFullPath' as UTF8. Skipping. Error: $($_.Exception.Message)"
-            }
-        } else {
-            Write-Warning "  CSS file not found: $cssFullPath (referenced in index.html). Skipping."
-        }
+            Write-Host "  Merging: $($match.Groups[1].Value)"
+            $content = Get-Utf8FileContent -FilePath $cssFullPath
+            if ($content -ne $null) {
+                 $cssFilesContent.Add($content + "`n")
+            } else { Write-Warning "  Skipping file due to read error: $cssFullPath" }
+        } else { Write-Warning "  CSS file not found: $cssFullPath. Skipping." }
     }
-
-    # Write the merged content using .NET to ensure UTF-8 *without* BOM
-    Write-Host "Writing merged content to $MergedCssName (UTF-8 without BOM)"
-    try {
-        [System.IO.File]::WriteAllText($mergedCssPath, ($cssFilesContent -join ""), $utf8NoBomEncoding)
-    } catch {
-        Write-Error "Failed to write merged CSS file '$mergedCssPath'. Error: $($_.Exception.Message)"
-        exit 1
-    }
+    if ($cssFilesContent.Count -gt 0) {
+        Write-Host "Writing merged CSS to $MergedCssName (UTF-8 No BOM)..."
+        try { [System.IO.File]::WriteAllText($mergedCssPath, ($cssFilesContent -join ""), $utf8NoBomEncoding) }
+        catch { Write-Error "Failed to write merged CSS file. Error: $($_.Exception.Message)"; exit 1 }
+    } else { Write-Warning "No valid CSS content merged. $MergedCssName will be empty or not created."}
 }
 
-# 6. & 7. Identify JS Files in Order and Merge Them
-Write-Host "Merging JavaScript files..." -ForegroundColor Cyan
+# 6. Merge JS Files (Read UTF-8, Write UTF-8 No BOM)
+Write-Host "Merging JavaScript files (excluding $ConfigFileName)..." -ForegroundColor Cyan
 $mergedScriptPath = Join-Path -Path $DeployDirectoryPath -ChildPath $MergedScriptName
 $jsFilesContent = [System.Collections.Generic.List[string]]::new()
-
-# Regex to find script tags loading from the 'js/' directory
-$scriptTagRegex = '<script\s+src="(js/[^"]+\.js)".*?></script>'
+$scriptTagRegex = '<script\s+src="(js/(?!' + [regex]::Escape($ConfigFileName) + ')[^"]+\.js)".*?></script>'
 $jsMatches = [regex]::Matches($originalIndexContent, $scriptTagRegex)
-
-if ($jsMatches.Count -eq 0) {
-    Write-Warning "No script tags loading from 'js/' found in original index.html. Merged script file will be empty."
-} else {
-    Write-Host "Found $($jsMatches.Count) JS files to merge in order:"
+if ($jsMatches.Count -eq 0) { Write-Warning "No JS scripts (excluding $ConfigFileName) found." }
+else {
+    Write-Host "Found $($jsMatches.Count) JS files to merge:"
     foreach ($match in $jsMatches) {
-        $jsRelativePath = $match.Groups[1].Value
-        $jsFullPath = Join-Path -Path $SourceDirectory -ChildPath $jsRelativePath
+        $jsFullPath = Join-Path -Path $SourceDirectory -ChildPath $match.Groups[1].Value
         if (Test-Path $jsFullPath) {
-            Write-Host "  Merging: $jsRelativePath (reading as UTF-8)"
-            try {
-                 $jsFileContent = Get-Content -Path $jsFullPath -Raw -Encoding UTF8 -ErrorAction Stop
-                 # Add content + a newline for separation
-                 $jsFilesContent.Add($jsFileContent + "`n")
-            } catch {
-                 Write-Warning "  Failed to read JS file '$jsFullPath' as UTF8. Skipping. Error: $($_.Exception.Message)"
-            }
-        } else {
-            Write-Warning "  JS file not found: $jsFullPath (referenced in index.html). Skipping."
-        }
+             Write-Host "  Merging: $($match.Groups[1].Value)"
+             $content = Get-Utf8FileContent -FilePath $jsFullPath
+             if ($content -ne $null) {
+                  $jsFilesContent.Add($content + "`n")
+             } else { Write-Warning "  Skipping file due to read error: $jsFullPath" }
+        } else { Write-Warning "  JS file not found: $jsFullPath. Skipping." }
     }
-
-    # Write the merged content using .NET to ensure UTF-8 *without* BOM
-    Write-Host "Writing merged content to $MergedScriptName (UTF-8 without BOM)"
-    try {
-        [System.IO.File]::WriteAllText($mergedScriptPath, ($jsFilesContent -join ""), $utf8NoBomEncoding)
-    } catch {
-        Write-Error "Failed to write merged script file '$mergedScriptPath'. Error: $($_.Exception.Message)"
-        exit 1
-    }
+     if ($jsFilesContent.Count -gt 0) {
+        Write-Host "Writing merged JS to $MergedScriptName (UTF-8 No BOM)..."
+        try { [System.IO.File]::WriteAllText($mergedScriptPath, ($jsFilesContent -join ""), $utf8NoBomEncoding) }
+        catch { Write-Error "Failed to write merged script file. Error: $($_.Exception.Message)"; exit 1 }
+    } else { Write-Warning "No valid JS content merged. $MergedScriptName will be empty or not created."}
 }
 
-# 8. & 9. Modify Deployed index.html for CSS and JS
-Write-Host "Updating CSS and JS references in deployed index.html..." -ForegroundColor Cyan
-$deployedIndexPath = Join-Path -Path $DeployDirectoryPath -ChildPath "index.html"
+# 7. Extract Body Content
+Write-Host "Extracting content between <body> tags..."
+$bodyContentRegex = '(?s)<body.*?>(.*?)</body>'
+$bodyMatch = [regex]::Match($originalIndexContent, $bodyContentRegex)
+if (-not $bodyMatch.Success) {
+     Write-Warning "Could not extract content between <body> tags."
+     $rawBodyContent = "<!-- ERROR: Could not extract body content -->"
+} else {
+     $rawBodyContent = $bodyMatch.Groups[1].Value.Trim()
+     Write-Host "  Successfully extracted body content."
+}
 
-# Read deployed index content - Assume UTF8 based on copy, but explicitly read
-Write-Host "Reading deployed index.html as UTF-8..."
+# 8. Clean Extracted Body Content
+Write-Host "Cleaning extracted body content (removing original script/link tags)..."
+$cleanedBodyContent = $rawBodyContent -replace '(?i)\s*<link\s+rel="stylesheet"\s+href="css/[^"]+\.css".*?>\s*', "`n"
+$cleanedBodyContent = $cleanedBodyContent -replace ('(?i)\s*<script\s+src="js/[^"]+\.js".*?</script>\s*', "`n")
+$cleanedBodyContent = $cleanedBodyContent -replace ('(?i)\s*<script\s+src="' + [regex]::Escape($ConfigFileName) + '".*?</script>\s*', "`n")
+$cleanedBodyContent = $cleanedBodyContent.Trim()
+Write-Host "  Cleaning complete."
+
+# 9. Construct the HTML Fragment
+Write-Host "Constructing $FragmentFileName..." -ForegroundColor Cyan
+# --- IMPORTANT: Update these paths based on Confluence hosting ---
+$confluenceCssPath = $MergedCssName      # e.g., "./style.css"
+$confluenceConfigPath = $ConfigFileName  # e.g., "./config.js"
+$confluenceScriptPath = $MergedScriptName # e.g., "./script.js"
+# --- End Update Paths ---
+
+$fragmentContent = @"
+<!-- Start CSV Dashboard Fragment -->
+<!-- Set Character Encoding -->
+<meta charset="UTF-8">
+<link rel="stylesheet" href="$confluenceCssPath"><!-- UPDATE PATH -->
+$cleanedBodyContent
+<script src="$confluenceConfigPath"></script><!-- UPDATE PATH -->
+<script src="$confluenceScriptPath"></script><!-- UPDATE PATH -->
+<!-- End CSV Dashboard Fragment -->
+"@
+
+# 10. Save the Fragment File (Write UTF-8 No BOM)
+$fragmentPath = Join-Path -Path $DeployDirectoryPath -ChildPath $FragmentFileName
+Write-Host "Writing HTML fragment to $FragmentFileName (UTF-8 No BOM)..."
 try {
-    $deployedIndexContent = Get-Content -Path $deployedIndexPath -Raw -Encoding UTF8 -ErrorAction Stop
+    [System.IO.File]::WriteAllText($fragmentPath, $fragmentContent, $utf8NoBomEncoding)
+    Write-Host "  Successfully created $FragmentFileName"
 } catch {
-    Write-Error "Failed to read deployed index.html at '$deployedIndexPath' as UTF8. Error: $($_.Exception.Message)"
+    Write-Error "Failed to write fragment file '$fragmentPath'. Error: $($_.Exception.Message)"
     exit 1
 }
 
-# --- Modify CSS Links ---
-$replacementCssLink = '<link rel="stylesheet" href="{0}">' -f $MergedCssName
-# Regex to find the entire block of link tags loading from 'css/'
-# Assumes the block starts with base.css and ends with view-table.css as per your structure
-# Adjust the start/end hrefs if your index.html structure changes significantly
-$regexToReplaceCssBlock = '(?s)(<link\s+rel="stylesheet"\s+href="css/base\.css".*?>\s*).*?(<link\s+rel="stylesheet"\s+href="css/view-table\.css".*?>)'
-
-$modifiedIndexContent = $deployedIndexContent # Start with the original deployed content
-
-Write-Host "Attempting to replace CSS link block..."
-if ($modifiedIndexContent -match $regexToReplaceCssBlock) {
-    $modifiedIndexContent = $modifiedIndexContent -replace $regexToReplaceCssBlock, $replacementCssLink
-    Write-Host "  CSS link block found and replaced with single link to $MergedCssName."
-} else {
-    Write-Warning "  Could not find the expected block of 'css/' link tags in deployed index.html."
-    Write-Warning "  Expected block starts around '<link...href=`"css/base.css`"...' and ends with '<link...href=`"css/view-table.css`"...'."
-    # Fallback: Try inserting before </head>
-    if ($modifiedIndexContent -match '</head>') {
-         Write-Host "  Attempting fallback: Inserting merged CSS link tag before </head>..."
-         $modifiedIndexContent = $modifiedIndexContent -replace '</head>', ("`t" + $replacementCssLink + "`n</head>") # Add indentation
-         Write-Host "  Inserted CSS link tag before </head>. Please verify deploy/index.html."
-    } else {
-        Write-Warning "  Could not find </head> tag either. CSS link modification failed. Manual adjustment needed."
-    }
-}
-
-# --- Modify JS Scripts ---
-$replacementScriptTag = '<script src="{0}"></script>' -f $MergedScriptName
-# Regex to find the entire block of script tags loading from 'js/'
-# Assumes the block starts with renderer-shared.js and ends with app.js as per your structure
-# Adjust the start/end src if your index.html structure changes significantly
-$regexToReplaceJsBlock = '(?s)(<script\s+src="js/renderers/renderer-shared\.js".*?</script>\s*).*?(<script\s+src="js/app\.js".*?</script>)'
-
-Write-Host "Attempting to replace JS script block..."
-if ($modifiedIndexContent -match $regexToReplaceJsBlock) {
-    # Replace the entire matched block with the single new script tag
-    $modifiedIndexContent = $modifiedIndexContent -replace $regexToReplaceJsBlock, $replacementScriptTag
-    Write-Host "  JS script block found and replaced with single script tag for $MergedScriptName."
-} else {
-    Write-Warning "  Could not find the expected block of 'js/' script tags in deployed index.html."
-    Write-Warning "  Expected block starts around '<script src=`"js/renderers/renderer-shared.js`"...' and ends with '<script src=`"js/app.js`"...'."
-    # Fallback: Try inserting before </body>
-    if ($modifiedIndexContent -match '</body>') {
-         Write-Host "  Attempting fallback: Inserting merged script tag before </body>..."
-         $modifiedIndexContent = $modifiedIndexContent -replace '</body>', ("`t" + $replacementScriptTag + "`n</body>") # Add indentation
-         Write-Host "  Inserted script tag before </body>. Please verify deploy/index.html."
-    } else {
-         Write-Warning "  Could not find </body> tag either. JS script modification failed. Manual adjustment needed."
-    }
-}
-
-# --- Write Final Modified index.html ---
-Write-Host "Saving final updated $deployedIndexPath (UTF-8 without BOM)"
-try {
-    [System.IO.File]::WriteAllText($deployedIndexPath, $modifiedIndexContent, $utf8NoBomEncoding)
-    Write-Host "  Successfully updated $deployedIndexPath"
-} catch {
-    Write-Error "Failed to write final modified index.html '$deployedIndexPath'. Error: $($_.Exception.Message)"
-    exit 1
-}
-
-Write-Host "Deployment process finished successfully." -ForegroundColor Green
-Write-Host "Deploy package created in: $DeployDirectoryPath"
+# --- Final Output ---
+# (No changes needed here)
+Write-Host "-----------------------------------------------------" -ForegroundColor Green
+# ... rest of final messages ...

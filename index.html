@@ -3,55 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CSV Dashboard Generator</title> <!-- Title set by JS -->
+    <title>CSV Dashboard Generator</title>
     <link rel="stylesheet" href="css/base.css">
     <link rel="stylesheet" href="css/layout.css">
     <link rel="stylesheet" href="css/components.css">
     <link rel="stylesheet" href="css/view-table.css">
     <link rel="stylesheet" href="css/view-kanban.css">
     <link rel="stylesheet" href="css/view-summary.css">
-    <link rel="stylesheet" href="css/view-counts.css"></head>
+    <link rel="stylesheet" href="css/view-counts.css">
+</head>
 <body>
-    <h1>CSV Dashboard Generator</h1> <!-- Title set by JS -->
+    <!-- Title remains outside the wrapper -->
+    <h1>CSV Dashboard Generator</h1>
 
-    <!-- Upload Area -->
-    <div id="uploadContainer">
-        <label for="csvFileInput">Upload CSV Data File:</label>
-        <input type="file" id="csvFileInput" accept=".csv">
-        <!-- Icon Key Container (Global) -->
-        <div id="iconKeyContainer">
-            <!-- Key will be rendered here by JS -->
+    <!-- NEW: Dashboard Wrapper Div -->
+    <div id="cdg-dashboard-wrapper">
+
+        <!-- Upload Area -->
+        <div id="cdg-uploadContainer">
+            <label for="cdg-csvFileInput">Upload CSV Data File:</label>
+            <input type="file" id="cdg-csvFileInput" accept=".csv">
+            <div id="cdg-iconKeyContainer">
+                <!-- Key rendered here -->
+            </div>
         </div>
-        <!-- End Icon Key Container -->
-    </div>
 
-    <!-- Tab Controls (Buttons dynamically added by JS) -->
-    <div id="tabControls">
-        <!-- Buttons added by js/view-manager.js -->
-    </div>
+        <!-- Tab Controls -->
+        <div id="cdg-tabControls">
+            <!-- Buttons added -->
+        </div>
 
-    <!-- Dynamic View Content Area -->
-    <div id="viewContentContainer" class="view-content-area">
-        <!-- View containers added by js/view-manager.js -->
-    </div>
-    <!-- End Dynamic View Content Area -->
+        <!-- Dynamic View Content Area -->
+        <div id="cdg-viewContentContainer" class="cdg-view-content-area"> 
+            <!-- View containers added -->
+        </div>
 
-    <!-- Load Config FIRST -->
+    </div> <!-- END: Dashboard Wrapper Div -->
+
+
+    <!-- Scripts remain outside the wrapper -->
     <script src="config.js"></script>
-
-    <!-- Load JavaScript files in dependency order -->
-    <!-- Shared utilities -->
     <script src="js/renderers/renderer-shared.js"></script>
-    <!-- Core helpers -->
     <script src="js/config-loader.js"></script>
     <script src="js/data-handler.js"></script>
     <script src="js/view-manager.js"></script>
-    <!-- Specific renderers -->
     <script src="js/renderers/renderer-table.js"></script>
     <script src="js/renderers/renderer-kanban.js"></script>
     <script src="js/renderers/renderer-summary.js"></script>
     <script src="js/renderers/renderer-counts.js"></script>
-    <!-- Main application logic (LAST) -->
     <script src="js/app.js"></script>
 
 </body>

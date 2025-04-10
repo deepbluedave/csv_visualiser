@@ -1,82 +1,75 @@
 /* --- START OF FILE css/view-table.css --- */
 /* --- Table View Styles (Applied within .view-container[data-view-type="table"]) --- */
-.view-container[data-view-type="table"] {
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] {
     /* Table specific container styles if needed */
 }
 
-.view-container[data-view-type="table"] table {
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 0;
     table-layout: fixed;
 }
 
-.view-container[data-view-type="table"] th,
-.view-container[data-view-type="table"] td {
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] th,
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] td {
     border: 1px solid #ddd;
-    padding: 1px 3px; /* Keep minimal padding */
-    /* DENSITY CHANGE: Use baseline alignment for tighter packing */
+    padding: 1px 3px;
     vertical-align: baseline;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-/* DENSITY CHANGE: Aggressive font size and line height reduction */
-.view-container[data-view-type="table"] td {
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] td {
     font-size: 1.0rem;
-    line-height: 1.1; /* Attempt minimum possible line height */
+    line-height: 1.1;
 }
 
-.view-container[data-view-type="table"] th {
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] th {
     background-color: #f1f1f1;
     font-weight: 600;
     position: sticky;
     top: 0;
     z-index: 10;
-    font-size: 0.85em; /* DENSITY CHANGE: Smaller header font */
-    /* DENSITY CHANGE: Reduce header padding */
+    font-size: 0.85em;
     padding: 2px 4px;
-    vertical-align: middle; /* Keep headers middle aligned for now */
-    text-align: center; /* Keep centered */
+    vertical-align: middle;
+    text-align: center;
 }
 
-.view-container[data-view-type="table"] tbody tr:nth-child(even) {
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] tbody tr:nth-child(even) {
     background-color: #f9f9f9;
 }
-.view-container[data-view-type="table"] tbody tr:hover {
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] tbody tr:hover {
     background-color: #f0f5ff;
 }
 
 /* --- Header Orientation and Wrapping --- */
-/* Base for all header cells */
-.view-container[data-view-type="table"] th {
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] th {
     position: relative;
 }
-/* Base for the text span inside header */
-.view-container[data-view-type="table"] th .header-text {
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] th .header-text {
     display: block;
     line-height: 1.2;
     white-space: normal;
     word-break: break-word;
 }
-/* Horizontal Header Styles */
-.view-container[data-view-type="table"] th.header-horizontal {
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] th.header-horizontal {
     height: auto;
     vertical-align: middle;
     padding: 2px 4px;
     text-align: center;
 }
-.view-container[data-view-type="table"] th.header-horizontal .header-text {
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] th.header-horizontal .header-text {
     position: static; transform: none; width: auto; writing-mode: initial;
 }
-/* Vertical Header Styles (REVISED) */
-.view-container[data-view-type="table"] th.header-vertical {
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] th.header-vertical {
     height: 150px;
-    vertical-align: middle; 
+    vertical-align: middle;
     padding: 1px;
     text-align: center;
 }
-.view-container[data-view-type="table"] th.header-vertical .header-text {
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] th.header-vertical .header-text {
     position: absolute; bottom: 1px; left: 50%; transform-origin: center left;
     transform: translateX(-3px) rotate(-90deg); white-space: nowrap; overflow: hidden;
     text-overflow: ellipsis; width: 146px; writing-mode: initial; text-align: center;
@@ -84,60 +77,67 @@
 
 
 /* Cell Content Alignment & Wrapping */
-.view-container[data-view-type="table"] td {
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] td {
     text-align: left; /* Default alignment */
-    vertical-align: middle; /* DENSITY CHANGE: Use baseline */
-    white-space: normal; /* Allow wrapping for things like RA Action */
+    vertical-align: baseline;
+    white-space: normal;
     word-break: break-word;
-    line-height: 1.1; /* Ensure tight line height applied */
+    line-height: 1.1;
 }
 /* Span inside TD for better control if needed */
-.view-container[data-view-type="table"] td .cell-text {
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] td .cell-text { /* Scope class */
     display: block;
-    line-height: inherit; /* Inherit tight line height from td */
-    margin: 0; padding: 0; /* DENSITY CHANGE: Remove any potential default spacing */
-    vertical-align: middle; /* Align with other baseline elements */
+    line-height: inherit;
+    margin: 0; padding: 0;
+    vertical-align: baseline; /* Align with other baseline elements */
 }
 /* Link icon styling */
-.view-container[data-view-type="table"] td .table-link-icon {
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] td .table-link-icon { /* Scope class */
     font-size: 1.0em;
-    vertical-align: baseline; /* DENSITY CHANGE: Align with baseline */
-    display: inline-block; /* Allow centering via text-align on parent */
+    vertical-align: baseline;
+    display: inline-block;
     margin: 0 auto;
-    line-height: 1; /* Tight line height */
+    line-height: 1;
 }
 /* Icon (boolean etc) styling */
-.view-container[data-view-type="table"] td > .icon:only-child,
-.view-container[data-view-type="table"] td > .icon { /* Apply to all icons */
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] td > .icon:only-child, /* Scope .icon */
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] td > .icon { /* Scope .icon */
     display: inline-block;
     margin: 0 auto; /* Center horizontally if alone */
     text-align: center;
-    vertical-align: baseline; /* DENSITY CHANGE: Align with baseline */
-    line-height: 1; /* Tight line height */
-    font-size: 1.0em; /* Match link size */
+    vertical-align: baseline;
+    line-height: 1;
+    font-size: 1.0em;
 }
 /* Stacked Tag Styling */
-.view-container[data-view-type="table"] td .tag {
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] td .tag { /* Scope .tag */
     display: block;
-    margin-bottom: 0px; /* DENSITY CHANGE: No gap between stacked tags */
+    margin-bottom: 0px;
     width: fit-content;
     margin-left: auto;
     margin-right: auto;
-    vertical-align: baseline; /* Align tag block with baseline */
-    line-height: 1.1; /* DENSITY CHANGE: Minimum line height for tags */
-    padding: 0 4px; /* DENSITY CHANGE: Reduce tag padding */
+    vertical-align: baseline;
+    line-height: 1.1;
+    padding: 0 4px;
 }
+/* Stacked indicator wrapper */
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] td .stacked-indicator-wrapper { /* Scope wrapper */
+    /* Add styling if needed, e.g., alignment within the TD */
+    display: inline-block; /* Or block depending on desired alignment */
+    text-align: center; /* If block */
+    vertical-align: baseline;
+}
+
 /* Centering for specific content (JS applies text-align: center) */
-.view-container[data-view-type="table"] td[style*="text-align: center"] .cell-text,
-.view-container[data-view-type="table"] td[style*="text-align: center"] > .icon,
-.view-container[data-view-type="table"] td[style*="text-align: center"] > .tag {
-    /* Ensure block or inline-block elements center correctly */
-     display: inline-block; /* Allow centering */
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] td[style*="text-align: center"] .cell-text,
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] td[style*="text-align: center"] > .icon,
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] td[style*="text-align: center"] > .tag {
+     display: inline-block;
      text-align: center;
 }
-.view-container[data-view-type="table"] td[style*="text-align: center"] .tag {
-     display: block; /* Keep stacked tags block */
-     margin-left: auto; margin-right: auto; /* Re-apply auto margins for block centering */
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] td[style*="text-align: center"] .tag {
+     display: block;
+     margin-left: auto; margin-right: auto;
 }
 
 
