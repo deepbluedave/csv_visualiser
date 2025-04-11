@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV Data Editor</title>
+    <!-- Link to the same CSS used by the dashboard viewer -->
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Additional styles specific to the editor */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            padding: 15px;
+            background-color: #f8f9fa; /* Light background */
+        }
+        #csvEditorWrapper {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            max-width: 100%; /* Allow shrinking */
+            margin: 0 auto;
+        }
+        h1, h2 {
+            color: #343a40;
+            border-bottom: 1px solid #dee2e6;
+            padding-bottom: 8px;
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+        label {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        input[type="file"] {
+            margin-bottom: 15px;
+        }
+        button {
+            padding: 8px 12px;
+            margin: 5px 5px 15px 0;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            font-size: 0.9rem;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button.delete-row-btn {
+            background-color: #dc3545;
+            font-size: 0.8rem;
+            padding: 4px 8px;
+            margin: 0;
+        }
+         button.delete-row-btn:hover {
+             background-color: #c82333;
+         }
+        #addRowBtn {
+            background-color: #28a745;
+        }
+         #addRowBtn:hover {
+            background-color: #218838;
+         }
+        #downloadCsvBtn {
+            background-color: #17a2b8;
+        }
+        #downloadCsvBtn:hover {
+            background-color: #117a8b;
+        }
+
+        #editorTableContainer {
+            max-height: 60vh; /* Limit height and make table scrollable */
+            overflow: auto; /* Add scrollbars */
+            border: 1px solid #dee2e6;
+            margin-bottom: 15px;
+        }
+        #editorTable {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem; /* Slightly smaller font for editor */
+            table-layout: auto; /* Adjust based on content initially */
+        }
+        #editorTable th, #editorTable td {
+            border: 1px solid #dee2e6;
+            padding: 4px 6px;
+            vertical-align: top; /* Align top for multi-line consistency */
+            text-align: left;
+        }
+        #editorTable th {
+            background-color: #e9ecef;
+            position: sticky; /* Keep headers visible on scroll */
+            top: 0;
+            z-index: 1;
+            white-space: nowrap;
+        }
+        #editorTable td input[type="text"],
+        #editorTable td input[type="url"],
+        #editorTable td input[type="date"],
+        #editorTable td select,
+        #editorTable td textarea {
+            width: 100%;
+            padding: 3px 4px;
+            border: 1px solid #ced4da;
+            border-radius: 3px;
+            font-size: inherit; /* Inherit table font size */
+            box-sizing: border-box;
+        }
+        #editorTable td textarea {
+            min-height: 50px;
+            resize: vertical;
+        }
+         #editorTable td input[type="checkbox"] {
+            margin-top: 4px;
+         }
+        .actions-cell {
+            text-align: center !important;
+            width: 60px; /* Fixed width for delete button */
+            white-space: nowrap;
+        }
+        .readonly-indicator { /* Style for display-only tags/icons next to input */
+             display: inline-block;
+             margin-right: 5px;
+             vertical-align: middle;
+        }
+        .loading-message {
+            font-style: italic;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div id="csvEditorWrapper">
+        <h1>CSV Data Editor</h1>
+
+        <div id="loaderSection">
+            <label for="csvFileInput">Load CSV File:</label>
+            <input type="file" id="csvFileInput" accept=".csv">
+            <p class="loading-message">Load a CSV file to begin editing.</p>
+        </div>
+
+        <div id="editorSection" style="display: none;">
+             <h2>Edit Data (<span id="rowCount">0</span> Rows)</h2>
+            <div id="editorTableContainer">
+                <table id="editorTable">
+                    <thead></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <button id="addRowBtn">+ Add Row</button>
+            <button id="downloadCsvBtn">Download Updated CSV</button>
+        </div>
+    </div>
+
+    <!-- Load Config FIRST (Expected to be in the same folder) -->
+    <script src="config.js"></script>
+    <!-- Load Merged Script (Optional - for potential helpers like createElement, formatTag) -->
+    <!-- <script src="script.js"></script> -->
+
+    <script>
+        // --- DOM Elements ---
+        const csvFileInput = document.getElementById('csvFileInput');
+        const editorTableContainer = document.getElementById('editorTableContainer');
+        const editorTable = document.getElementById('editorTable');
+        const editorThead = editorTable.querySelector('thead');
+        const editorTbody = editorTable.querySelector('tbody');
+        const addRowBtn = document.getElementById('addRowBtn');
+        const downloadCsvBtn = document.getElementById('downloadCsvBtn');
+        const editorSection = document.getElementById('editorSection');
+        const loaderSection = document.getElementById('loaderSection');
+        const rowCountSpan = document.getElementById('rowCount');
+
+        // --- Global State ---
+        let csvData = []; // Array of row objects
+        let csvHeaders = [];
+        let editorConfig = {}; // Will hold merged default and specific config
+        let booleanTrueValues = ["true", "yes", "1", "y", "x", "on", "✓"]; // Default
+
+        // --- Initialization ---
+        function initializeEditor() {
+            // Check if defaultConfig exists (loaded from config.js)
+            if (typeof defaultConfig === 'undefined') {
+                alert('Error: config.js could not be loaded or is missing defaultConfig.');
+                return;
+            }
+            editorConfig = defaultConfig; // Use the loaded config
+            // Set boolean values from config if available
+            if (editorConfig.generalSettings?.trueValues) {
+                 booleanTrueValues = editorConfig.generalSettings.trueValues.map(v => String(v).toLowerCase());
+            }
+
+            csvFileInput.addEventListener('change', handleFileLoad);
+            addRowBtn.addEventListener('click', addRow);
+            downloadCsvBtn.addEventListener('click', handleDownload);
+        }
+
+        // --- File Handling ---
+        function handleFileLoad(event) {
+            const file = event.target.files[0];
+            if (!file) {
+                alert('No file selected.');
+                return;
+            }
+            loaderSection.querySelector('.loading-message').textContent = `Loading ${file.name}...`;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const csvString = e.target.result;
+                    processCsvData(csvString);
+                    loaderSection.querySelector('.loading-message').textContent = `${file.name} loaded.`;
+                     editorSection.style.display = 'block'; // Show editor
+                } catch (error) {
+                    console.error("Error processing CSV:", error);
+                    alert(`Error processing CSV: ${error.message}`);
+                     loaderSection.querySelector('.loading-message').textContent = `Error loading ${file.name}. Please check format and encoding (UTF-8 recommended).`;
+                     editorSection.style.display = 'none'; // Hide editor on error
+                }
+            };
+            reader.onerror = function(e) {
+                 console.error("FileReader error:", reader.error);
+                 alert(`Error reading file: ${reader.error.message || 'Unknown error'}`);
+                 loaderSection.querySelector('.loading-message').textContent = `Error reading file ${file.name}.`;
+                 editorSection.style.display = 'none';
+            };
+            reader.readAsText(file, 'UTF-8'); // Assume UTF-8
+        }
+
+        // --- CSV Parsing (Adapted from dashboard's data-handler.js) ---
+        function parseCSV(csvText, config) {
+            const lines = csvText.trim().split(/\r?\n/);
+            if (lines.length === 0) return { data: [], headers: [] };
+
+            const delimiter = config.generalSettings?.csvDelimiter || ',';
+            const headers = parseCSVLine(lines[0], delimiter);
+            const data = [];
+
+            for (let i = 1; i < lines.length; i++) {
+                const lineText = lines[i].trim();
+                if (!lineText) continue; // Skip empty lines
+
+                const values = parseCSVLine(lineText, delimiter);
+                const rowObject = {};
+                 let hasContent = false;
+
+                 for (let j = 0; j < headers.length; j++) {
+                    // Handle rows with fewer columns than headers
+                    const header = headers[j];
+                    if (header) {
+                       rowObject[header] = values[j] ?? ''; // Default to empty string if value missing
+                       if(rowObject[header]) hasContent = true; // Simple check if row is truly empty
+                    }
+                 }
+                 // Only add row if it's not completely empty or just commas
+                if(hasContent || values.some(v => v !== '')) {
+                   data.push(rowObject);
+                }
+            }
+            return { data, headers };
+        }
+
+        function parseCSVLine(line, delimiter) {
+            const values = [];
+            let currentPos = 0;
+            let insideQuotes = false;
+            let currentValue = '';
+            while (currentPos < line.length) {
+                const char = line[currentPos];
+                if (insideQuotes) {
+                    if (char === '"') {
+                        if (currentPos + 1 < line.length && line[currentPos + 1] === '"') {
+                            currentValue += '"'; currentPos++;
+                        } else { insideQuotes = false; }
+                    } else { currentValue += char; }
+                } else {
+                    if (char === '"') {
+                        if (currentValue === '') { insideQuotes = true; }
+                        else { currentValue += char; }
+                    } else if (char === delimiter) {
+                        values.push(currentValue); currentValue = '';
+                    } else { currentValue += char; }
+                }
+                currentPos++;
+            }
+            values.push(currentValue);
+            // Return raw values, don't trim here
+            return values;
+        }
+
+        // --- Data Processing & Table Rendering ---
+        function processCsvData(csvString) {
+            const result = parseCSV(csvString, editorConfig);
+            csvData = result.data;
+            csvHeaders = result.headers;
+            // Update config with actual headers if empty initially
+             if (!editorConfig.csvHeaders || editorConfig.csvHeaders.length === 0) {
+                 editorConfig.csvHeaders = csvHeaders;
+             }
+            renderEditableTable();
+        }
+
+        function renderEditableTable() {
+            editorThead.innerHTML = '';
+            editorTbody.innerHTML = '';
+            rowCountSpan.textContent = csvData.length;
+
+            if (csvHeaders.length === 0) return; // Nothing to render
+
+            // Create Header Row
+            const headerRow = editorThead.insertRow();
+            csvHeaders.forEach(header => {
+                const th = document.createElement('th');
+                th.textContent = header;
+                headerRow.appendChild(th);
+            });
+            // Actions Header
+            const thActions = document.createElement('th');
+            thActions.textContent = 'Actions';
+            headerRow.appendChild(thActions);
+
+            // Create Data Rows
+            csvData.forEach((rowData, index) => {
+                const row = createEditableRow(rowData, index);
+                editorTbody.appendChild(row);
+            });
+        }
+
+        function createEditableRow(rowData, rowIndex) {
+            const row = editorTbody.insertRow();
+            row.dataset.index = rowIndex;
+
+            csvHeaders.forEach(header => {
+                const cell = row.insertCell();
+                const currentValue = rowData[header] ?? '';
+                const inputElement = createInputElement(header, currentValue, rowIndex);
+                cell.appendChild(inputElement);
+            });
+
+            // Actions Cell
+            const cellActions = row.insertCell();
+            cellActions.className = 'actions-cell';
+            const deleteBtn = document.createElement('button');
+            deleteBtn.textContent = 'Delete';
+            deleteBtn.className = 'delete-row-btn';
+            deleteBtn.onclick = () => deleteRow(rowIndex);
+            cellActions.appendChild(deleteBtn);
+
+            return row;
+        }
+
+        // --- Input Element Creation (uses config) ---
+        function createInputElement(header, value, rowIndex) {
+            const config = editorConfig.indicatorStyles?.[header] || {};
+            const generalConfig = editorConfig.generalSettings;
+            let element;
+
+            const isMultiValue = generalConfig.multiValueColumns?.includes(header);
+            const isLinkCol = generalConfig.linkColumns?.includes(header);
+            const isBooleanIcon = config.type === 'icon' && (config.trueCondition || (config.valueMap && hasBooleanKeys(config.valueMap)));
+
+            // Basic textarea for long text based on common names (customize as needed)
+             const longTextHeaders = ["RA Action", "Key Objectives", "Description", "Notes", "Comments"];
+             if (longTextHeaders.some(h => header.toLowerCase().includes(h.toLowerCase()))) {
+                  element = document.createElement('textarea');
+                  element.value = value;
+             }
+             // Checkbox for Boolean Icons
+            else if (isBooleanIcon) {
+                 element = document.createElement('input');
+                 element.type = 'checkbox';
+                 element.checked = isTruthy(value, booleanTrueValues);
+            }
+            // Select for Tag with valueMap (non-multi-value)
+            else if (config.type === 'tag' && config.valueMap && !isMultiValue) {
+                 element = document.createElement('select');
+                 // Add an empty option
+                 const emptyOpt = document.createElement('option');
+                 emptyOpt.value = '';
+                 emptyOpt.textContent = '-- Select --';
+                 element.appendChild(emptyOpt);
+                 // Add options from valueMap keys (excluding default)
+                 Object.keys(config.valueMap).filter(k => k !== 'default').forEach(key => {
+                    const opt = document.createElement('option');
+                    opt.value = key;
+                    // Use display text from config if available
+                    opt.textContent = config.valueMap[key]?.text || key;
+                    element.appendChild(opt);
+                 });
+                 element.value = value; // Set current value
+                 // TODO: Could add distinct values from data if not in valueMap
+            }
+            // Input type="url" for link columns
+             else if (isLinkCol) {
+                element = document.createElement('input');
+                element.type = 'url';
+                element.value = value;
+                element.placeholder = 'https://...';
+             }
+              // Input type="date" for columns likely containing dates
+             else if (header.toLowerCase().includes('date') || header.toLowerCase().includes('eta')) {
+                 element = document.createElement('input');
+                 element.type = 'date';
+                 // Attempt to format existing value for date input if possible
+                 // This is basic, needs improvement for reliable date parsing
+                 try {
+                     if (value && !isNaN(new Date(value))) {
+                         element.value = new Date(value).toISOString().split('T')[0];
+                     } else {
+                         element.value = value; // Keep original if not parsable
+                     }
+                 } catch(e) { element.value = value; }
+             }
+            // Text input for Multi-value tags or general text
+            else {
+                 element = document.createElement('input');
+                 element.type = 'text';
+                 element.value = value;
+                 if (isMultiValue) {
+                    element.placeholder = 'Enter values, separated by commas';
+                 }
+            }
+
+            element.dataset.header = header;
+            element.dataset.rowIndex = rowIndex;
+            element.addEventListener('change', handleInputChange); // Update on change (focus loss)
+             // element.addEventListener('input', handleInputChange); // Update instantly (can be laggy)
+
+            return element;
+        }
+
+        // --- Helper to check if valueMap represents a boolean ---
+        function hasBooleanKeys(valueMap) {
+             const keys = Object.keys(valueMap).map(k => k.toLowerCase());
+             // Simple check: does it define styles for variations of true/false?
+             return (keys.includes("true") && keys.includes("false")) ||
+                    (keys.includes("1") && keys.includes("0"));
+         }
+
+        // --- Helper for boolean checks ---
+        function isTruthy(value, trueValues) {
+             return value !== null && typeof value !== 'undefined' && trueValues.includes(String(value).toLowerCase());
+        }
+
+
+        // --- Data Update Handling ---
+        function handleInputChange(event) {
+            const inputElement = event.target;
+            const rowIndex = parseInt(inputElement.dataset.rowIndex, 10);
+            const header = inputElement.dataset.header;
+            let newValue;
+
+            if (inputElement.type === 'checkbox') {
+                 // Store based on configured true/false - Find first true/false in config
+                 // This needs refinement - assumes simple TRUE/FALSE string representation
+                 newValue = inputElement.checked ? (getConfiguredBooleanValue(true) || 'TRUE') : (getConfiguredBooleanValue(false) || 'FALSE');
+            }
+             else if (inputElement.type === 'date') {
+                // Store YYYY-MM-DD format, or empty if input cleared
+                newValue = inputElement.value || '';
+             }
+            else {
+                 newValue = inputElement.value;
+            }
+
+            // Update the data array
+            if (rowIndex >= 0 && rowIndex < csvData.length && header) {
+                csvData[rowIndex][header] = newValue;
+                // console.log(`Updated data[${rowIndex}][${header}] to:`, newValue);
+            } else {
+                 console.error("Error updating data: Invalid index or header", rowIndex, header);
+            }
+        }
+
+        // Helper to find first configured true/false value (simple approach)
+        function getConfiguredBooleanValue(isTrueTarget) {
+            const targetValString = String(isTrueTarget).toLowerCase();
+             for (const val of editorConfig.generalSettings?.trueValues || []) {
+                 if (String(val).toLowerCase() === targetValString) return val; // Found preferred 'true'
+                 if(isTrueTarget && isTruthy(val, booleanTrueValues)) return val; // Found a true value
+             }
+              // Basic fallback if not found in config's trueValues
+             if (!isTrueTarget) return "FALSE"; // Default false if none specifically configured
+            return "TRUE"; // Default true
+        }
+
+
+        // --- Row Manipulation ---
+        function addRow() {
+            const newRowData = {};
+            csvHeaders.forEach(header => newRowData[header] = ''); // Initialize with empty strings
+            csvData.push(newRowData);
+            // Append just the new row instead of full re-render for better performance
+             const newRowElement = createEditableRow(newRowData, csvData.length - 1);
+             editorTbody.appendChild(newRowElement);
+             rowCountSpan.textContent = csvData.length;
+             newRowElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); // Scroll to new row
+        }
+
+        function deleteRow(rowIndex) {
+             if (!confirm(`Are you sure you want to delete row ${rowIndex + 1}?`)) {
+                return;
+            }
+            if (rowIndex >= 0 && rowIndex < csvData.length) {
+                csvData.splice(rowIndex, 1);
+                // Re-render the entire table to fix indices and avoid complexity
+                renderEditableTable();
+            }
+        }
+
+        // --- CSV Generation & Download ---
+        function generateCsvString() {
+             if (csvHeaders.length === 0) return '';
+             const delimiter = editorConfig.generalSettings?.csvDelimiter || ',';
+
+             // Header row
+             const headerString = csvHeaders.map(header => escapeCsvValue(header, delimiter)).join(delimiter);
+
+             // Data rows
+             const dataRows = csvData.map(row => {
+                 return csvHeaders.map(header => {
+                     const value = row[header] ?? '';
+                     return escapeCsvValue(value, delimiter);
+                 }).join(delimiter);
+             });
+
+             return [headerString, ...dataRows].join('\r\n'); // Use CRLF for broad compatibility
+         }
+
+        function escapeCsvValue(value, delimiter) {
+             const strValue = String(value);
+             // Need to quote if value contains delimiter, double quote, or newline chars
+             if (strValue.includes(delimiter) || strValue.includes('"') || strValue.includes('\n') || strValue.includes('\r')) {
+                 // Escape existing double quotes by doubling them
+                 const escapedValue = strValue.replace(/"/g, '""');
+                 return `"${escapedValue}"`;
+             }
+             return strValue; // Return as-is if no special chars
+         }
+
+        function handleDownload() {
+            const csvString = generateCsvString();
+            if (!csvString) {
+                alert('No data to download.');
+                return;
+            }
+
+            const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+
+            // Suggest a filename
+            const originalFilename = csvFileInput.files[0]?.name || 'data.csv';
+            const newFilename = originalFilename.replace(/\.csv$/i, '') + '_updated.csv';
+
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', newFilename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url); // Clean up
+        }
+
+        // --- Start the editor ---
+        initializeEditor();
+
+    </script>
+</body>
+</html>
