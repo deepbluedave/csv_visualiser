@@ -136,7 +136,7 @@ function isTruthy(value, config) {
 
     // --- Standard Indicator Style Logic ---
     if (!styleConfig || styleConfig.type === 'none') return ''; // No styling configured or explicitly none
-
+    
     const valuesToProcess = Array.isArray(value) ? value : [value];
     let generatedHtmlArray = []; // Store HTML for each item before joining
 
@@ -152,7 +152,7 @@ function isTruthy(value, config) {
 
                 // 1. Check trueCondition
                 if (styleConfig.trueCondition && !iconApplied && isTruthy(currentValue, config)) {
-                    currentIconHtml = `<span class="icon ${styleConfig.trueCondition.cssClass || ''}" title="${styleConfig.trueCondition.title || columnName}">${styleConfig.trueCondition.value || '?'}</span>`;
+                    currentIconHtml = `<span class="csv-dashboard-icon ${styleConfig.trueCondition.cssClass || ''}" title="${styleConfig.trueCondition.title || columnName}">${styleConfig.trueCondition.value || '?'}</span>`;
                     iconApplied = true;
                 }
 
@@ -187,7 +187,7 @@ function isTruthy(value, config) {
                     // Apply mapping if found and not the default, and it has a 'value' defined
                     if (mapping && mapping !== styleConfig.valueMap.default && mapping.value !== undefined) {
                         if (mapping.value !== "") { // Only add span if value is not empty
-                             currentIconHtml = `<span class="icon ${mapping.cssClass || ''}" title="${mapping.title || columnName + ': ' + currentValue}">${mapping.value}</span>`;
+                             currentIconHtml = `<span class="csv-dashboard-icon ${mapping.cssClass || ''}" title="${mapping.title || columnName + ': ' + currentValue}">${mapping.value}</span>`;
                         } else {
                              currentIconHtml = ""; // Explicitly empty output
                         }
@@ -197,7 +197,7 @@ function isTruthy(value, config) {
                     else if (styleConfig.valueMap.default && !iconApplied && styleConfig.valueMap.default.value !== undefined) {
                         const defaultMapping = styleConfig.valueMap.default;
                          if (defaultMapping.value !== "") {
-                           currentIconHtml = `<span class="icon ${defaultMapping.cssClass || ''}" title="${defaultMapping.title || columnName + ': ' + currentValue}">${defaultMapping.value}</span>`;
+                           currentIconHtml = `<span class="csv-dashboard-icon ${defaultMapping.cssClass || ''}" title="${defaultMapping.title || columnName + ': ' + currentValue}">${defaultMapping.value}</span>`;
                            iconApplied = true;
                          }
                     }
@@ -447,12 +447,9 @@ function isTruthy(value, config) {
                 tabContentElement.style.setProperty('--summary-inner-column-gap', layout.columnGap || '15px');
                 tabContentElement.style.setProperty('--summary-inner-item-gap', layout.itemGap || '10px');
             }
-
             // Apply Counts layout styles (if any defined in future)
             // if (tab.type === 'counts' && tab.config?.layout) { ... }
-
         });
-
     } catch (e) {
         console.error("Error applying config styles:", e);
     }
@@ -642,7 +639,7 @@ function parseCSVLine(line, delimiter = ',') {
  * @param {object} row The data row object.
  * @param {object} condition The filter condition object {column, filterType, filterValue}.
  * @param {object} globalConfig The global application configuration (for trueValues, headers).
- * @returns {boolean} True if the row matches the condition.
+ * @returns {boolean} True if the row matches the condition. 
  */
 //  this if needed by renderers directly, otherwise keep internal
 /*  */ function checkCondition(row, condition, globalConfig) {
@@ -1066,7 +1063,7 @@ let appState = { parsedData: [], currentConfig: {}, activeTabId: null }; // Defa
     if (iconEntries.length > 0) {
         let keyHTML = '<h4>Icon Key:</h4><ul>';
         iconEntries.forEach(entry => {
-            keyHTML += `<li><span class="icon ${entry.cssClass || ''}" title="${entry.title}">${entry.icon}</span> = ${entry.title}</li>`;
+            keyHTML += `<li><span class="csv-dashboard-icon ${entry.cssClass || ''}" title="${entry.title}">${entry.icon}</span> = ${entry.title}</li>`;
         });
         keyHTML += '</ul>';
         iconKeyContainer.innerHTML = keyHTML;
@@ -1182,7 +1179,7 @@ function renderTable(filteredData, tabConfig, globalConfig, targetElement, showM
                 if (linkColumns.includes(header)) {
                     const url = String(value || '').trim();
                     if (url.startsWith('http://') || url.startsWith('https://')) {
-                        cellHTML = `<a href="${url}" target="_blank" rel="noopener noreferrer" title="Open Link: ${url}" class="table-link-icon">🔗</a>`;
+                        cellHTML = `<a href="${url}" target="_blank" rel="noopener noreferrer" title="Open Link: ${url}" class="table-link-csv-dashboard-icon">🔗</a>`;
                         cellTitle = `Link: ${url}`;
                         cellTextAlign = 'center'; // Center link icons
                     } else if (url) {
@@ -1354,7 +1351,7 @@ function renderTable(filteredData, tabConfig, globalConfig, targetElement, showM
 
         // Add cards (passing tab config and global config)
         groupData.forEach(row => {
-            groupBlockDiv.appendChild(createInitiativeCard(row, tabConfig.config, globalConfig, 'kanban-card'));
+            groupBlockDiv.appendChild(createInitiativeCard(row, tabConfig.config, globalConfig, 'kanban-card', 'csv-dashboard-icon'));
         });
 
         if (!currentColumnWrapper) {
@@ -1518,7 +1515,7 @@ function checkSummarySectionFilter(row, sectionConf, globalConfig) {
             } else {
                 // Fallback list (no grouping)
                  const listContainer = document.createElement('div'); listContainer.className = 'summary-section-list';
-                 items.forEach(item => { listContainer.appendChild(createInitiativeCard(item, tabConfig.config, globalConfig, 'summary-card')); }); // Use imported createInitiativeCard
+                 items.forEach(item => { listContainer.appendChild(createInitiativeCard(item, tabConfig.config, globalConfig, 'summary-card').replace(" icon", " csv-dashboard-icon")); }); // Use imported createInitiativeCard
                  sectionDiv.appendChild(listContainer);
             }
         }
@@ -1645,7 +1642,7 @@ function checkCounterFilter(rowValue, counterConfig, globalConfig) {
                      const cssClass = displayConf?.cssClass ? ` ${displayConf.cssClass}` : '';
                      const titleAttr = ` title="${counterConfig.title}"`;
                      if (displayConf?.type === 'icon' && displayConf.value) {
-                          displayHTML = `<span class="icon${cssClass}"${titleAttr}>${displayConf.value}</span>`;
+                          displayHTML = `<span class="csv-dashboard-icon${cssClass}"${titleAttr}>${displayConf.value}</span>`;
                      } else if (displayConf?.type === 'text' && displayConf.value) {
                           displayHTML = `<span class="count-header-tag-icon${cssClass}"${titleAttr}>${displayConf.value}</span>`;
                      }
@@ -1956,7 +1953,7 @@ document.addEventListener('DOMContentLoaded', () => {
      * @param {Event} event The click event.
      */
     function handleTabClick(event) {
-         const button = event.target.closest('.tab-button'); // Find the button element
+         const button = event.target.closest('.tab-button'); // Find the button element  
          if (button) {
              const tabId = button.getAttribute('data-tab-id');
              if (tabId && tabId !== appState.activeTabId) {

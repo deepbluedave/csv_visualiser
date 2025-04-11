@@ -1,296 +1,257 @@
 // --- START OF FILE config.js ---
 
 let defaultConfig = {
-  "configVersion": 3.4, // Incremented version
+  "configVersion": 4.3, // Incremented version
   "csvHeaders": [], // Auto-populated on CSV load
 
   "generalSettings": {
-    "dashboardTitle": "RA Security Initiative Tracker (v3 - Styled Sizes)", // Retain title
-    "csvUrl": null,
-    "trueValues": [
-      "true", "TRUE", "yes", "y", "1", "✓", "x", "on"
-    ],
+    "dashboardTitle": "Fantasy World Atlas & Gazetteer Project",
+    "csvUrl": null, // Set to a URL or leave null for upload
+    "trueValues": [ "true", "TRUE", "yes", "y", "1", "✓", "x", "on" ],
     "csvDelimiter": ",",
-    "multiValueColumns": ["Organization", "Size Variations"],
-    "linkColumns": [
-        "Instructions Link",
-        "Tracking Link"
-    ]
+    "multiValueColumns": ["Tags/Keywords", "Related Entries"], // Columns with comma-separated values
+    "linkColumns": [ "Wiki Link", "Inspiration Link" ] // Columns containing URLs
   },
 
   // Global styles for indicators (tags/icons) used across tabs
   "indicatorStyles": {
-      // --- Boolean Icon Indicators (FIXED: Added valueMap to hide FALSE) ---
-      "Elevated":   {
+      // --- Boolean Icon Indicators ---
+      "Art Needed": {
           "type": "icon",
-          "trueCondition": { "value": "⭐", "cssClass": "indicator-style-boolean-true", "title": "Elevated: True"},
-          "valueMap": { "false": {"value":""}, "FALSE": {"value":""}, "0": {"value":""}, "": {"value":""} } // Hide false values
+          "trueCondition": { "value": "🎨", "cssClass": "cdg-indicator-art-needed", "title": "Artwork Needed"},
+          "valueMap": { "false": {"value":""}, "FALSE": {"value":""}, "0": {"value":""}, "": {"value":""} } // Hide false
       },
-      "Campaign":   {
+      "Plot Hook Included": {
           "type": "icon",
-          "trueCondition": { "value": "📢", "cssClass": "indicator-style-boolean-true", "title": "Campaign: True"},
-          "valueMap": { "false": {"value":""}, "FALSE": {"value":""}, "0": {"value":""}, "": {"value":""} }
-      },
-      "Regulatory": {
-          "type": "icon",
-          "trueCondition": { "value": "⚖️", "cssClass": "indicator-style-boolean-true", "title": "Regulatory: True"},
-          "valueMap": { "false": {"value":""}, "FALSE": {"value":""}, "0": {"value":""}, "": {"value":""} }
-       },
-      "FURR":       {
-          "type": "icon",
-          "trueCondition": { "value": "🛡️", "cssClass": "indicator-style-boolean-true", "title": "FURR Applicable: True"},
-          "valueMap": { "false": {"value":""}, "FALSE": {"value":""}, "0": {"value":""}, "": {"value":""} }
-      },
-      "App Health": {
-          "type": "icon",
-          "trueCondition": { "value": "🩺", "cssClass": "indicator-style-boolean-true", "title": "App Health Related: True"},
-          "valueMap": { "false": {"value":""}, "FALSE": {"value":""}, "0": {"value":""}, "": {"value":""} }
-       },
-      "Baseline":   {
-          "type": "icon",
-          "trueCondition": { "value": "📈", "cssClass": "indicator-style-boolean-true", "title": "Baseline Related: True"}, // Corrected Icon
+          "trueCondition": { "value": "🎣", "cssClass": "cdg-indicator-plot-hook", "title": "Plot Hook Included"},
           "valueMap": { "false": {"value":""}, "FALSE": {"value":""}, "0": {"value":""}, "": {"value":""} } // Hide false
       },
 
       // --- Tag Indicators ---
-      "Domain": { /* ... existing style ... */
-        "type": "tag", "titlePrefix": "Domain: ",
+      "Region": {
+        "type": "tag", "titlePrefix": "Region: ",
         "valueMap": {
-          "IAM":              { "bgColor": "#ddebf7", "textColor": "#2a5d8a" },
-          "Vuln Management":  { "bgColor": "#f8d7da", "textColor": "#58151c" },
-          "Data Security":    { "bgColor": "#e2f0d9", "textColor": "#537d3b" },
-          "Incident Response":{ "bgColor": "#fff3cd", "textColor": "#664d03" },
-          "Cloud Security":   { "bgColor": "#cfe2ff", "textColor": "#0a367a" },
-          "Network Security": { "bgColor": "#ededed", "textColor": "#333" },
-          "Awareness":        { "bgColor": "#fef4e5", "textColor": "#885f25" },
-          "Logging & Monitoring": { "bgColor":"#e9ecef", "textColor": "#495057"},
-          "default":          { "bgColor": "#f5f5f5", "textColor": "#555" }
+          "Verdant Kingdoms":     { "bgColor": "#d1e7dd", "textColor": "#0f5132" }, // Green
+          "Dragon Spine Mtns":    { "bgColor": "#adb5bd", "textColor": "#ffffff" }, // Grey
+          "Azure Coast":          { "bgColor": "#cfe2ff", "textColor": "#0a367a" }, // Blue
+          "Shadowlands":          { "bgColor": "#495057", "textColor": "#ffffff" }, // Dark Grey
+          "Sunken Isles":         { "bgColor": "#0dcaf0", "textColor": "#000000" }, // Cyan
+          "Whispering Desert":    { "bgColor": "#fef4e5", "textColor": "#885f25" }, // Sandy
+          "default":              { "bgColor": "#e9ecef", "textColor": "#495057" }
         }
       },
-      "Organization": { /* ... existing style ... */
-        "type": "tag", "titlePrefix": "Org: ",
-        "layout": "stacked", // Keep stacking
+       "Entry Type": {
+        "type": "tag", "titlePrefix": "Type: ",
         "valueMap": {
-          "InfoSec": { "bgColor": "#e9d8fd", "textColor": "#5e3a8c" },
-          "CTO":     { "bgColor": "#d1e7dd", "textColor": "#0f5132" },
-          "GI":      { "bgColor": "#fef4e5", "textColor": "#885f25" },
-          "AppDev":  { "bgColor": "#cfe2ff", "textColor": "#0a367a"},
-          "default": { "bgColor": "#eeeeee", "textColor": "#555" }
+          "City":             { "bgColor": "#f8d7da", "textColor": "#58151c" }, // Reddish
+          "Ruin":             { "bgColor": "#6c757d", "textColor": "#ffffff" }, // Grey
+          "Faction":          { "bgColor": "#e9d8fd", "textColor": "#5e3a8c" }, // Purple
+          "Culture":          { "bgColor": "#fef4e5", "textColor": "#885f25" }, // Sandy
+          "Historical Event": { "bgColor": "#fff3cd", "textColor": "#664d03" }, // Yellow
+          "Landmark":         { "bgColor": "#d1e7dd", "textColor": "#0f5132" }, // Green
+          "Character Group":  { "bgColor": "#cfe2ff", "textColor": "#0a367a" }, // Blue
+          "Flora/Fauna":      { "bgColor": "#90ee90", "textColor": "#006400" }, // LightGreen
+          "Item/Artifact":    { "bgColor": "#ffb6c1", "textColor": "#8b0000" }, // LightPink
+          "default":          { "bgColor": "#e9ecef", "textColor": "#495057" }
         }
       },
-      "T-Size": { // Main default size - STYLED BY SIZE
-          "type": "tag", "titlePrefix": "Default Size: ",
+      "Status": {
+        "type": "tag", "titlePrefix": "Status: ",
+        "valueMap": {
+          "Outline":          { "text":"📝 Outline",       "bgColor": "#f8f9fa", "textColor": "#6c757d" }, // Light Grey
+          "Draft In Progress":{ "text":"✏️ Drafting",      "bgColor": "#cfe2ff", "textColor": "#0a367a" }, // Blue
+          "Needs Detail":     { "text":"❓ Needs Detail",  "bgColor": "#fff3cd", "textColor": "#664d03" }, // Yellow
+          "Needs Map Ref":    { "text":"🗺️ Needs Map",    "bgColor": "#fef4e5", "textColor": "#885f25" }, // Sandy
+          "Linking Needed":   { "text":"🔗 Linking Needed","bgColor": "#e9d8fd", "textColor": "#5e3a8c" }, // Purple
+          "Review":           { "text":"🧐 Review",       "bgColor": "#fd7e14", "textColor": "#ffffff" }, // Orange
+          "Finalized":        { "text":"✅ Finalized",     "bgColor": "#d1e7dd", "textColor": "#0f5132" }, // Green
+          "default":          { "bgColor": "#e9ecef", "textColor": "#495057" }
+        }
+      },
+      "Primary Author": {
+        "type": "tag", "titlePrefix": "Author: ",
+        "valueMap": {
+          "Bardrick Quill":   { "bgColor": "#ddebf7", "textColor": "#2a5d8a" },
+          "Loremaster Elara": { "bgColor": "#e2f0d9", "textColor": "#537d3b" },
+          "WorldForge AI":    { "bgColor": "#adb5bd", "textColor": "#ffffff" },
+          "default":          { "bgColor": "#e9ecef", "textColor": "#495057" }
+        }
+      },
+      "Tags/Keywords": {
+        "type": "tag", "titlePrefix": "Tags: ",
+        "layout": "stacked",
+        "valueMap": { "default": { "bgColor": "#dee2e6", "textColor": "#495057" } } // Simple default
+      },
+      "Related Entries": {
+        "type": "tag", "titlePrefix": "Related: ",
+        "layout": "stacked",
+        "valueMap": { "default": { "bgColor": "#cfe2ff", "textColor": "#0a367a", "borderColor": "#a3c6ff"} } // Different default
+      },
+      "Complexity/Size": {
+          "type": "tag", "titlePrefix": "Size: ",
           "valueMap": {
-              "XL": { "text": "📏 XL", "bgColor": "#dc3545", "textColor": "#ffffff", "title":"Size: Extra Large" }, // Red
-              "L":  { "text": "📏 L",  "bgColor": "#ffc107", "textColor": "#343a40", "title":"Size: Large" }, // Yellow
-              "M":  { "text": "📏 M",  "bgColor": "#17a2b8", "textColor": "#ffffff", "title":"Size: Medium" }, // Cyan
-              "S":  { "text": "📏 S",  "bgColor": "#28a745", "textColor": "#ffffff", "title":"Size: Small" }, // Green
-              "":   { "text": "➖ N/A", "bgColor": "#f8f9fa", "textColor": "#6c757d", "title":"Size: N/A" }, // Grey
+              "XL": { "text": "📏 XL", "bgColor": "#dc3545", "textColor": "#ffffff", "title":"Complexity: Extra Large" },
+              "L":  { "text": "📏 L",  "bgColor": "#ffc107", "textColor": "#343a40", "title":"Complexity: Large" },
+              "M":  { "text": "📏 M",  "bgColor": "#17a2b8", "textColor": "#ffffff", "title":"Complexity: Medium" },
+              "S":  { "text": "📏 S",  "bgColor": "#28a745", "textColor": "#ffffff", "title":"Complexity: Small" },
               "default": { "bgColor": "#eeeeee", "textColor": "#555" }
           }
       },
-      "Size Variations": {
-           "type": "tag",
-           "layout": "stacked", // Keep stacking
-           "titlePrefix": "Specific Size: ",
-           // --- NEW STRUCTURE: Using styleRules instead of valueMap ---
-           "styleRules": [
-               // Rule 1: Match anything ending in :XL (case-insensitive flag 'i' might be useful if needed)
-               {
-                   "matchType": "regex",
-                   "pattern": ":XL$", // Regex: Ends with :XL
-                   "style": { "bgColor": "#dc3545", "textColor": "#ffffff" } // Red style
-               },
-               // Rule 2: Match anything ending in :L
-               {
-                   "matchType": "regex",
-                   "pattern": ":L$", // Regex: Ends with :L
-                   "style": { "bgColor": "#ffc107", "textColor": "#343a40" } // Yellow style
-               },
-               // Rule 3: Match anything ending in :M
-               {
-                   "matchType": "regex",
-                   "pattern": ":M$", // Regex: Ends with :M
-                   "style": { "bgColor": "#17a2b8", "textColor": "#ffffff" } // Cyan style
-               },
-               // Rule 4: Match anything ending in :S
-               {
-                   "matchType": "regex",
-                   "pattern": ":S$", // Regex: Ends with :S
-                   "style": { "bgColor": "#28a745", "textColor": "#ffffff" } // Green style
-               }
-               // Add more specific rules here if needed, e.g., exact matches for specific cases
-               // {
-               //   "matchType": "exact",
-               //   "value": "Jane Doe:TBC",
-               //   "style": { "bgColor": "#6c757d", "textColor": "#ffffff" }
-               // }
-           ],
-           // --- Fallback style if NO rules match ---
-           "defaultStyle": {
-               "bgColor": "#e9ecef",       // Neutral background
-               "textColor": "#495057",       // Dark grey text
-               "borderColor": "#ced4da"    // Subtle border
-           }
-           // --- REMOVE the old valueMap section ---
-           // "valueMap": { ... HARD-CODED LIST REMOVED ... }
-       },
-      "RA Reporting Approach": { /* ... existing style ... */
-           "type": "tag", "titlePrefix": "Report: ",
-           "valueMap": {
-               "Deck":      { "text":"📊 Deck",      "bgColor": "#ddebf7", "textColor": "#2a5d8a" },
-               "Dashboard": { "text":"📈 Dashboard", "bgColor": "#e2f0d9", "textColor": "#537d3b" },
-               "Optional":  { "text":"❓ Optional",  "bgColor": "#fef4e5", "textColor": "#885f25" },
-               "":          { "text":"➖ N/A",       "bgColor": "#f8f9fa", "textColor": "#495057" },
-               "default":   { "bgColor": "#eeeeee", "textColor": "#555" }
-           }
+      "Draft Date": {
+          "type": "tag", "titlePrefix": "Drafted: ",
+          "valueMap": { "default": { "bgColor": "#f8f9fa", "textColor": "#6c757d" } }
       },
-      "Status": { /* ... existing style ... */
-        "type": "tag", "titlePrefix": "Status: ",
-        "valueMap": {
-          "Started":  { "text":"⏳ Started",   "bgColor": "#cfe2ff", "textColor": "#0a367a" },
-          "Complete": { "text":"✅ Complete",  "bgColor": "#d1e7dd", "textColor": "#0f5132" },
-          "N/A":      { "text":"➖ N/A",       "bgColor": "#f8f9fa", "textColor": "#495057" },
-          "":         { "text":"⚪ Not Set",   "bgColor": "#f8f9fa", "textColor": "#495057" },
-          "default":  { "bgColor": "#eeeeee", "textColor": "#555" }
-        }
-      },
-      "Deadline": { /* ... existing style ... */
-          "type": "tag", "titlePrefix": "Due: ",
-          "valueMap": { "default": { "bgColor": "#e9ecef", "textColor": "#495057" } }
-      },
-      "TLT": { /* ... existing style ... */
-           "type": "tag", "titlePrefix": "TLT: ",
-           "valueMap": { "default": { "bgColor": "#fff0e6", "textColor": "#8a4c2a" } }
-       },
 
-      // --- Columns to display as plain text (or handled by linkColumns) ---
-      "Title": { "type": "none" },
-      "BURR": { "type": "none" },
-      "Metrics": { "type": "none" },
-      "Standards": { "type": "none" },
-      "RA Action": { "type": "none" },
-      "Instructions Link": { "type": "none" },
-      "Tracking Link": { "type": "none" }
+      // --- Columns to display as plain text or handled by linkColumns ---
+      "Entry Name": { "type": "none" },
+      "Wiki Link": { "type": "none" },       // Handled by linkColumns
+      "Inspiration Link": { "type": "none" } // Handled by linkColumns
   },
 
   // --- Tab Definitions ---
-  // Tabs remain the same - config already includes T-Size and Size Variations
   "tabs": [
-    // --- Tab 1: Basic Table View (All Initiatives) ---
+    // --- Tab 1: Master Gazetteer Table ---
     {
-      "id": "all-initiatives-table",
-      "title": "All Initiatives",
+      "id": "gazetteer-table",
+      "title": "Gazetteer Master List",
       "type": "table",
       "enabled": true,
       "filter": null,
       "config": {
         "displayColumns": [
-          "Title", "Domain", "Organization", "TLT", "Status", "Deadline",
-          "T-Size", "Size Variations",
-          "Elevated", "Campaign", "Regulatory", "FURR", "App Health", "Baseline",
-          "RA Reporting Approach", "RA Action",
-          "Instructions Link", "Tracking Link",
-          "BURR"
+          "Entry Name", "Region", "Entry Type", "Status", "Primary Author",
+          "Complexity/Size", "Tags/Keywords", "Related Entries",
+          "Draft Date", "Art Needed", "Plot Hook Included",
+          "Wiki Link", "Inspiration Link"
         ],
         "columnWidths": {
-            "default": "100px", "Title": "250px", "Domain": "130px", "Organization": "150px",
-            "TLT": "120px", "Status": "100px", "Deadline": "100px", "T-Size": "80px",
-            "Size Variations": "120px", "RA Action": "250px", "Elevated": "50px",
-            "Campaign": "50px", "Regulatory": "50px", "FURR": "50px", "App Health": "50px",
-            "Baseline": "50px", "RA Reporting Approach": "120px", "Instructions Link": "50px",
-            "Tracking Link": "50px"
+            "default": "100px",
+            "Entry Name": "250px", "Region": "140px", "Entry Type": "130px",
+            "Status": "120px", "Primary Author": "120px",
+            "Complexity/Size": "70px", "Tags/Keywords": "200px", "Related Entries": "200px",
+            "Draft Date": "100px", "Art Needed": "50px", "Plot Hook Included": "50px",
+            "Wiki Link": "50px", "Inspiration Link": "50px"
         },
         "headerOrientations": {
-            "default": "vertical", "Title": "horizontal", "Domain": "horizontal",
-            "Organization": "horizontal", "RA Action": "horizontal", "Size Variations": "horizontal"
+            "default": "vertical",
+            "Entry Name": "horizontal", "Region": "horizontal", "Entry Type": "horizontal",
+             "Status": "horizontal", "Tags/Keywords": "horizontal", "Related Entries": "horizontal"
         }
       }
     },
 
-    // --- Tab 2: Kanban View by Status (Active Items) ---
+    // --- Tab 2: Kanban by Writing Status ---
     {
-      "id": "kanban-by-status-active",
-      "title": "Active (Status)",
+      "id": "kanban-status",
+      "title": "📝 Writing Status",
       "type": "kanban",
       "enabled": true,
-       "filter": {
-          "logic": "AND",
-          "conditions": [
-              { "column": "Status", "filterType": "valueIsNot", "filterValue": "Complete" },
-              { "column": "Status", "filterType": "valueIsNot", "filterValue": "N/A" },
-              { "column": "Status", "filterType": "valueNotEmpty" }
-          ]
-       },
+      "filter": { "logic": "AND", "conditions": [{"column": "Status", "filterType": "valueIsNot", "filterValue": "Finalized"}] }, // Hide finalized?
       "config": {
         "groupByColumn": "Status",
-        "cardTitleColumn": "Title",
+        "cardTitleColumn": "Entry Name",
         "cardIndicatorColumns": [
-            "Domain", "Organization", "TLT", "Deadline",
-            "T-Size", "Size Variations",
-            "Elevated", "Campaign", "Regulatory",
-            "Tracking Link"
+            "Entry Type",
+            "Region",
+            "Primary Author",
+            "Complexity/Size",
+            "Art Needed" // Icon
         ],
-        "cardLinkColumn": "Tracking Link",
+        "cardLinkColumn": "Wiki Link",
         "layout": {
-            "minColumnWidth": "320px", "columnGap": "15px", "itemGap": "10px"
+            "minColumnWidth": "500px", // Base column width
+            "columnGap": "15px",       // Space between columns
+            "itemGap": "15px",         // Space between group blocks *within* a stacked column
+            // --- Stacking Controls ---
+            "maxItemsPerGroupInColumn": 2, // Allow up to 3 status groups vertically per column area
+            "preventStackingAboveItemCount": 8 // If any status has > 8 entries, give it its own column area
         }
       }
     },
 
-    // --- Tab 3: Kanban View by TLT ---
+    // --- Tab 3: Kanban by Region ---
     {
-      "id": "kanban-by-tlt",
-      "title": "By TLT",
+      "id": "kanban-region",
+      "title": "🗺️ Regional Progress",
       "type": "kanban",
       "enabled": true,
       "filter": null,
       "config": {
-        "groupByColumn": "TLT",
-        "cardTitleColumn": "Title",
+        "groupByColumn": "Region",
+        "cardTitleColumn": "Entry Name",
         "cardIndicatorColumns": [
-            "Domain", "Status", "Deadline", "Organization",
-            "T-Size", "Size Variations",
-            "Elevated", "Regulatory", "Tracking Link"
+            "Entry Type",
+            "Status",
+            "Primary Author",
+            "Plot Hook Included" // Icon
         ],
-        "cardLinkColumn": "Tracking Link",
-        "layout": {
-             "minColumnWidth": "350px", "columnGap": "12px", "itemGap": "8px"
-        }
+        "cardLinkColumn": "Wiki Link",
+        "layout": { "minColumnWidth": "440px", "columnGap": "12px", "itemGap": "8px" }
       }
     },
 
-    // --- Tab 4: Summary View for High Visibility Initiatives ---
+    // --- Tab 4: Summary - Action Needed ---
     {
-        "id": "high-visibility-summary",
-        "title": "❗ High Visibility",
+        "id": "summary-action",
+        "title": "❗ Action Needed",
         "type": "summary",
         "enabled": true,
         "filter": {
-            "logic": "OR",
+            "logic": "OR", // Show if *any* action is needed
             "conditions": [
-                { "column": "Elevated", "filterType": "booleanTrue" },
-                { "column": "Regulatory", "filterType": "booleanTrue" },
-                { "column": "Campaign", "filterType": "booleanTrue" }
+                { "column": "Status", "filterType": "valueInList", "filterValue": ["Needs Detail", "Needs Map Ref", "Linking Needed"] },
+                { "column": "Art Needed", "filterType": "booleanTrue" },
+                { "column": "Plot Hook Included", "filterType": "booleanFalse" } // Find those MISSING plot hooks
             ]
         },
         "config": {
-            "groupByColumn": "Domain",
+            "groupByColumn": "Region", // Group action items by region
             "cardIndicatorColumns": [
-                "Organization", "TLT", "Status", "Deadline",
-                "T-Size", "Size Variations",
-                "Elevated", "Campaign", "Regulatory",
-                "Tracking Link"
+                "Entry Type",
+                "Status", // Show the status tag indicating why it needs action
+                "Primary Author",
+                "Art Needed",           // Include icons
+                "Plot Hook Included",
+                "Wiki Link"             // Link to edit
             ],
-            "internalLayout": {
-                "minColumnWidth": "400px", "columnGap": "15px", "itemGap": "10px"
-            },
-            "cardLinkColumn": "Tracking Link",
+            "internalLayout": { "minColumnWidth": "350px", "columnGap": "15px", "itemGap": "10px" },
+            "cardLinkColumn": "Wiki Link",
             "sections": [
-                 { "id": "summary-elevated", "title": "⭐ Elevated Initiatives", "filterColumn": "Elevated", "filterType": "booleanTrue", "bgColor": "#fff3cd", "textColor": "#664d03" },
-                 { "id": "summary-regulatory", "title": "⚖️ Regulatory Initiatives", "filterColumn": "Regulatory", "filterType": "booleanTrue", "bgColor": "#cfe2ff", "textColor": "#0a367a" },
-                 { "id": "summary-campaign", "title": "📢 Campaign Initiatives", "filterColumn": "Campaign", "filterType": "booleanTrue", "bgColor": "#f8d7da", "textColor": "#58151c" },
-                 { "id": "summary-other-high-vis", "title": "Other High Visibility (Passed Tab Filter)", "filterColumn": null, "filterType": "catchAll", "bgColor": "#f5f5f5", "textColor": "#333" }
+                 // Order sections by likely priority or workflow step
+                 { "id": "summary-needs-detail", "title": "❓ Needs Content Detail", "filterColumn": "Status", "filterType": "valueEquals", "filterValue": "Needs Detail", "bgColor": "#fff3cd", "textColor": "#664d03" },
+                 { "id": "summary-needs-links", "title": "🔗 Needs Connections/Linking", "filterColumn": "Status", "filterType": "valueEquals", "filterValue": "Linking Needed", "bgColor": "#e9d8fd", "textColor": "#5e3a8c" },
+                 { "id": "summary-needs-map", "title": "🗺️ Needs Map Reference", "filterColumn": "Status", "filterType": "valueEquals", "filterValue": "Needs Map Ref", "bgColor": "#fef4e5", "textColor": "#885f25" },
+                 { "id": "summary-needs-art", "title": "🎨 Needs Artwork", "filterColumn": "Art Needed", "filterType": "booleanTrue", "bgColor": "#cfe2ff", "textColor": "#0a367a" },
+                 { "id": "summary-needs-hooks", "title": "🎣 Needs Plot Hooks", "filterColumn": "Plot Hook Included", "filterType": "booleanFalse", "bgColor": "#f8d7da", "textColor": "#58151c" }, // Filter for FALSE
+                 // Catch-all probably not needed if OR filter covers all sections
+                 // { "id": "summary-other-action", "title": "Other Action (Passed Tab Filter)", "filterColumn": null, "filterType": "catchAll", "bgColor": "#f8f9fa", "textColor": "#6c757d" }
+            ]
+        }
+    },
+
+     // --- Tab 5: Counts - Entry Type by Region ---
+    {
+        "id": "counts-types-by-region",
+        "title": "📊 Content Types by Region",
+        "type": "counts",
+        "enabled": true,
+        "filter": null, // Count all entries
+        "config": {
+            // groupByColumn: What each small box represents (the Region)
+            "groupByColumn": "Region",
+
+            // counters: Define each Entry Type we want to count
+            "counters": [
+                { "title": "Cities", "column": "Entry Type", "filterType": "valueEquals", "filterValue": "City" },
+                { "title": "Ruins", "column": "Entry Type", "filterType": "valueEquals", "filterValue": "Ruin" },
+                { "title": "Factions", "column": "Entry Type", "filterType": "valueEquals", "filterValue": "Faction" },
+                { "title": "Cultures", "column": "Entry Type", "filterType": "valueEquals", "filterValue": "Culture" },
+                { "title": "Historical Events", "column": "Entry Type", "filterType": "valueEquals", "filterValue": "Historical Event" },
+                { "title": "Landmarks", "column": "Entry Type", "filterType": "valueEquals", "filterValue": "Landmark" },
+                { "title": "Character Groups", "column": "Entry Type", "filterType": "valueEquals", "filterValue": "Character Group" },
+                { "title": "Flora/Fauna", "column": "Entry Type", "filterType": "valueEquals", "filterValue": "Flora/Fauna" },
+                { "title": "Items/Artifacts", "column": "Entry Type", "filterType": "valueEquals", "filterValue": "Item/Artifact" }
+                 // Add display icons if desired
             ]
         }
     }

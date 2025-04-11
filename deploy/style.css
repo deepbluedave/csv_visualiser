@@ -56,7 +56,7 @@
     /* Ensure flex context if needed for internal layout, but usually layout.css handles it */
     display: flex;
     flex-direction: column;
-    /* Set a height or min-height if needed within the embedded context */
+    /* Set a height or min-height if needed withi the embedded context */
     /* Example: min-height: 500px; */
 }
 /* Ensure children also use border-box */
@@ -146,7 +146,7 @@
     gap: 5px;
 }
 
-#cdg-dashboard-wrapper #cdg-iconKeyContainer li .icon { /* Scope .icon within key */
+#cdg-dashboard-wrapper #cdg-iconKeyContainer li .csv-dashboard-icon { /* Scope .icon within key */
     font-size: 1.1em;
     display: inline-block;
     text-align: center;
@@ -291,7 +291,7 @@
     white-space: normal; /* Allow indicators to wrap if needed */
     line-height: 1.3; /* Ensure consistent line height for wrapped indicators */
 }
-#cdg-dashboard-wrapper .card-indicators .icon,
+#cdg-dashboard-wrapper .card-indicators .csv-dashboard-icon,
 #cdg-dashboard-wrapper .card-indicators .tag {
      vertical-align: middle;
      margin-left: 3px;
@@ -303,7 +303,7 @@
  }
 
 /* --- Indicator/Tag Base Styles --- */
-#cdg-dashboard-wrapper .icon {
+#cdg-dashboard-wrapper .csv-dashboard-icon {
     font-size: 1.1em; /* Base icon size */
     line-height: 1;   /* Prevent extra line height */
     display: inline-block;
@@ -331,19 +331,19 @@
 
 /* --- Specific ICON Indicator Styles (From Config Classes) --- */
 /* Slightly smaller boolean icons in table */
-#cdg-dashboard-wrapper .view-container[data-view-type="table"] td .icon.indicator-style-boolean-true {
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] td .csv-dashboard-icon.indicator-style-boolean-true {
     font-size: 1.0em;
     line-height: 1;
     vertical-align: baseline;
 }
 /* Base boolean icon style */
-#cdg-dashboard-wrapper .icon.indicator-style-boolean-true { /* Matches class from config */
+#cdg-dashboard-wrapper .csv-dashboard-icon.indicator-style-boolean-true { /* Matches class from config */
     color: var(--color-success);
 }
 /* Other specific icon styles - ensure class names here match config's cssClass */
-#cdg-dashboard-wrapper .icon.indicator-style-alert     { color: var(--color-error); }
-#cdg-dashboard-wrapper .icon.indicator-style-campaign  { color: var(--color-warning); }
-#cdg-dashboard-wrapper .icon.indicator-style-regulatory{ color: var(--color-info); }
+#cdg-dashboard-wrapper .csv-dashboard-icon.indicator-style-alert     { color: var(--color-error); }
+#cdg-dashboard-wrapper .csv-dashboard-icon.indicator-style-campaign  { color: var(--color-warning); }
+#cdg-dashboard-wrapper .csv-dashboard-icon.indicator-style-regulatory{ color: var(--color-info); }
 /* ... etc ... */
 
 
@@ -508,8 +508,8 @@
     line-height: 1;
 }
 /* Icon (boolean etc) styling */
-#cdg-dashboard-wrapper .view-container[data-view-type="table"] td > .icon:only-child, /* Scope .icon */
-#cdg-dashboard-wrapper .view-container[data-view-type="table"] td > .icon { /* Scope .icon */
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] td > .csv-dashboard-icon:only-child, /* Scope .icon */
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] td > .csv-dashboard-icon { /* Scope .icon */
     display: inline-block;
     margin: 0 auto; /* Center horizontally if alone */
     text-align: center;
@@ -538,7 +538,7 @@
 
 /* Centering for specific content (JS applies text-align: center) */
 #cdg-dashboard-wrapper .view-container[data-view-type="table"] td[style*="text-align: center"] .cell-text,
-#cdg-dashboard-wrapper .view-container[data-view-type="table"] td[style*="text-align: center"] > .icon,
+#cdg-dashboard-wrapper .view-container[data-view-type="table"] td[style*="text-align: center"] > .csv-dashboard-icon,
 #cdg-dashboard-wrapper .view-container[data-view-type="table"] td[style*="text-align: center"] > .tag {
      display: inline-block;
      text-align: center;
@@ -676,7 +676,7 @@
     align-items: center;
     gap: 8px;
 }
-#cdg-dashboard-wrapper .indicator-domain-group h3 .icon, /* Scope icon */
+#cdg-dashboard-wrapper .indicator-domain-group h3 .csv-dashboard-icon, /* Scope icon */
 #cdg-dashboard-wrapper .indicator-domain-group h3 .count-header-tag-icon { /* Scope custom class */
     font-size: 1.2em;
     line-height: 1;
