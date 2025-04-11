@@ -1,0 +1,14 @@
+Creature Name,Species,Habitat Zone,Temperament,Status,Care Specialist,Dietary Needs,Last Health Check,Magical Property,Endangered Status,Special Handling Req.,Enclosure Link,Care Log Link
+Ignis,Phoenix,Volcanic Peaks,Territorial,Healthy,Elara Meadowlight,Fire Salts,2024-05-01,Healing Tears,TRUE,TRUE,https://sanctuary.local/enclosures/vp01,https://sanctuary.local/logs/ignis
+Zephyr,Griffin,Volcanic Peaks,Aggressive,Acclimatizing,Gorok Stonehand,Raw Meat,2024-04-15,,FALSE,TRUE,https://sanctuary.local/enclosures/vp02,https://sanctuary.local/logs/zephyr
+Luna,Mooncalf,Celestial Meadow,Skittish,Healthy,Elara Meadowlight,"Moon Dew,Silver Apples",2024-05-10,Illumination,FALSE,FALSE,https://sanctuary.local/enclosures/cm01,https://sanctuary.local/logs/luna
+Sparky,Niffler,Crystal Caves,Playful,Healthy,Filius Wickham,"Gemstones,Shiny Objects",2024-04-28,Metal Detection,FALSE,FALSE,https://sanctuary.local/enclosures/cc01,https://sanctuary.local/logs/sparky
+Obsidian,Dragon,Volcanic Peaks,Territorial,Breeding Program,Gorok Stonehand,Raw Meat,2024-03-20,Fire Breath,TRUE,TRUE,https://sanctuary.local/enclosures/vp03,https://sanctuary.local/logs/obsidian
+Shadowfax,Hippogriff,Celestial Meadow,Docile,Healthy,Elara Meadowlight,"Sun Grains,Insects",2024-05-05,,FALSE,FALSE,https://sanctuary.local/enclosures/cm02,https://sanctuary.local/logs/shadowfax
+Nyx,Thestral,Shadow Fen,Skittish,Healthy,Rubeus Hagrid,Raw Meat,2024-04-18,Invisibility,FALSE,TRUE,https://sanctuary.local/enclosures/sf01,https://sanctuary.local/logs/nyx
+Flicker,Phoenix,Volcanic Peaks,Docile,Injured,Elara Meadowlight,Fire Salts,2024-05-12,Healing Tears,TRUE,TRUE,https://sanctuary.local/enclosures/vp01,https://sanctuary.local/logs/flicker
+Goldie,Niffler,Crystal Caves,Playful,Quarantine,Filius Wickham,"Gemstones,Shiny Objects",2024-05-09,Metal Detection,FALSE,TRUE,https://sanctuary.local/enclosures/cc01_q,https://sanctuary.local/logs/goldie
+Celeste,Mooncalf,Celestial Meadow,Docile,Breeding Program,Elara Meadowlight,Moon Dew,2024-05-02,Illumination,FALSE,FALSE,https://sanctuary.local/enclosures/cm03,https://sanctuary.local/logs/celeste
+Ashwing,Griffin,Whispering Woods,Territorial,Released,Gorok Stonehand,Raw Meat,2023-11-01,,FALSE,FALSE,,
+Glimmer,Thestral,Shadow Fen,Skittish,Acclimatizing,"Rubeus Hagrid,Elara Meadowlight",Raw Meat,2024-05-14,Invisibility,FALSE,TRUE,https://sanctuary.local/enclosures/sf02,https://sanctuary.local/logs/glimmer
+Rumble,Dragon,Volcanic Peaks,Aggressive,Injured,Gorok Stonehand,Raw Meat,2024-05-13,Fire Breath,TRUE,TRUE,https://sanctuary.local/enclosures/vp03_q,https://sanctuary.local/logs/rumble

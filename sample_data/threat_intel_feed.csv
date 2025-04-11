@@ -1,0 +1,13 @@
+Threat ID / CVE,Threat Type,Status,Severity,Targeted Sector(s),Associated Malware/Tool,Detection Date,Analyst Assigned,Mitigation Available,Actively Exploited,Report Link,IOC Link
+CVE-2024-1001,Vulnerability Exploit,Active Exploit,Critical,"Finance,Healthcare",Cobalt Strike,2024-05-10,J. Patel,Partial,TRUE,https://threatintel.local/report/cve-2024-1001,https://threatintel.local/ioc/cve-2024-1001
+APT-Whisperwind,APT,Monitored,High,"Government,Energy",CustomBackdoor,2024-04-20,Cyber Intel Team B,FALSE,FALSE,https://threatintel.local/report/apt-ww,https://threatintel.local/ioc/apt-ww
+LockBit-Wave3,Ransomware,Active Exploit,Critical,Healthcare,LockBit,2024-05-15,M. Garcia,Partial,TRUE,https://threatintel.local/report/lb3-hc,https://threatintel.local/ioc/lb3
+GenericPhish-May24,Phishing,Mitigated,Medium,Retail,N/A,2024-05-01,Automated System,TRUE,FALSE,https://threatintel.local/report/phish-may24,
+CVE-2023-5555,Vulnerability Exploit,Patched,High,Technology,Metasploit,2024-01-15,S. Chen,TRUE,FALSE,https://threatintel.local/report/cve-2023-5555,https://threatintel.local/ioc/cve-2023-5555
+DDoS-Banking-Blitz,DDoS,Active Exploit,High,Finance,Botnet-XYZ,2024-05-18,InfraSec Team,FALSE,TRUE,https://threatintel.local/report/ddos-bank,https://threatintel.local/ioc/ddos-bank
+QakBot- resurgence,Malware,Potential Threat,High,"Finance,Technology",QakBot,2024-04-28,J. Patel,Partial,FALSE,https://threatintel.local/report/qakbot-r,https://threatintel.local/ioc/qakbot-r
+CVE-2024-2002,Vulnerability Exploit,Monitored,Medium,"Energy,Technology",Powershell Empire,2024-05-05,Cyber Intel Team B,TRUE,FALSE,https://threatintel.local/report/cve-2024-2002,https://threatintel.local/ioc/cve-2024-2002
+Misconfig-Alert-01,Potential Threat,False Positive,Low,N/A,N/A,2024-05-19,S. Chen,TRUE,FALSE,,
+StealerX,Info Stealer,Active Exploit,High,Multiple,CustomStealer,2024-05-16,M. Garcia,FALSE,TRUE,https://threatintel.local/report/stealerx,https://threatintel.local/ioc/stealerx
+WebShell-Gov-Target,APT,Mitigated,High,Government,ChinaChopper,2024-03-10,Cyber Intel Team B,TRUE,FALSE,https://threatintel.local/report/ws-gov,https://threatintel.local/ioc/ws-gov
+FakeUpdate-Campaign,Malware,Potential Threat,Medium,Retail,"SocGholish,NetSupport",2024-05-20,J. Patel,Partial,FALSE,https://threatintel.local/report/fakeupd,https://threatintel.local/ioc/fakeupd

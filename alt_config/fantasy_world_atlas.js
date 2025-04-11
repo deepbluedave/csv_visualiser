@@ -163,7 +163,7 @@ let defaultConfig = {
             "columnGap": "15px",       // Space between columns
             "itemGap": "15px",         // Space between group blocks *within* a stacked column
             // --- Stacking Controls ---
-            "maxItemsPerGroupInColumn": 2, // Allow up to 3 status groups vertically per column area
+            "maxItemsPerGroupInColumn": 3, // Allow up to 3 status groups vertically per column area
             "preventStackingAboveItemCount": 8 // If any status has > 8 entries, give it its own column area
         }
       }
