@@ -397,6 +397,73 @@ function isTruthy(value, config) {
     });
 }
 
+/**
+ * Sorts an array of data objects based on multiple criteria defined in sortByConfig.
+ * Handles basic string, numeric comparison and null/undefined values.
+ * @param {object[]} dataArray The array of data objects to sort (will be sorted in place).
+ * @param {object[]} sortByConfig Array of sort criteria, e.g., [{ column: 'ColA', direction: 'asc' }, { column: 'ColB', direction: 'desc' }].
+ * @param {object} globalConfig The global configuration, used to access csvHeaders for validation.
+ * @returns {object[]} The sorted dataArray (same array instance passed in). Returns original array if sortByConfig is invalid.
+ */
+function sortData(dataArray, sortByConfig, globalConfig) {
+    if (!Array.isArray(dataArray) || !Array.isArray(sortByConfig) || sortByConfig.length === 0) {
+        return dataArray; // No sorting needed or possible
+    }
+
+    const validHeaders = globalConfig?.csvHeaders || [];
+
+    // Filter out invalid sort criteria (column doesn't exist)
+    const validSortBy = sortByConfig.filter(criterion => {
+        const isValid = criterion && criterion.column && validHeaders.includes(criterion.column);
+        if (!isValid) {
+            console.warn(`sortData: Invalid or missing sort column "${criterion?.column}". Ignoring criterion.`);
+        }
+        return isValid;
+    });
+
+    if (validSortBy.length === 0) {
+        console.warn("sortData: No valid sort criteria found.");
+        return dataArray; // Return original if no valid criteria
+    }
+
+    // The actual comparison function
+    const comparisonFunction = (a, b) => {
+        for (const criterion of validSortBy) {
+            const { column, direction = 'asc' } = criterion; // Default to ascending
+            const valA = a[column];
+            const valB = b[column];
+
+            // Define order for null/undefined (nulls/undefined last for asc, first for desc)
+            const ascSortOrder = direction.toLowerCase() === 'asc' ? 1 : -1;
+            if (valA == null && valB != null) return ascSortOrder;
+            if (valA != null && valB == null) return -ascSortOrder;
+            if (valA == null && valB == null) continue; // Treat equal if both null/undefined, move to next criterion
+
+            let comparison = 0;
+
+            // Basic type handling (improve with more specific checks if needed, e.g., dates)
+            if (typeof valA === 'number' && typeof valB === 'number') {
+                comparison = valA - valB;
+            } else {
+                // Default to string comparison using localeCompare
+                // This handles numbers-as-strings reasonably well for simple cases
+                comparison = String(valA).localeCompare(String(valB), undefined, { numeric: true, sensitivity: 'base' });
+            }
+
+            // If values are different, return based on direction
+            if (comparison !== 0) {
+                return direction.toLowerCase() === 'desc' ? (comparison * -1) : comparison;
+            }
+            // If values are equal, continue to the next sort criterion
+        }
+        return 0; // All criteria resulted in equality
+    };
+
+    // Sort the array in place
+    dataArray.sort(comparisonFunction);
+    return dataArray;
+}
+
 // --- END OF FILE js/renderers/renderer-shared.js ---
 // --- START OF FILE js/config-loader.js ---
 
@@ -1131,6 +1198,10 @@ function renderTable(filteredData, tabConfig, globalConfig, targetElement, showM
         return;
     }
 
+    // --- *** NEW: Apply Sorting *** ---
+    const sortByConfig = tabConfig.config?.sortBy;
+    const dataToRender = sortData([...filteredData], sortByConfig, globalConfig); // Use helper, sort a copy
+
     const validHeaders = globalConfig.csvHeaders || [];
     const linkColumns = globalConfig.generalSettings?.linkColumns || [];
     const colWidths = tabConfig.config?.columnWidths || {};
@@ -1175,7 +1246,7 @@ function renderTable(filteredData, tabConfig, globalConfig, targetElement, showM
     }
 
     // --- Render Body ---
-    filteredData.forEach((row, rowIndex) => {
+    dataToRender.forEach((row, rowIndex) => {
         const tr = document.createElement('tr');
         displayCols.forEach(header => {
             if (validHeaders.includes(header)) {
@@ -1271,13 +1342,14 @@ function renderTable(filteredData, tabConfig, globalConfig, targetElement, showM
 /**
  * Renders data into a Kanban view within the specified target element.
  * Uses configuration specific to the tab.
+ * Includes sorting for groups and items within groups.
  * @param {object[]} filteredData The data rows already filtered for this tab.
  * @param {object} tabConfig The configuration object for this specific kanban tab.
  * @param {object} globalConfig The global application configuration.
  * @param {HTMLElement} targetElement The container element for this tab.
  * @param {Function} showMessage Function to display messages.
  */
- function renderKanban(filteredData, tabConfig, globalConfig, targetElement, showMessage) {
+function renderKanban(filteredData, tabConfig, globalConfig, targetElement, showMessage) {
     if (!targetElement) {
         console.error("renderKanban: Target element not provided.");
         return;
@@ -1285,7 +1357,7 @@ function renderTable(filteredData, tabConfig, globalConfig, targetElement, showM
     targetElement.innerHTML = ''; // Clear previous content
     setMessagePlaceholder(tabConfig.id, '', false); // Add hidden placeholder
 
-    // Apply grid styles dynamically based on tab config's layout settings
+    // --- Apply layout styles dynamically ---
     const layoutConf = tabConfig.config?.layout;
     if (layoutConf) {
         targetElement.style.setProperty('--kanban-min-col-width', layoutConf.minColumnWidth || '280px');
@@ -1294,95 +1366,166 @@ function renderTable(filteredData, tabConfig, globalConfig, targetElement, showM
     }
     targetElement.style.display = 'grid'; // Ensure grid display
 
-    // Validate config
+    // --- Validate Basic Config ---
     const groupCol = tabConfig.config?.groupByColumn;
-    const titleCol = tabConfig.config?.cardTitleColumn;
+    const titleCol = tabConfig.config?.cardTitleColumn; // Optional, but good practice
     const validHeaders = globalConfig.csvHeaders || [];
 
     if (!groupCol || !validHeaders.includes(groupCol)) {
-         showMessage(`Kanban tab "${tabConfig.title}" has invalid 'groupByColumn'.`, tabConfig.id);
+         showMessage(`Kanban tab "${tabConfig.title}" has invalid or missing 'groupByColumn'.`, tabConfig.id);
          return;
     }
      if (titleCol && !validHeaders.includes(titleCol)) {
-          console.warn(`renderKanban (Tab "${tabConfig.title}"): 'cardTitleColumn' ("${titleCol}") not found.`);
+          console.warn(`renderKanban (Tab "${tabConfig.title}"): Configured 'cardTitleColumn' ("${titleCol}") not found in CSV headers.`);
      }
 
-    // Handle empty filtered data
+    // --- Handle Empty Filtered Data ---
     if (!filteredData || filteredData.length === 0) {
         showMessage(`No data matches the filter criteria for tab "${tabConfig.title}".`, tabConfig.id);
         return;
     }
 
-    // Get Layout Settings
-    const maxGroupsPerColumn = Math.max(1, parseInt(layoutConf?.maxItemsPerGroupInColumn, 10) || 1);
-    const largeGroupThreshold = Math.max(0, parseInt(layoutConf?.preventStackingAboveItemCount, 10) || 10000);
-
-    // Group Filtered Data
+    // --- Group Filtered Data ---
     const grouped = filteredData.reduce((acc, row) => {
         const categoryValue = (validHeaders.includes(groupCol) ? row[groupCol] : undefined) ?? 'Uncategorized';
+        // Handle potential array values from multi-value groupBy columns (though less common for Kanban)
         const category = Array.isArray(categoryValue) ? categoryValue.join(', ') : String(categoryValue);
         if (!acc[category]) acc[category] = [];
         acc[category].push(row);
         return acc;
     }, {});
 
-    // Sort Groups
-    const sortedGroupKeys = Object.keys(grouped).sort((keyA, keyB) => {
-        return (grouped[keyB]?.length || 0) - (grouped[keyA]?.length || 0);
-    });
+    // --- Sort Group Keys ---
+    let sortedGroupKeys = Object.keys(grouped);
+    const groupSortConfig = tabConfig.config?.groupSortBy;
 
-    // Render into Columns
+    if (groupSortConfig) {
+        if (Array.isArray(groupSortConfig)) { // Predefined fixed order
+            const predefinedOrder = groupSortConfig.map(String); // Ensure strings
+            const fixedOrderKeys = [];
+            const remainingKeys = [];
+
+            // Separate keys into fixed order and remaining
+            sortedGroupKeys.forEach(key => {
+                if (predefinedOrder.includes(key)) {
+                    // Will be placed according to predefinedOrder index
+                } else {
+                    remainingKeys.push(key);
+                }
+            });
+
+            // Add keys found in predefined order first, maintaining the order
+            predefinedOrder.forEach(pKey => {
+                if (grouped[pKey]) { // Check if the key actually exists in the grouped data
+                    fixedOrderKeys.push(pKey);
+                }
+            });
+
+             // Sort remaining keys alphabetically (or could add another config option)
+             remainingKeys.sort((a, b) => String(a).localeCompare(String(b)));
+
+             // Combine the arrays
+             sortedGroupKeys = [...fixedOrderKeys, ...remainingKeys];
+
+        } else if (typeof groupSortConfig === 'string') {
+            // Sort based on string commands
+            switch (groupSortConfig.toLowerCase()) {
+                case 'keyasc':
+                    sortedGroupKeys.sort((a, b) => String(a).localeCompare(String(b)));
+                    break;
+                case 'keydesc':
+                    sortedGroupKeys.sort((a, b) => String(b).localeCompare(String(a)));
+                    break;
+                case 'countasc':
+                    sortedGroupKeys.sort((a, b) => (grouped[a]?.length || 0) - (grouped[b]?.length || 0));
+                    break;
+                case 'countdesc':
+                    sortedGroupKeys.sort((a, b) => (grouped[b]?.length || 0) - (grouped[a]?.length || 0));
+                    break;
+                default:
+                     console.warn(`renderKanban: Unknown groupSortBy value "${groupSortConfig}". Defaulting to keyAsc.`);
+                     sortedGroupKeys.sort((a, b) => String(a).localeCompare(String(b)));
+                     break;
+            }
+        } else {
+            console.warn(`renderKanban: Invalid groupSortBy type "${typeof groupSortConfig}". Defaulting to keyAsc.`);
+            sortedGroupKeys.sort((a, b) => String(a).localeCompare(String(b)));
+        }
+    } else {
+        // Default sort if no config provided (e.g., keyAsc)
+        sortedGroupKeys.sort((a, b) => String(a).localeCompare(String(b)));
+    }
+
+    // --- Render into Columns (using sortedGroupKeys) ---
+    const maxGroupsPerColumn = Math.max(1, parseInt(layoutConf?.maxItemsPerGroupInColumn, 10) || 1); // Default to 1 if not specified
+    const largeGroupThreshold = Math.max(0, parseInt(layoutConf?.preventStackingAboveItemCount, 10) || 0); // Default 0 means no threshold
+
     let currentColumnWrapper = null;
     let groupsInCurrentColumn = 0;
-    let currentColumnIsFull = false;
+    let currentColumnIsFull = false; // Flag to force new column
 
     sortedGroupKeys.forEach((groupKey) => {
         const groupData = grouped[groupKey];
-        if (!groupData || groupData.length === 0) return;
+        if (!groupData || groupData.length === 0) return; // Skip empty groups
 
-        const itemCountInGroup = groupData.length;
+        // --- Sort Items Within This Group ---
+        const itemSortConfig = tabConfig.config?.itemSortBy;
+        // Use sortData helper, passing a copy of groupData to avoid modifying original
+        const itemsToRender = sortData([...groupData], itemSortConfig, globalConfig);
+        // --- End Sort Items Within Group ---
+
+        const itemCountInGroup = itemsToRender.length;
+        // Determine if this group forces a new column due to size threshold
         const isLargeGroup = largeGroupThreshold > 0 && itemCountInGroup > largeGroupThreshold;
 
-        if (currentColumnWrapper === null || currentColumnIsFull) {
+        // Determine if a new column wrapper is needed
+        if (currentColumnWrapper === null || currentColumnIsFull || (maxGroupsPerColumn > 1 && isLargeGroup && groupsInCurrentColumn > 0) || (maxGroupsPerColumn > 1 && groupsInCurrentColumn >= maxGroupsPerColumn) ) {
             currentColumnWrapper = document.createElement('div');
             currentColumnWrapper.className = 'kanban-column';
-            // Apply item gap to wrapper
+            // Apply item gap between group blocks within the column wrapper
             if (layoutConf?.itemGap) currentColumnWrapper.style.gap = layoutConf.itemGap;
             targetElement.appendChild(currentColumnWrapper);
-            groupsInCurrentColumn = 0;
-            currentColumnIsFull = false;
+            groupsInCurrentColumn = 0; // Reset count for new column
+            currentColumnIsFull = false; // Reset flag
         }
 
+        // --- Create the group block ---
         const groupBlockDiv = document.createElement('div');
         groupBlockDiv.className = 'kanban-group-block';
         const header = document.createElement('h3');
-        header.textContent = groupKey;
+        header.textContent = `${groupKey} (${itemCountInGroup})`; // Include count in header
         groupBlockDiv.appendChild(header);
 
-        // Add cards (passing tab config and global config)
-        groupData.forEach(row => {
-            groupBlockDiv.appendChild(createInitiativeCard(row, tabConfig.config, globalConfig, 'kanban-card', 'csv-dashboard-icon'));
+        // --- Add cards (using sorted itemsToRender) ---
+        itemsToRender.forEach(row => {
+            // Pass the specific tab's config object (tabConfig.config)
+            // createInitiativeCard is assumed to be available (likely from renderer-shared.js)
+            groupBlockDiv.appendChild(createInitiativeCard(row, tabConfig.config, globalConfig, 'kanban-card'));
         });
 
+        // Append the group block to the current column wrapper
         if (!currentColumnWrapper) {
-             console.error(`renderKanban (Tab "${tabConfig.title}"): Fatal logic error - currentColumnWrapper is null.`);
+             // This shouldn't happen due to the logic above, but safety check
+             console.error(`renderKanban (Tab "${tabConfig.title}"): Fatal logic error - currentColumnWrapper is null before appending group block.`);
              currentColumnWrapper = document.createElement('div'); currentColumnWrapper.className = 'kanban-column'; targetElement.appendChild(currentColumnWrapper); // Fallback
         }
         currentColumnWrapper.appendChild(groupBlockDiv);
         groupsInCurrentColumn++;
 
-        if (isLargeGroup || groupsInCurrentColumn >= maxGroupsPerColumn) {
+        // Check if the current column should now be considered full
+        if (isLargeGroup || (maxGroupsPerColumn > 1 && groupsInCurrentColumn >= maxGroupsPerColumn)) {
              currentColumnIsFull = true;
         }
     });
 
-    // Hide message placeholder if content rendered
+    // --- Final Message Handling ---
     if (targetElement.querySelector('.kanban-column')) {
-        hideMessages(tabConfig.id);
+        hideMessages(tabConfig.id); // Hide placeholder if columns were rendered
     } else if (!filteredData || filteredData.length === 0) {
-         // Message handled above
+         // Message "No data matches filter" already shown
     } else {
-        showMessage(`Could not render Kanban columns for tab "${tabConfig.title}".`, tabConfig.id);
+        // Data exists, groups exist, but somehow no columns rendered (shouldn't happen with valid config)
+        showMessage(`Could not render Kanban columns for tab "${tabConfig.title}". Check configuration and data.`, tabConfig.id);
     }
 }
 // --- END OF FILE js/renderers/renderer-kanban.js ---

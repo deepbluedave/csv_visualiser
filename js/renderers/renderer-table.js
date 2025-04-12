@@ -44,6 +44,10 @@ function renderTable(filteredData, tabConfig, globalConfig, targetElement, showM
         return;
     }
 
+    // --- *** NEW: Apply Sorting *** ---
+    const sortByConfig = tabConfig.config?.sortBy;
+    const dataToRender = sortData([...filteredData], sortByConfig, globalConfig); // Use helper, sort a copy
+
     const validHeaders = globalConfig.csvHeaders || [];
     const linkColumns = globalConfig.generalSettings?.linkColumns || [];
     const colWidths = tabConfig.config?.columnWidths || {};
@@ -88,7 +92,7 @@ function renderTable(filteredData, tabConfig, globalConfig, targetElement, showM
     }
 
     // --- Render Body ---
-    filteredData.forEach((row, rowIndex) => {
+    dataToRender.forEach((row, rowIndex) => {
         const tr = document.createElement('tr');
         displayCols.forEach(header => {
             if (validHeaders.includes(header)) {

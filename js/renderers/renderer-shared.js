@@ -397,4 +397,71 @@ function isTruthy(value, config) {
     });
 }
 
+/**
+ * Sorts an array of data objects based on multiple criteria defined in sortByConfig.
+ * Handles basic string, numeric comparison and null/undefined values.
+ * @param {object[]} dataArray The array of data objects to sort (will be sorted in place).
+ * @param {object[]} sortByConfig Array of sort criteria, e.g., [{ column: 'ColA', direction: 'asc' }, { column: 'ColB', direction: 'desc' }].
+ * @param {object} globalConfig The global configuration, used to access csvHeaders for validation.
+ * @returns {object[]} The sorted dataArray (same array instance passed in). Returns original array if sortByConfig is invalid.
+ */
+function sortData(dataArray, sortByConfig, globalConfig) {
+    if (!Array.isArray(dataArray) || !Array.isArray(sortByConfig) || sortByConfig.length === 0) {
+        return dataArray; // No sorting needed or possible
+    }
+
+    const validHeaders = globalConfig?.csvHeaders || [];
+
+    // Filter out invalid sort criteria (column doesn't exist)
+    const validSortBy = sortByConfig.filter(criterion => {
+        const isValid = criterion && criterion.column && validHeaders.includes(criterion.column);
+        if (!isValid) {
+            console.warn(`sortData: Invalid or missing sort column "${criterion?.column}". Ignoring criterion.`);
+        }
+        return isValid;
+    });
+
+    if (validSortBy.length === 0) {
+        console.warn("sortData: No valid sort criteria found.");
+        return dataArray; // Return original if no valid criteria
+    }
+
+    // The actual comparison function
+    const comparisonFunction = (a, b) => {
+        for (const criterion of validSortBy) {
+            const { column, direction = 'asc' } = criterion; // Default to ascending
+            const valA = a[column];
+            const valB = b[column];
+
+            // Define order for null/undefined (nulls/undefined last for asc, first for desc)
+            const ascSortOrder = direction.toLowerCase() === 'asc' ? 1 : -1;
+            if (valA == null && valB != null) return ascSortOrder;
+            if (valA != null && valB == null) return -ascSortOrder;
+            if (valA == null && valB == null) continue; // Treat equal if both null/undefined, move to next criterion
+
+            let comparison = 0;
+
+            // Basic type handling (improve with more specific checks if needed, e.g., dates)
+            if (typeof valA === 'number' && typeof valB === 'number') {
+                comparison = valA - valB;
+            } else {
+                // Default to string comparison using localeCompare
+                // This handles numbers-as-strings reasonably well for simple cases
+                comparison = String(valA).localeCompare(String(valB), undefined, { numeric: true, sensitivity: 'base' });
+            }
+
+            // If values are different, return based on direction
+            if (comparison !== 0) {
+                return direction.toLowerCase() === 'desc' ? (comparison * -1) : comparison;
+            }
+            // If values are equal, continue to the next sort criterion
+        }
+        return 0; // All criteria resulted in equality
+    };
+
+    // Sort the array in place
+    dataArray.sort(comparisonFunction);
+    return dataArray;
+}
+
 // --- END OF FILE js/renderers/renderer-shared.js ---

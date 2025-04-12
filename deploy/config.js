@@ -136,7 +136,12 @@ let defaultConfig = {
             "default": "vertical",
             "Entry Name": "horizontal", "Region": "horizontal", "Entry Type": "horizontal",
              "Status": "horizontal", "Tags/Keywords": "horizontal", "Related Entries": "horizontal"
-        }
+        },
+        "sortBy": [                                         // <--- Added
+          { "column": "Draft Date", "direction": "asc" },
+          { "column": "Region", "direction": "asc" },
+          { "column": "Status", "direction": "desc" }
+       ]        
       }
     },
 
@@ -158,6 +163,12 @@ let defaultConfig = {
             "Art Needed" // Icon
         ],
         "cardLinkColumn": "Wiki Link",
+        //"groupSortBy": ["Region", "In Progress", "Blocked", "Needs Review", "Complete"], // <--- Added (Fixed order)
+        "groupSortBy": "countDesc" , // Example: Show busiest columns first
+        "itemSortBy": [                                      // <--- Added
+            { "column": "Complexity/Size", "direction": "desc" },
+            { "column": "DueDate", "direction": "asc" }
+        ],        
         "layout": {
             "minColumnWidth": "500px", // Base column width
             "columnGap": "15px",       // Space between columns
@@ -165,6 +176,41 @@ let defaultConfig = {
             // --- Stacking Controls ---
             "maxItemsPerGroupInColumn": 3, // Allow up to 3 status groups vertically per column area
             "preventStackingAboveItemCount": 8 // If any status has > 8 entries, give it its own column area
+        }
+      }
+    },
+   
+    // --- Tab 2: Kanban by Writing Status ---
+    {
+      "id": "kanban-size-complexity",
+      "title": "📝 Size",
+      "type": "kanban",
+      "enabled": true,
+      "filter": { "logic": "AND", "conditions": [{"column": "Status", "filterType": "valueIsNot", "filterValue": "Finalized"}] }, // Hide finalized?
+      "config": {
+        "groupByColumn": "Complexity/Size",
+        "cardTitleColumn": "Entry Name",
+        "cardIndicatorColumns": [
+            "Entry Type",
+            "Region",
+            "Primary Author",
+            "Complexity/Size",
+            "Art Needed" // Icon
+        ],
+        "cardLinkColumn": "Wiki Link",
+        "groupSortBy": ["XL", "L", "M", "S"], // <--- Added (Fixed order)
+        //"groupSortBy": "countDesc" , // Example: Show busiest columns first
+        "itemSortBy": [                                      // <--- Added
+            { "column": "Complexity/Size", "direction": "desc" },
+            { "column": "DueDate", "direction": "asc" }
+        ],        
+        "layout": {
+            "minColumnWidth": "500px", // Base column width
+            "columnGap": "15px",       // Space between columns
+            "itemGap": "15px",         // Space between group blocks *within* a stacked column
+            // --- Stacking Controls ---
+            "maxItemsPerGroupInColumn": 2, // Allow up to 3 status groups vertically per column area
+            "preventStackingAboveItemCount": 5 // If any status has > 8 entries, give it its own column area
         }
       }
     },
