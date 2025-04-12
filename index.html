@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="css/view-kanban.css">
     <link rel="stylesheet" href="css/view-summary.css">
     <link rel="stylesheet" href="css/view-counts.css">
+    <link rel="stylesheet" href="css/view-graph.css">
 </head>
 <body>
     <!-- Title remains outside the wrapper -->
@@ -51,6 +52,16 @@
     <script src="js/renderers/renderer-kanban.js"></script>
     <script src="js/renderers/renderer-summary.js"></script>
     <script src="js/renderers/renderer-counts.js"></script>
+
+   <!-- *** NEW: Add Vis.js Network library *** -->
+   <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+   <link href="https://unpkg.com/vis-network/styles/vis-network.min.css" rel="stylesheet" type="text/css" />
+   <!-- *** END NEW *** -->
+
+   <!-- *** NEW: Add Graph Renderer Script *** -->
+   <script src="js/renderers/renderer-graph.js"></script>
+   <!-- *** END NEW *** -->
+
     <script src="js/app.js"></script>
 
 </body>

@@ -159,7 +159,9 @@ if (-not $bodyMatch.Success) {
 Write-Host "Cleaning extracted body content (removing original script/link tags)..."
 $cleanedBodyContent = $rawBodyContent -replace '(?i)\s*<link\s+rel="stylesheet"\s+href="css/[^"]+\.css".*?>\s*', "`n"
 $cleanedBodyContent = $cleanedBodyContent -replace ('(?i)\s*<script\s+src="js/[^"]+\.js".*?</script>\s*', "`n")
-$cleanedBodyContent = $cleanedBodyContent -replace ('(?i)\s*<script\s+src="' + [regex]::Escape($ConfigFileName) + '".*?</script>\s*', "`n")
+# More robust pattern to find the config script tag, accounting for minor variations
+$configScriptPattern = '(?i)\s*<script[^>]+src\s*=\s*"' + [regex]::Escape($ConfigFileName) + '"[^>]*>.*?</script>\s*'
+$cleanedBodyContent = $cleanedBodyContent -replace $configScriptPattern, "`n"
 $cleanedBodyContent = $cleanedBodyContent.Trim()
 Write-Host "  Cleaning complete."
 

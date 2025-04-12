@@ -165,40 +165,56 @@
     flex-wrap: wrap;
     gap: 4px; /* Gap between tab buttons */
 }
+
 #cdg-dashboard-wrapper .tab-button { /* Style buttons based on class added by JS */
     padding: 9px 14px;
     cursor: pointer;
     border: 1px solid #ccc;
-    background-color: #f0f0f0;
+    /* --- Use CSS variables with fallbacks --- */
+    background-color: var(--cdg-tab-bg-color, #f0f0f0); /* Use custom BG or default grey */
+    color: var(--cdg-tab-text-color, #555);             /* Use custom Text or default grey */
+    /* --- END --- */
     border-radius: 5px 5px 0 0;
     border-bottom: none;
     position: relative;
     bottom: -1px;
     font-size: 0.95em;
-    color: #555;
-    transition: background-color 0.2s ease, color 0.2s ease;
+    transition: background-color 0.2s ease, color 0.2s ease, filter 0.2s ease, border-color 0.2s ease; /* Added border-color transition */
     white-space: nowrap; /* Prevent button text wrapping */
-}
-#cdg-dashboard-wrapper .tab-button:hover {
-     background-color: #e5e5e5;
-     color: #333;
-}
-#cdg-dashboard-wrapper .tab-button.active { /* Style active button based on class added by JS */
-    background-color: var(--color-container-bg);
-    border-color: #ccc;
-    border-bottom: 1px solid var(--color-container-bg);
-    font-weight: 600;
-    color: var(--color-text-dark);
-    z-index: 1;
+    filter: brightness(100%); /* Start at normal brightness */
 }
 
-/* --- Dynamic View Content Area --- */
-#cdg-dashboard-wrapper .cdg-view-content-area { /* Use class from HTML */
-    flex-grow: 1; /* Take remaining vertical space within the wrapper */
-    position: relative;
-    overflow: hidden; /* Prevent containers from overflowing this area */
-    display: flex; /* Use flex to manage the single active container */
-    flex-direction: column;
+/* --- Hover state for NON-ACTIVE tabs --- */
+#cdg-dashboard-wrapper .tab-button:not(.active):hover {
+     /* Slightly darken the background (custom or default) on hover using filter */
+     filter: brightness(95%);
+     /* Optional: Define specific hover text color if needed */
+     /* color: var(--cdg-tab-text-color-hover, #333); */
+     border-color: #bbb; /* Slightly darken border on hover */
+}
+
+/* --- MODIFIED: Active state --- */
+#cdg-dashboard-wrapper .tab-button.active {
+    /* --- REMOVED explicit background-color and color overrides --- */
+    /* background-color: var(--color-container-bg); */ /* REMOVED */
+    /* color: var(--color-text-dark); */              /* REMOVED */
+
+    /* Keep border connected to content area */
+    border-color: #ccc; /* Match tab controls border */
+    /* Make bottom border match the view container background visually 'connecting' them */
+    /* We need to ensure the container background is white for this to work well */
+    border-bottom: 1px solid var(--color-container-bg, #fff); /* Use variable */
+
+    /* Keep these for active state indication */
+    font-weight: 600;
+    z-index: 1;
+
+    /* --- Optionally enhance active state visibility --- */
+    /* Option 1: Slightly brighten the active tab */
+    filter: brightness(105%);
+    /* Option 2: Add a subtle inner shadow or stronger border */
+    /* box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.08); */
+    /* border-top: 2px solid var(--cdg-tab-text-color, #555); */ /* Example using text color */
 }
 
 /* Style for each dynamically generated view container */

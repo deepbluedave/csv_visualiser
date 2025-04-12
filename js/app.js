@@ -206,6 +206,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     case 'counts':
                         renderCountsView(filteredData, tabConfig, currentConfig, targetElement, showMessage);
                         break;
+                    // *** NEW CASE ***
+                    case 'graph':
+                        renderGraph(filteredData, tabConfig, currentConfig, targetElement, showMessage);
+                        break;
+                    // *** END NEW CASE ***                        
                     default:
                         console.warn(`renderAllTabs: Unknown tab type "${tabConfig.type}" for tab "${tabConfig.title}".`);
                         showMessage(`Unknown view type configured: "${tabConfig.type}"`, tabConfig.id);

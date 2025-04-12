@@ -117,6 +117,8 @@ let defaultConfig = {
       "type": "table",
       "enabled": true,
       "filter": null,
+      "bgColor": "#d1e7dd", // <--- ADDED: Optional background color for the tab button
+      "textColor": "#0f5132", // <--- ADDED: Optional text color for the tab button      
       "config": {
         "displayColumns": [
           "Entry Name", "Region", "Entry Type", "Status", "Primary Author",

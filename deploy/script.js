@@ -756,10 +756,9 @@ let appState = { parsedData: [], currentConfig: {}, activeTabId: null }; // Defa
 
 /**
  * Generates tab buttons and view content containers based on config.
- * (Moved here from app.js for better organization)
  * @param {Array} tabsConfig Array of tab configuration objects from global config.
  */
- function generateTabsAndContainers(tabsConfig = []) {
+function generateTabsAndContainers(tabsConfig = []) {
     const { tabControls, viewContentContainer } = domElements;
     if (!tabControls || !viewContentContainer) {
         console.error("generateTabsAndContainers: Tab controls or view content container not found.");
@@ -777,16 +776,27 @@ let appState = { parsedData: [], currentConfig: {}, activeTabId: null }; // Defa
         button.className = 'tab-button';
         button.setAttribute('data-tab-id', tab.id);
         button.textContent = tab.title || tab.id;
+
+        // --- *** NEW: Apply custom colors using CSS variables *** ---
+        if (tab.bgColor) {
+            // Set CSS variable for background color on the button element itself
+            button.style.setProperty('--cdg-tab-bg-color', tab.bgColor);
+        }
+        if (tab.textColor) {
+            // Set CSS variable for text color on the button element itself
+            button.style.setProperty('--cdg-tab-text-color', tab.textColor);
+        }
+        // --- *** END NEW *** ---
+
         tabControls.appendChild(button);
 
-        // Create View Content Container
+        // Create View Content Container (rest of the function remains the same)
         const container = document.createElement('div');
         container.id = `tab-content-${tab.id}`;
         container.className = 'view-container';
         container.setAttribute('data-view-type', tab.type);
         container.style.display = 'none'; // Hide initially
 
-        // Add a placeholder message div inside each container
         const placeholder = document.createElement('div');
         placeholder.className = 'message-placeholder';
         placeholder.textContent = 'Initializing...';
