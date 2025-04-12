@@ -271,10 +271,26 @@ let defaultConfig = {
       // Optional: Color primary nodes based on their Unit
       "nodeColorColumn": "Complexity/Size", // Column for color coding primary nodes
       // Optional: Distinct style for category nodes
+
+      /*
+      ellipse: (Usually the default) An oval shape.
+      circle: A perfect circle.
+      database: Represents a cylinder, often used for databases.
+      box: A rectangle.
+      text: A rectangle that sizes itself to fit the label text (no explicit shape outline unless borders are styled).
+      diamond: A diamond shape (rotated square).
+      dot: A small circle, typically with a fixed size (can be scaled with the size option).
+      star: A five-pointed star.
+      triangle: An upward-pointing triangle.
+      triangleDown: A downward-pointing triangle.
+      hexagon: A six-sided polygon.
+      square: A square shape.
+      */
+
       "categoryNodeStyle": {
-          "shape": "box", // Make categories visually distinct
+          "shape": "dot", // Make categories visually distinct
           "color": { "background": "#f0f0f0", "border": "#cccccc" },
-          "font": { "color": "#555555", "size": 11 }
+          "font": { "color": "#555555", "size": 8 }
       },
       // Optional: Columns to show in the tooltip of primary nodes
       "nodeTooltipColumns": ["Primary Author", "Complexity/Size", "Tags/Keywords", "Related Entries"],
@@ -287,7 +303,7 @@ let defaultConfig = {
       // --- Layout & Appearance (Vis.js options mapped here) ---
       "layoutEngine": "forceDirected", // 'forceDirected' (default), 'hierarchical', etc.
       "physicsEnabled": true,          // Let the graph settle
-      "nodeShape": "circle"           // Default shape for primary nodes
+      "nodeShape": "dot"          // Default shape for primary nodes
     }
   }
   ]

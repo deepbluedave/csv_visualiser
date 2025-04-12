@@ -232,8 +232,14 @@ function renderGraph(filteredData, tabConfig, globalConfig, targetElement, showM
                      springConstant: 0.08,
                      damping: 0.4
                  },
-                 stabilization: { iterations: 150 }
-                 // Adjust physics settings as needed
+                 stabilization: { 
+                    enabled: true,
+                    iterations: 1000, // Or adjust as needed
+                    updateInterval: 50,
+                    onlyDynamicEdges: false,
+                    fit: false // <-- IMPORTANT: Set Vis.js internal fit during stabilization to false, we'll do it manually after                }
+                    // Adjust physics settings as needed
+                 }
             },
             nodes: {
                  // Default node styles (can be overridden by individual node colors/shapes)
@@ -245,7 +251,7 @@ function renderGraph(filteredData, tabConfig, globalConfig, targetElement, showM
                  // Default edge styles
                  // width: 0.5,
                  // color: { inherit: 'from' },
-                 smooth: { type: 'continuous' } // Or dynamic
+                 smooth: { type: 'dynamic' } // Or dynamic
             },
             interaction: {
                  tooltipDelay: 200,
@@ -257,6 +263,7 @@ function renderGraph(filteredData, tabConfig, globalConfig, targetElement, showM
         if(graphConf.layoutEngine === 'hierarchical') {
              options.layout.hierarchical = { enabled: true, sortMethod: 'directed', direction: 'UD' }; // Example hierarchical settings
              options.physics.enabled = false; // Often disable physics with hierarchical
+             options.layout.hierarchical.levelSeparation = 250; // Adjust as needed
         } else {
              // Default to force-directed implied by physics settings
         }
@@ -272,7 +279,9 @@ function renderGraph(filteredData, tabConfig, globalConfig, targetElement, showM
         network.once("stabilizationIterationsDone", function() {
             // Optional: Actions after layout stabilization
              console.log(`Graph layout stabilized for tab: ${tabConfig.id}`);
-             network.fit(); // Fit network to view after stabilization
+             network.fit({
+                animation: false 
+            }); // Fit network to view after stabilization
         });
 
          network.on("showPopup", function (params) {
