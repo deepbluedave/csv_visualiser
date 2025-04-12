@@ -751,3 +751,27 @@
     padding: 10px 0;
 }
 /* --- END OF FILE css/view-counts.css --- */
+/* --- START OF FILE css/view-graph.css --- */
+
+/* Ensure the container for the graph has a defined height */
+#cdg-dashboard-wrapper .view-container[data-view-type="graph"] {
+    height: 600px; /* Or use vh units, or ensure parent has height */
+    min-height: 400px;
+    position: relative; /* Needed for Vis.js elements */
+    background-color: #ffffff; /* Ensure a background */
+    overflow: hidden; /* Vis handles internal scrolling/panning */
+}
+
+/* Optional: Style Vis.js tooltips if needed */
+div.vis-tooltip {
+    /* Example: */
+    background-color: rgba(0, 0, 0, 0.75) !important;
+    color: white !important;
+    padding: 5px 8px !important;
+    border-radius: 3px !important;
+    font-size: 0.9em !important;
+    max-width: 300px; /* Limit width */
+    white-space: normal !important; /* Allow wrapping */
+}
+
+/* --- END OF FILE css/view-graph.css --- */
