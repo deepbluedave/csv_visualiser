@@ -1,19 +1,25 @@
 // --- START OF FILE js/view-manager.js ---
 
-// No direct imports needed for core logic, relies on appState and DOM access
-
-// Keep track of fetched DOM elements passed from app.js
-let domElements = {}; // Initial elements like controls, containers
+// Keep track of fetched DOM elements and shared state/functions
+let domElements = {};
 let appState = { parsedData: [], currentConfig: {}, activeTabId: null }; // Default structure
+let searchHandler = null; // Variable to store the search function reference
 
 /**
- * Initializes the View Manager with necessary DOM elements and state reference.
- * @param {object} elements Object containing references to key DOM elements (global/static ones).
- * @param {object} state Object containing references to shared state (parsedData, currentConfig, activeTabId).
+ * Initializes the View Manager with necessary DOM elements, state reference,
+ * and a reference to the global search handler function.
+ * @param {object} elements Object containing references to key DOM elements.
+ * @param {object} state Object containing references to shared state.
+ * @param {Function} searchHandlerFunction Reference to the handleGlobalSearch function from app.js.
  */
- function initViewManager(elements, state) {
+ function initViewManager(elements, state, searchHandlerFunction) {
     domElements = elements;
     appState = state; // Get reference to shared state object
+    searchHandler = searchHandlerFunction; // Store the function reference
+    if (typeof searchHandler !== 'function') {
+        console.warn("initViewManager: Provided searchHandlerFunction is not a function.");
+        searchHandler = null; // Ensure it's null if invalid
+    }
 }
 
 /**
@@ -39,20 +45,17 @@ function generateTabsAndContainers(tabsConfig = []) {
         button.setAttribute('data-tab-id', tab.id);
         button.textContent = tab.title || tab.id;
 
-        // --- *** NEW: Apply custom colors using CSS variables *** ---
+        // Apply custom colors using CSS variables
         if (tab.bgColor) {
-            // Set CSS variable for background color on the button element itself
             button.style.setProperty('--cdg-tab-bg-color', tab.bgColor);
         }
         if (tab.textColor) {
-            // Set CSS variable for text color on the button element itself
             button.style.setProperty('--cdg-tab-text-color', tab.textColor);
         }
-        // --- *** END NEW *** ---
 
         tabControls.appendChild(button);
 
-        // Create View Content Container (rest of the function remains the same)
+        // Create View Content Container
         const container = document.createElement('div');
         container.id = `tab-content-${tab.id}`;
         container.className = 'view-container';
@@ -70,12 +73,14 @@ function generateTabsAndContainers(tabsConfig = []) {
 
 
 /**
- * Shows the specified tab's content view and hides others. Updates tab button states. Manages content/message visibility.
+ * Shows the specified tab's content view and hides others. Updates tab button states.
+ * Manages content/message visibility and resets global search.
  * @param {string} tabId The ID of the tab to show (e.g., 'all-tasks-table').
  */
  function showView(tabId) {
-    const { tabControls, viewContentContainer } = domElements; // Get main containers
-    console.log(`showView attempting to activate tabId: ${tabId}`); // <<< Add Log 1
+    // Now includes globalSearchInput from domElements passed in initViewManager
+    const { tabControls, viewContentContainer, globalSearchInput } = domElements;
+    console.log(`showView attempting to activate tabId: ${tabId}`);
     appState.activeTabId = tabId; // Update shared state tracker
 
     if (!viewContentContainer || !tabControls) {
@@ -97,33 +102,37 @@ function generateTabsAndContainers(tabsConfig = []) {
     // Access config through shared state
     const tabConfig = appState.currentConfig.tabs?.find(t => t.id === tabId);
 
-    // <<< Add Log 2 & 3 >>>
-    console.log(`showView - Found container for ${tabId}:`, activeContainer);
-    console.log(`showView - Found config for ${tabId}:`, tabConfig ? 'Yes' : 'No', tabConfig);
+    // Debugging logs
+    // console.log(`showView - Found container for ${tabId}:`, activeContainer);
+    // console.log(`showView - Found config for ${tabId}:`, tabConfig ? 'Yes' : 'No', tabConfig);
 
     if (activeContainer && tabConfig) {
-        // If container and config are found, DO activate the view
-        console.log(`showView - Entering IF block for tabId: ${tabId}`); // Keep for verification
+        // console.log(`showView - Entering IF block for tabId: ${tabId}`); // Keep for debugging if needed
 
         activeContainer.classList.add('active');
-        let displayType = 'block';
-        if (tabConfig.type === 'kanban' || tabConfig.type === 'counts') displayType = 'grid';
-        else if (tabConfig.type === 'summary') displayType = 'flex';
+        // Set display type based on view TYPE (matches CSS)
+        let displayType = 'block'; // Default
+        if (tabConfig.type === 'kanban' || tabConfig.type === 'counts') {
+            displayType = 'grid';
+        } else if (tabConfig.type === 'summary') {
+            displayType = 'flex'; // Summary container is flex column
+        } else if (tabConfig.type === 'graph') {
+            displayType = 'block'; // Graph container is typically block
+        }
         activeContainer.style.display = displayType;
 
-        // --- Reset search state INSIDE the successful activation block ---
-        if (typeof handleGlobalSearch === 'function') {
-             if(domElements.globalSearchInput) {
+        // --- Reset search state using the stored function reference ---
+        if (searchHandler) {
+             if(domElements.globalSearchInput) { // Check if element exists in shared domElements
                  domElements.globalSearchInput.value = '';
              }
-            handleGlobalSearch('');
+            searchHandler(''); // Trigger search with empty term to show all in the new view
         } else {
-            // Log if search reset fails, but don't stop view activation
-            console.warn("showView: handleGlobalSearch function not found. Cannot reset search.");
+            console.warn("showView: searchHandler function reference is missing. Cannot reset search.");
         }
         // --- End search reset ---
 
-        console.log(`showView successfully activated tab: ${tabId}`);
+        // console.log(`showView successfully activated tab: ${tabId}`); // Keep for debugging if needed
 
     } else {
         // If container OR config was NOT found, THEN show warning and fallback
@@ -131,9 +140,9 @@ function generateTabsAndContainers(tabsConfig = []) {
         const firstEnabledTab = appState.currentConfig.tabs?.find(t => t.enabled !== false);
         if (firstEnabledTab && firstEnabledTab.id !== tabId) {
             console.log(`Falling back to first enabled tab: ${firstEnabledTab.id}`);
-            showView(firstEnabledTab.id);
+            showView(firstEnabledTab.id); // Recursive call with fallback
         } else {
-             showMessage(`View '${tabId}' not found or is disabled.`, null);
+             showMessage(`View '${tabId}' not found or is disabled.`, null); // Show generic message
         }
         return; // Exit early as the intended view wasn't shown
     }
@@ -194,6 +203,7 @@ function generateTabsAndContainers(tabsConfig = []) {
         } else if (placeholder && keepPlaceholders) {
             // Ensure placeholder is visible if kept
             placeholder.classList.add('visible');
+            placeholder.textContent = 'Upload CSV File or Fetching Data...'; // Set appropriate message
         }
     });
 
@@ -210,6 +220,7 @@ function generateTabsAndContainers(tabsConfig = []) {
  function setMessagePlaceholder(tabId, message = "Upload CSV File", makeVisible = true) {
     const container = document.getElementById(`tab-content-${tabId}`);
     if (!container) {
+        // console.warn(`setMessagePlaceholder: Container for tab ${tabId} not found.`); // Can be noisy during init
         return;
     }
     let placeholder = container.querySelector('.message-placeholder');
@@ -233,12 +244,13 @@ function generateTabsAndContainers(tabsConfig = []) {
   function showMessageOnLoad(tabId = null, message = "Upload CSV File") {
     const targetTabId = tabId ?? appState.activeTabId;
     if (!targetTabId) {
+         // console.warn("showMessageOnLoad: Cannot show message - no targetTabId available.");
          return;
     }
 
     // Ensure ONLY the target tab's message is visible initially
     appState.currentConfig.tabs?.forEach(tab => {
-        if(tab.id !== targetTabId) {
+        if (tab.enabled !== false && tab.id !== targetTabId) {
             setMessagePlaceholder(tab.id, '', false); // Hide message in other tabs
         }
     });
@@ -340,7 +352,7 @@ function generateTabsAndContainers(tabsConfig = []) {
     // Add Link Icon Entry (Global)
     const linkColumns = config.generalSettings?.linkColumns || [];
     if (linkColumns.length > 0) {
-        const linkKeyEntry = { icon: '🔗', title: 'Link to URL', cssClass: 'icon-key-link' };
+        const linkKeyEntry = { icon: '🔗', title: 'Link to URL', cssClass: 'icon-key-link' }; // Changed to actual emoji
         const key = `${linkKeyEntry.icon}|${linkKeyEntry.title}`;
         if (!processedKeys.has(key)) {
             iconEntries.push(linkKeyEntry);
@@ -358,7 +370,7 @@ function generateTabsAndContainers(tabsConfig = []) {
         });
         keyHTML += '</ul>';
         iconKeyContainer.innerHTML = keyHTML;
-        iconKeyContainer.style.display = '';
+        iconKeyContainer.style.display = 'block'; // Use block or flex depending on desired layout
     } else {
         iconKeyContainer.innerHTML = '';
         iconKeyContainer.style.display = 'none';
