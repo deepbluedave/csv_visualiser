@@ -24,6 +24,12 @@
         <div id="cdg-uploadContainer">
             <label for="cdg-csvFileInput">Upload CSV Data File:</label>
             <input type="file" id="cdg-csvFileInput" accept=".csv">
+
+            <!-- *** NEW SEARCH INPUT START *** -->
+            <label for="cdg-globalSearchInput" class="visually-hidden">Search:</label> <!-- Hidden label for accessibility -->
+            <input type="search" id="cdg-globalSearchInput" placeholder="Search visible items..." style="margin-left: auto; min-width: 250px; padding: 4px 8px;">
+            <!-- *** NEW SEARCH INPUT END *** -->
+
             <div id="cdg-iconKeyContainer">
                 <!-- Key rendered here -->
             </div>
@@ -35,11 +41,13 @@
         </div>
 
         <!-- Dynamic View Content Area -->
-        <div id="cdg-viewContentContainer" class="cdg-view-content-area"> 
+        <div id="cdg-viewContentContainer" class="cdg-view-content-area">
             <!-- View containers added -->
         </div>
 
-    </div> <!-- END: Dashboard Wrapper Div -->
+    </div>
+    
+    <!-- END: Dashboard Wrapper Div -->
 
 
     <!-- Scripts remain outside the wrapper -->

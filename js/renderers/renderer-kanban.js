@@ -4,6 +4,7 @@
  * Renders data into a Kanban view within the specified target element.
  * Uses configuration specific to the tab.
  * Includes sorting for groups and items within groups.
+ * Resolves itemSortBy and cardIndicatorColumns using defaults from generalSettings if not specified in tab config.
  * @param {object[]} filteredData The data rows already filtered for this tab.
  * @param {object} tabConfig The configuration object for this specific kanban tab.
  * @param {object} globalConfig The global application configuration.
@@ -129,11 +130,12 @@ function renderKanban(filteredData, tabConfig, globalConfig, targetElement, show
         const groupData = grouped[groupKey];
         if (!groupData || groupData.length === 0) return; // Skip empty groups
 
-        // --- Sort Items Within This Group ---
-        const itemSortConfig = tabConfig.config?.itemSortBy;
+        // --- *** UPDATED: Resolve itemSortBy using defaults *** ---
+        // Resolve the sort configuration: Use tab-specific if defined, otherwise use global default, else null
+        const itemSortConfig = tabConfig.config?.itemSortBy ?? globalConfig.generalSettings?.defaultItemSortBy ?? null;
         // Use sortData helper, passing a copy of groupData to avoid modifying original
         const itemsToRender = sortData([...groupData], itemSortConfig, globalConfig);
-        // --- End Sort Items Within Group ---
+        // --- *** END UPDATED *** ---
 
         const itemCountInGroup = itemsToRender.length;
         // Determine if this group forces a new column due to size threshold
@@ -159,9 +161,19 @@ function renderKanban(filteredData, tabConfig, globalConfig, targetElement, show
 
         // --- Add cards (using sorted itemsToRender) ---
         itemsToRender.forEach(row => {
-            // Pass the specific tab's config object (tabConfig.config)
-            // createInitiativeCard is assumed to be available (likely from renderer-shared.js)
-            groupBlockDiv.appendChild(createInitiativeCard(row, tabConfig.config, globalConfig, 'kanban-card'));
+            // --- *** UPDATED: Resolve indicators and pass config slice *** ---
+            // Resolve indicators: Use tab-specific if defined, otherwise use global default, else empty array
+            const indicatorsToUse = tabConfig.config?.cardIndicatorColumns ?? globalConfig.generalSettings?.defaultCardIndicatorColumns ?? [];
+
+            // Create a temporary config object slice to pass to createInitiativeCard
+            const cardCreationConfig = {
+                ...tabConfig.config, // Copy other card-related configs (like cardTitleColumn, cardLinkColumn)
+                cardIndicatorColumns: indicatorsToUse // Use the resolved list
+            };
+
+            // Pass the resolved config slice to createInitiativeCard
+            groupBlockDiv.appendChild(createInitiativeCard(row, cardCreationConfig, globalConfig, 'kanban-card'));
+             // --- *** END UPDATED *** ---
         });
 
         // Append the group block to the current column wrapper

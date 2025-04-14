@@ -11,9 +11,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const viewContentContainer = document.getElementById('cdg-viewContentContainer'); // Container for dynamic views
     const mainHeading = document.querySelector('h1');
     const iconKeyContainer = document.getElementById('cdg-iconKeyContainer'); // Keep global icon key
+    const globalSearchInput = document.getElementById('cdg-globalSearchInput');
 
     // Check if essential containers were found
-    if (!fileInput || !tabControls || !viewContentContainer || !mainHeading) {
+    if (!fileInput || !tabControls || !viewContentContainer || !mainHeading || !globalSearchInput) {
         console.error("Essential DOM elements missing (controls/containers). Dashboard cannot initialize.");
         document.body.innerHTML = '<h1 style="color: red; text-align: center; margin-top: 50px;">Critical Error: Required HTML structure is missing. Cannot load dashboard.</h1>';
         return;
@@ -22,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Collect static DOM elements for View Manager
     const domElements = {
         fileInput, uploadContainer, tabControls, viewContentContainer,
-        mainHeading, iconKeyContainer
+        mainHeading, iconKeyContainer , globalSearchInput
     };
 
 
@@ -44,10 +45,21 @@ document.addEventListener('DOMContentLoaded', () => {
     initViewManager(domElements, appState); // Pass static elements & state ref
     initializeDashboard();
 
+    // --- Debounce Timer ---
+    let searchDebounceTimer;
+
     // --- Event Listeners ---
     if (fileInput) fileInput.addEventListener('change', handleFileSelectEvent);
     if (tabControls) tabControls.addEventListener('click', handleTabClick);
 
+    if (globalSearchInput) {
+        globalSearchInput.addEventListener('input', () => {
+            clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = setTimeout(() => {
+                handleGlobalSearch(globalSearchInput.value);
+            }, 300); // 300ms debounce delay
+        });
+   }
 
     // --- Core Application Functions ---
 
@@ -258,12 +270,116 @@ document.addEventListener('DOMContentLoaded', () => {
              if (tabId && tabId !== appState.activeTabId) {
                  console.log(`Switching view to tab: ${tabId}`);
                  // appState.activeTabId = tabId; // Let showView update the state
+
+                 if (globalSearchInput) {
+                    globalSearchInput.value = ''; // Clear the input field
+                 }
+
                  showView(tabId); // Show the new view (updates activeTabId internally)
                  // Optionally re-apply styles if they depend heavily on active state
                  // applyConfigStyles(currentConfig);
              }
          }
      }
+
+    // *** NEW: Search Handler Function ***
+    /**
+     * Filters the currently visible elements based on the search term.
+     * @param {string} searchTerm The text to search for.
+     */
+    function handleGlobalSearch(searchTerm) {
+        const term = searchTerm.trim().toLowerCase();
+        console.log(`Performing search for: "${term}" on tab: ${appState.activeTabId}`);
+
+        if (!appState.activeTabId) return; // Should not happen if initialized correctly
+
+        const activeContainer = document.getElementById(`tab-content-${appState.activeTabId}`);
+        if (!activeContainer) return;
+
+        const tabConfig = appState.currentConfig.tabs?.find(t => t.id === appState.activeTabId);
+        if (!tabConfig) return;
+
+        const searchableTypes = ['table', 'kanban', 'summary'];
+        if (!searchableTypes.includes(tabConfig.type)) {
+            console.log(`Search skipped: Tab type "${tabConfig.type}" is not searchable.`);
+            // Optionally disable the search input visually here
+            return;
+        }
+
+        let targetElementsSelector;
+        switch (tabConfig.type) {
+            case 'table':
+                targetElementsSelector = 'tbody tr'; // Keep targeting table rows
+                break;
+            case 'kanban':
+                targetElementsSelector = '.kanban-group-block'; // Target the whole group block
+                break;
+            case 'summary':
+                // Target the group block *within* the summary section grid/list
+                // Note: This assumes renderGroupedItemsAsGrid was used.
+                // If no grouping is used in summary, this might need adjustment,
+                // but typically summary benefits from grouping.
+                targetElementsSelector = '.summary-group-block';
+                break;
+            default:
+                return;
+        }
+
+        const elementsToSearch = activeContainer.querySelectorAll(targetElementsSelector);
+        let visibleCount = 0;
+
+        let searchRegex = null;
+        let isPlainTextSearch = false;
+
+        // Don't try regex for empty strings
+        if (term !== '') {
+            try {
+                // Create a case-insensitive regex
+                searchRegex = new RegExp(term, 'i');
+                console.log("Search mode: Regex");
+            } catch (e) {
+                // Invalid Regex syntax - fall back to plain text search
+                console.warn(`Invalid regex pattern "${term}". Falling back to plain text search. Error: ${e.message}`);
+                isPlainTextSearch = true;
+                // Lowercase the term *now* for plain text search
+                const termLower = term.toLowerCase();
+                console.log("Search mode: Plain Text (due to invalid regex)");
+            }
+        } else {
+        // Empty search term means plain text mode (show all)
+            isPlainTextSearch = true;
+                console.log("Search mode: Plain Text (empty term)");
+        }
+
+        elementsToSearch.forEach(element => {
+            const elementText = element.textContent || ''; // No need to lowercase text content for regex 'i' flag
+            let isMatch = false;
+
+            // --- *** UPDATED: Matching Logic *** ---
+            if (term === '') {
+                // Empty search always matches (shows all)
+                isMatch = true;
+            } else if (searchRegex && !isPlainTextSearch) {
+                // Valid regex exists, use it
+                isMatch = searchRegex.test(elementText);
+            } else {
+                // Plain text search (either fallback or empty term)
+                 // Lowercase element text only for plain text search
+                isMatch = elementText.toLowerCase().includes(term.toLowerCase());
+            }
+             // --- *** END UPDATED *** ---
+
+            element.classList.toggle('cdg-search-hidden', !isMatch);
+
+            if (isMatch) {
+                visibleCount++;
+            }
+        });
+
+        console.log(`Search complete. ${visibleCount} groups/rows visible.`);
+        // Optional: Update a status message showing search results count
+        // Optional: Add logic here to hide empty Kanban/Summary groups if needed
+    }
 
     // --- UI Update Functions ---
 

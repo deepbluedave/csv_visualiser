@@ -135,32 +135,42 @@ function renderTable(filteredData, tabConfig, globalConfig, targetElement, showM
                     const isValueFalsey = !isTruthy(value, globalConfig); // Use helper from shared
 
                     let applyRawValueFallback = true; // Assume we show raw value if indicator is empty
+                    let indicatorsPresent = Array.isArray(cellHTML) && cellHTML.length > 0;
 
                     // Disable fallback ONLY if it's an icon column, the value is falsey,
-                    // AND the indicator logic correctly returned an empty string.
-                    if (isIconColumn && isValueFalsey && !cellHTML?.trim()) {
+                    // AND the indicator logic correctly returned an empty array.
+                    if (isIconColumn && isValueFalsey && !indicatorsPresent) {
                         applyRawValueFallback = false;
                     }
                     // --- End Fallback Check ---
 
 
                     // Apply display logic based on fallback flag and indicator content
-                    if (applyRawValueFallback && !cellHTML?.trim() && cellTitle !== '') {
-                        // Fallback allowed, indicator is empty, and raw value is not empty
+                    if (applyRawValueFallback && !indicatorsPresent && cellTitle !== '') {
+                        // Fallback allowed, indicator array is empty, and raw value is not empty
+                        // Prepare cellHTML as a string for direct display
                         cellHTML = `<span class="cell-text">${cellTitle}</span>`;
                         // Align based on header orientation
                         const headerOrientation = headerOrientations[header] || headerOrientations['default'] || 'vertical';
                         cellTextAlign = headerOrientation === 'horizontal' ? 'left' : 'center';
-                    } else if (cellHTML?.trim()) {
-                         // Indicator HTML *is* present (icon, tag, or stacked tags)
-                         // Determine title and alignment based on the indicator
-                         const tempDiv = document.createElement('div'); tempDiv.innerHTML = cellHTML;
-                         // Use title from indicator if present, fallback to raw value, then header
+                    } else if (indicatorsPresent) {
+                         // Indicator HTML array *is* present
+                         // *** JOIN the array into a single string for table cell display ***
+                         // A simple space join is usually appropriate for table cells.
+                         const joinedIndicators = cellHTML.join(' ');
+
+                         // Determine title and alignment based on the first indicator
+                         const tempDiv = document.createElement('div'); tempDiv.innerHTML = joinedIndicators;
                          cellTitle = tempDiv.firstChild?.title || cellTitle || header;
                          cellTextAlign = 'center'; // Usually center indicators/tags
-                    } else {
+
+                         // Update cellHTML to the joined string
+                         cellHTML = joinedIndicators;
+                    } else 
+                    {
                         // This case means indicator is empty AND fallback is disabled (or cellTitle was empty)
-                        // Leave cellHTML as "" (empty cell)
+                        // Ensure cellHTML is an empty string for td.innerHTML
+                        cellHTML = '';
                         cellTitle = cellTitle || header; // Set title attribute anyway for empty cell
                     }
                 }

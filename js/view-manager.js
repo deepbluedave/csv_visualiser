@@ -75,6 +75,7 @@ function generateTabsAndContainers(tabsConfig = []) {
  */
  function showView(tabId) {
     const { tabControls, viewContentContainer } = domElements; // Get main containers
+    console.log(`showView attempting to activate tabId: ${tabId}`); // <<< Add Log 1
     appState.activeTabId = tabId; // Update shared state tracker
 
     if (!viewContentContainer || !tabControls) {
@@ -96,25 +97,43 @@ function generateTabsAndContainers(tabsConfig = []) {
     // Access config through shared state
     const tabConfig = appState.currentConfig.tabs?.find(t => t.id === tabId);
 
+    // <<< Add Log 2 & 3 >>>
+    console.log(`showView - Found container for ${tabId}:`, activeContainer);
+    console.log(`showView - Found config for ${tabId}:`, tabConfig ? 'Yes' : 'No', tabConfig);
+
     if (activeContainer && tabConfig) {
+        // If container and config are found, DO activate the view
+        console.log(`showView - Entering IF block for tabId: ${tabId}`); // Keep for verification
+
         activeContainer.classList.add('active');
-        // Set display type based on view TYPE (matches CSS)
-        let displayType = 'block'; // Default
-        if (tabConfig.type === 'kanban' || tabConfig.type === 'counts') {
-            displayType = 'grid';
-        } else if (tabConfig.type === 'summary') {
-            displayType = 'flex'; // Summary container is flex column
-        }
+        let displayType = 'block';
+        if (tabConfig.type === 'kanban' || tabConfig.type === 'counts') displayType = 'grid';
+        else if (tabConfig.type === 'summary') displayType = 'flex';
         activeContainer.style.display = displayType;
+
+        // --- Reset search state INSIDE the successful activation block ---
+        if (typeof handleGlobalSearch === 'function') {
+             if(domElements.globalSearchInput) {
+                 domElements.globalSearchInput.value = '';
+             }
+            handleGlobalSearch('');
+        } else {
+            // Log if search reset fails, but don't stop view activation
+            console.warn("showView: handleGlobalSearch function not found. Cannot reset search.");
+        }
+        // --- End search reset ---
+
+        console.log(`showView successfully activated tab: ${tabId}`);
+
     } else {
+        // If container OR config was NOT found, THEN show warning and fallback
         console.warn(`showView: Container or config for tabId '${tabId}' not found.`);
-        // Fallback: Try showing the first available enabled tab
         const firstEnabledTab = appState.currentConfig.tabs?.find(t => t.enabled !== false);
         if (firstEnabledTab && firstEnabledTab.id !== tabId) {
             console.log(`Falling back to first enabled tab: ${firstEnabledTab.id}`);
-            showView(firstEnabledTab.id); // Recursive call with fallback
+            showView(firstEnabledTab.id);
         } else {
-             showMessage(`View '${tabId}' not found or is disabled.`, null); // Show generic message
+             showMessage(`View '${tabId}' not found or is disabled.`, null);
         }
         return; // Exit early as the intended view wasn't shown
     }
