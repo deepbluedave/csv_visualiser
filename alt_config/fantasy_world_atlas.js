@@ -136,7 +136,12 @@ let defaultConfig = {
             "default": "vertical",
             "Entry Name": "horizontal", "Region": "horizontal", "Entry Type": "horizontal",
              "Status": "horizontal", "Tags/Keywords": "horizontal", "Related Entries": "horizontal"
-        }
+        },
+        "sortBy": [                                         // <--- Added
+          { "column": "Draft Date", "direction": "asc" },
+          { "column": "Region", "direction": "asc" },
+          { "column": "Status", "direction": "desc" }
+       ]        
       }
     },
 
@@ -158,6 +163,16 @@ let defaultConfig = {
             "Art Needed" // Icon
         ],
         "cardLinkColumn": "Wiki Link",
+        //"groupSortBy": ["Region", "In Progress", "Blocked", "Needs Review", "Complete"], // <--- Added (Fixed order)
+        "groupSortBy": "countDesc" , // Example: Show busiest columns first
+        "itemSortBy": [                                      // <--- Added
+          {
+            "column": "Complexity/Size", // Sort by complexity/size
+            "direction": "custom", // New direction type
+            "order": ["XL", "L", "M", "S", ""] // Define the desired order explicitly
+          },
+          { "column": "DueDate", "direction": "asc" }
+        ],        
         "layout": {
             "minColumnWidth": "500px", // Base column width
             "columnGap": "15px",       // Space between columns
@@ -165,6 +180,41 @@ let defaultConfig = {
             // --- Stacking Controls ---
             "maxItemsPerGroupInColumn": 3, // Allow up to 3 status groups vertically per column area
             "preventStackingAboveItemCount": 8 // If any status has > 8 entries, give it its own column area
+        }
+      }
+    },
+   
+    // --- Tab 2: Kanban by Writing Status ---
+    {
+      "id": "kanban-size-complexity",
+      "title": "📝 Size",
+      "type": "kanban",
+      "enabled": true,
+      "filter": { "logic": "AND", "conditions": [{"column": "Status", "filterType": "valueIsNot", "filterValue": "Finalized"}] }, // Hide finalized?
+      "config": {
+        "groupByColumn": "Complexity/Size",
+        "cardTitleColumn": "Entry Name",
+        "cardIndicatorColumns": [
+            "Entry Type",
+            "Region",
+            "Primary Author",
+            "Complexity/Size",
+            "Art Needed" // Icon
+        ],
+        "cardLinkColumn": "Wiki Link",
+        "groupSortBy": ["XL", "L", "M", "S"], // <--- Added (Fixed order)
+        //"groupSortBy": "countDesc" , // Example: Show busiest columns first
+        "itemSortBy": [                                      // <--- Added
+            { "column": "Complexity/Size", "direction": "desc" },
+            { "column": "DueDate", "direction": "asc" }
+        ],        
+        "layout": {
+            "minColumnWidth": "500px", // Base column width
+            "columnGap": "15px",       // Space between columns
+            "itemGap": "15px",         // Space between group blocks *within* a stacked column
+            // --- Stacking Controls ---
+            "maxItemsPerGroupInColumn": 2, // Allow up to 3 status groups vertically per column area
+            "preventStackingAboveItemCount": 5 // If any status has > 8 entries, give it its own column area
         }
       }
     },
@@ -254,7 +304,58 @@ let defaultConfig = {
                  // Add display icons if desired
             ]
         }
+    },
+    
+   // --- Tab Hub Spoke Graph ---
+   {
+    "id": "aqa-concept-graph",
+    "title": "🕸️ Concept Graph",
+    "type": "graph", // New type
+    "enabled": true,  // <<< FEATURE TOGGLE: Set to false to hide this tab
+    "filter": null,  // Optional: Filter data before graphing (e.g., only Core Content)
+    "config": {
+      // --- Node Configuration ---
+      "primaryNodeIdColumn": "Region",               // Column with unique ID for the main 'things'
+      "primaryNodeLabelColumn": "Region",// Column for the label of the main 'things'
+      "categoryNodeColumns": ["Entry Name", "Entry Type"], // Columns whose values become category nodes
+      // Optional: Color primary nodes based on their Unit
+      "nodeColorColumn": "Complexity/Size", // Column for color coding primary nodes
+      // Optional: Distinct style for category nodes
+
+      /*
+      ellipse: (Usually the default) An oval shape.
+      circle: A perfect circle.
+      database: Represents a cylinder, often used for databases.
+      box: A rectangle.
+      text: A rectangle that sizes itself to fit the label text (no explicit shape outline unless borders are styled).
+      diamond: A diamond shape (rotated square).
+      dot: A small circle, typically with a fixed size (can be scaled with the size option).
+      star: A five-pointed star.
+      triangle: An upward-pointing triangle.
+      triangleDown: A downward-pointing triangle.
+      hexagon: A six-sided polygon.
+      square: A square shape.
+      */
+
+      "categoryNodeStyle": {
+          "shape": "dot", // Make categories visually distinct
+          "color": { "background": "#f0f0f0", "border": "#cccccc" },
+          "font": { "color": "#555555", "size": 8 }
+      },
+      // Optional: Columns to show in the tooltip of primary nodes
+      "nodeTooltipColumns": ["Primary Author", "Complexity/Size", "Tags/Keywords", "Related Entries"],
+
+      // --- Edge Configuration ---
+      // Edges go FROM primary node TO category node
+      "edgeDirection": "undirected", // 'directed' or 'undirected'
+      "edgeColor": "#cccccc",        // Optional: Static color for edges
+
+      // --- Layout & Appearance (Vis.js options mapped here) ---
+      "layoutEngine": "forceDirected", // 'forceDirected' (default), 'hierarchical', etc.
+      "physicsEnabled": true,          // Let the graph settle
+      "nodeShape": "dot"          // Default shape for primary nodes
     }
+  }
   ]
 };
 // --- END OF FILE config.js ---

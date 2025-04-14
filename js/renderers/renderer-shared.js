@@ -397,71 +397,152 @@ function isTruthy(value, config) {
     });
 }
 
+// --- START OF REPLACEMENT for sortData in js/renderers/renderer-shared.js ---
+
 /**
  * Sorts an array of data objects based on multiple criteria defined in sortByConfig.
- * Handles basic string, numeric comparison and null/undefined values.
+ * Handles basic string, numeric comparison, custom ordering, and null/undefined values.
  * @param {object[]} dataArray The array of data objects to sort (will be sorted in place).
- * @param {object[]} sortByConfig Array of sort criteria, e.g., [{ column: 'ColA', direction: 'asc' }, { column: 'ColB', direction: 'desc' }].
+ * @param {object[]} sortByConfig Array of sort criteria, e.g., [{ column: 'ColA', direction: 'asc' }, { column: 'ColB', direction: 'custom', order: ['High', 'Medium', 'Low'] }].
  * @param {object} globalConfig The global configuration, used to access csvHeaders for validation.
- * @returns {object[]} The sorted dataArray (same array instance passed in). Returns original array if sortByConfig is invalid.
+ * @returns {object[]} The sorted dataArray (same array instance passed in). Returns original array if sortByConfig is invalid or dataArray is not an array.
  */
 function sortData(dataArray, sortByConfig, globalConfig) {
-    if (!Array.isArray(dataArray) || !Array.isArray(sortByConfig) || sortByConfig.length === 0) {
-        return dataArray; // No sorting needed or possible
+    // Basic validation of inputs
+    if (!Array.isArray(dataArray)) {
+        console.warn("sortData: dataArray is not an array. Returning original.");
+        return dataArray;
+    }
+    if (!Array.isArray(sortByConfig) || sortByConfig.length === 0) {
+        return dataArray; // No sorting requested
     }
 
     const validHeaders = globalConfig?.csvHeaders || [];
 
-    // Filter out invalid sort criteria (column doesn't exist)
-    const validSortBy = sortByConfig.filter(criterion => {
-        const isValid = criterion && criterion.column && validHeaders.includes(criterion.column);
-        if (!isValid) {
-            console.warn(`sortData: Invalid or missing sort column "${criterion?.column}". Ignoring criterion.`);
+    // --- Pre-process and validate sort criteria ---
+    const validSortBy = sortByConfig.map(criterion => {
+        // Basic structure check
+        if (!criterion || typeof criterion !== 'object' || !criterion.column) {
+            console.warn(`sortData: Invalid sort criterion structure found. Ignoring criterion:`, criterion);
+            return null;
         }
-        return isValid;
-    });
+        // Check if column exists
+        if (!validHeaders.includes(criterion.column)) {
+            console.warn(`sortData: Invalid or missing sort column "${criterion.column}". Ignoring criterion.`);
+            return null;
+        }
+        // Validate direction and custom order
+        const direction = String(criterion.direction || 'asc').toLowerCase();
+        let order = null;
+        if (direction === 'custom') {
+            if (!Array.isArray(criterion.order) || criterion.order.length === 0) {
+                console.warn(`sortData: Sort direction is 'custom' for column "${criterion.column}" but 'order' array is missing or empty. Falling back to 'asc'.`);
+                return { ...criterion, direction: 'asc' }; // Fallback
+            }
+            // Pre-process custom order to lowercase strings for efficient lookup
+            order = criterion.order.map(item => String(item ?? '').toLowerCase());
+        } else if (!['asc', 'desc'].includes(direction)) {
+            console.warn(`sortData: Invalid sort direction "${criterion.direction}" for column "${criterion.column}". Defaulting to 'asc'.`);
+            return { ...criterion, direction: 'asc' }; // Default
+        }
 
+        return { ...criterion, direction, order }; // Return processed criterion
+    }).filter(Boolean); // Remove null entries from invalid criteria
+
+    // Exit if no valid criteria remain
     if (validSortBy.length === 0) {
-        console.warn("sortData: No valid sort criteria found.");
-        return dataArray; // Return original if no valid criteria
+        console.warn("sortData: No valid sort criteria found after validation.");
+        return dataArray;
     }
 
-    // The actual comparison function
+    // --- The Core Comparison Function ---
     const comparisonFunction = (a, b) => {
         for (const criterion of validSortBy) {
-            const { column, direction = 'asc' } = criterion; // Default to ascending
+            const { column, direction, order } = criterion; // Get processed values
             const valA = a[column];
             const valB = b[column];
 
-            // Define order for null/undefined (nulls/undefined last for asc, first for desc)
-            const ascSortOrder = direction.toLowerCase() === 'asc' ? 1 : -1;
-            if (valA == null && valB != null) return ascSortOrder;
-            if (valA != null && valB == null) return -ascSortOrder;
-            if (valA == null && valB == null) continue; // Treat equal if both null/undefined, move to next criterion
+            // Consistent handling of null/undefined values:
+            // nulls/undefined are considered "greater" than actual values,
+            // so they appear last in 'asc' and first in 'desc'.
+            const aIsNull = valA === null || typeof valA === 'undefined';
+            const bIsNull = valB === null || typeof valB === 'undefined';
+
+            if (aIsNull && bIsNull) {
+                continue; // Both null/undefined, treat as equal for this level, move to next criterion
+            }
+            if (aIsNull) {
+                return 1; // null/undefined ('a') is greater than non-null ('b')
+            }
+            if (bIsNull) {
+                return -1; // non-null ('a') is less than null/undefined ('b')
+            }
+            // --- From here, both valA and valB are non-null/undefined ---
 
             let comparison = 0;
 
-            // Basic type handling (improve with more specific checks if needed, e.g., dates)
-            if (typeof valA === 'number' && typeof valB === 'number') {
-                comparison = valA - valB;
-            } else {
-                // Default to string comparison using localeCompare
-                // This handles numbers-as-strings reasonably well for simple cases
-                comparison = String(valA).localeCompare(String(valB), undefined, { numeric: true, sensitivity: 'base' });
-            }
+            // --- Custom Order Logic ---
+            if (direction === 'custom') {
+                // 'order' array is guaranteed to exist and be lowercase string array here
+                const valALower = String(valA).toLowerCase();
+                const valBLower = String(valB).toLowerCase();
+                const indexA = order.indexOf(valALower);
+                const indexB = order.indexOf(valBLower);
 
-            // If values are different, return based on direction
+                if (indexA !== -1 && indexB !== -1) {
+                    // Both values found in custom order: compare indices
+                    comparison = indexA - indexB;
+                } else if (indexA !== -1) {
+                    // Only A is in the list, A comes first
+                    comparison = -1;
+                } else if (indexB !== -1) {
+                    // Only B is in the list, B comes first
+                    comparison = 1;
+                } else {
+                    // Neither is in the list, fall back to standard string comparison
+                    // to maintain some stable order for unlisted items.
+                    comparison = String(valA).localeCompare(String(valB), undefined, { numeric: true, sensitivity: 'base' });
+                }
+            }
+            // --- Standard Asc/Desc Logic ---
+            else {
+                // Attempt numeric comparison first
+                const numA = Number(valA);
+                const numB = Number(valB);
+                if (!isNaN(numA) && !isNaN(numB)) {
+                    comparison = numA - numB;
+                } else {
+                    // Fallback to locale-aware string comparison (handles numbers in strings too)
+                    comparison = String(valA).localeCompare(String(valB), undefined, { numeric: true, sensitivity: 'base' });
+                }
+
+                // Apply descending order if specified and values differ
+                if (comparison !== 0 && direction === 'desc') {
+                    comparison *= -1;
+                }
+            } // --- End Standard Asc/Desc ---
+
+            // If a difference was found based on this criterion, return the result
             if (comparison !== 0) {
-                return direction.toLowerCase() === 'desc' ? (comparison * -1) : comparison;
+                return comparison;
             }
-            // If values are equal, continue to the next sort criterion
+            // Otherwise, values are equal for this criterion, continue to the next one
         }
-        return 0; // All criteria resulted in equality
-    };
 
-    // Sort the array in place
-    dataArray.sort(comparisonFunction);
-    return dataArray;
+        // All criteria resulted in equality
+        return 0;
+    }; // --- End of comparisonFunction ---
+
+    // Sort the array in place using the comparison function
+    try {
+        dataArray.sort(comparisonFunction);
+    } catch (error) {
+        console.error("Error during dataArray.sort():", error);
+        // Optionally return original array on error, or re-throw
+        return dataArray;
+    }
+
+    return dataArray; // Return the sorted array (same instance)
 }
 
 // --- END OF FILE js/renderers/renderer-shared.js ---
