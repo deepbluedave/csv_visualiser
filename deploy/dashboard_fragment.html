@@ -12,7 +12,18 @@
         <div id="cdg-uploadContainer">
             <label for="cdg-csvFileInput">Upload CSV Data File:</label>
             <input type="file" id="cdg-csvFileInput" accept=".csv">
-            <div id="cdg-iconKeyContainer">
+
+            <label for="cdg-globalSearchInput" class="visually-hidden">Search:</label>
+            <input type="search" id="cdg-globalSearchInput" placeholder="Search visible items..." style="margin-left: 15px; min-width: 200px; padding: 4px 8px;"> <!-- Adjusted margin -->
+
+            <!-- *** NEW EXPORT BUTTON START *** -->
+            <button type="button" id="cdg-exportButton" title="Export Current View as CSV" style="margin-left: 10px; padding: 4px 10px; font-size: 0.9em; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                📊 Export View
+            </button>
+            <!-- *** NEW EXPORT BUTTON END *** -->
+
+            <!-- Icon Key pushed further right -->
+            <div id="cdg-iconKeyContainer" style="margin-left: auto;">
                 <!-- Key rendered here -->
             </div>
         </div>
@@ -23,11 +34,13 @@
         </div>
 
         <!-- Dynamic View Content Area -->
-        <div id="cdg-viewContentContainer" class="cdg-view-content-area"> 
+        <div id="cdg-viewContentContainer" class="cdg-view-content-area">
             <!-- View containers added -->
         </div>
 
-    </div> <!-- END: Dashboard Wrapper Div -->
+    </div> 
+    
+    <!-- END: Dashboard Wrapper Div -->
 
 
     <!-- Scripts remain outside the wrapper -->

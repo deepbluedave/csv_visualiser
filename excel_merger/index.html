@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spreadsheet Aggregator</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <h1>Spreadsheet Aggregator Utility</h1>
+
+    <div class="control-section">
+        <label for="configInput">1. Upload Configuration File (config.json):</label>
+        <input type="file" id="configInput" accept=".json">
+    </div>
+
+    <div class="control-section">
+        <label for="folderInput">2. Select Spreadsheet Folder (.xlsx):</label>
+        <input type="file" id="folderInput" webkitdirectory directory multiple accept=".xlsx">
+        <span id="fileCount">0 files selected</span>
+    </div>
+
+    <div class="control-section">
+        <button id="processButton" disabled>3. Process Files</button>
+    </div>
+
+    <div class="control-section">
+         <button id="downloadButton" style="display: none;">4. Download Aggregated File</button>
+    </div>
+
+    <div id="status">
+        <h2>Status</h2>
+        <pre id="statusLog"></pre>
+    </div>
+
+    <!-- Load SheetJS library -->
+    <!-- Option 1: Local file -->
+    <!-- <script src="lib/xlsx.full.min.js"></script> -->
+    <!-- Option 2: CDN -->
+     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <!-- Load your custom script -->
+    <script src="aggregator.js"></script>
+</body>
+</html>

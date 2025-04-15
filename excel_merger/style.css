@@ -1,0 +1,93 @@
+body {
+    font-family: sans-serif;
+    line-height: 1.6;
+    margin: 20px;
+    background-color: #f4f4f4;
+}
+
+h1, h2 {
+    color: #333;
+    text-align: center;
+}
+
+.control-section {
+    background-color: #fff;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #555;
+}
+
+input[type="file"] {
+    display: block;
+    margin-bottom: 10px;
+}
+
+button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: background-color 0.2s ease;
+}
+
+button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+button:hover:not(:disabled) {
+    background-color: #0056b3;
+}
+
+#downloadButton {
+    background-color: #28a745; /* Green */
+}
+
+#downloadButton:hover:not(:disabled) {
+    background-color: #218838;
+}
+
+
+#status {
+    margin-top: 20px;
+    background-color: #e9ecef;
+    padding: 15px;
+    border-radius: 5px;
+    border: 1px solid #ced4da;
+}
+
+#status h2 {
+    margin-top: 0;
+    font-size: 1.2em;
+    color: #495057;
+    text-align: left;
+}
+
+#statusLog {
+    font-family: monospace;
+    white-space: pre-wrap; /* Allows wrapping */
+    word-wrap: break-word; /* Breaks long words */
+    max-height: 300px;
+    overflow-y: auto; /* Add scrollbar if needed */
+    background-color: #fff;
+    padding: 10px;
+    border: 1px solid #ddd;
+    font-size: 0.9em;
+}
+
+#fileCount {
+    font-style: italic;
+    color: #666;
+    margin-left: 10px;
+}

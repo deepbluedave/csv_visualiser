@@ -302,21 +302,29 @@
 }
 
 #cdg-dashboard-wrapper .card-indicators {
-    text-align: right;
-    flex-shrink: 0;
-    white-space: normal; /* Allow indicators to wrap if needed */
-    line-height: 1.3; /* Ensure consistent line height for wrapped indicators */
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 5px;
+    justify-content: center;
+    align-items: center;
+    /* flex-shrink: 0; */ /* <<< REMOVE OR COMMENT OUT THIS LINE */
 }
+
+
+/* --- Adjust indicator margins if gap is sufficient --- */
 #cdg-dashboard-wrapper .card-indicators .csv-dashboard-icon,
 #cdg-dashboard-wrapper .card-indicators .tag {
-     vertical-align: middle;
-     margin-left: 3px;
-     margin-bottom: 2px; /* Small gap for wrapped items */
+     vertical-align: middle; /* Keep vertical alignment */
+     /* margin-left: 3px; */ /* REMOVE - rely on 'gap' property */
+     /* margin-bottom: 2px; */ /* REMOVE - rely on 'gap' property */
 }
-#cdg-dashboard-wrapper .card-indicators .tag:first-child,
+
+/* REMOVE this rule as margin-left is removed */
+/* #cdg-dashboard-wrapper .card-indicators .tag:first-child,
 #cdg-dashboard-wrapper .card-indicators .icon:first-child {
      margin-left: 0;
- }
+ } */
+
 
 /* --- Indicator/Tag Base Styles --- */
 #cdg-dashboard-wrapper .csv-dashboard-icon {
@@ -421,6 +429,44 @@
 #cdg-dashboard-wrapper .icon-key-link { /* Style link within icon key */
     color: var(--color-accent);
 }
+
+/* --- Search Feature --- */
+.cdg-search-hidden {
+    display: none !important; /* Use !important to override other display styles */
+}
+
+/* Accessibility helper */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+#cdg-dashboard-wrapper #cdg-exportButton {
+    margin-left: 10px;
+    padding: 4px 10px;
+    font-size: 0.9em;
+    background-color: #6c757d; /* Bootstrap secondary grey */
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+#cdg-dashboard-wrapper #cdg-exportButton:hover {
+    background-color: #5a6268;
+}
+#cdg-dashboard-wrapper #cdg-exportButton:disabled { /* Style for when export is not possible */
+    background-color: #adb5bd;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
 /* --- END OF FILE css/components.css --- */
 /* --- START OF FILE css/view-table.css --- */
 /* --- Table View Styles (Applied within .view-container[data-view-type="table"]) --- */

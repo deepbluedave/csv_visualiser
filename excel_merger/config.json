@@ -1,0 +1,48 @@
+{
+    "masterSheetIdentifier": {
+      "name": "MasterData", 
+      "fileNameHint": "master_sheet", 
+      "uniqueIdColumn": "ID" 
+    },
+    "outputColumns": [        
+      "ID",
+      "IssueName",
+      "RiskLevel",
+      "SourceFile", 
+      "SourceSheetType" 
+    ],
+    "sheetMappings": [
+      {
+        "name": "MasterData", 
+        "fileNameHint": "master_sheet", 
+        "uniqueIdColumn": "ID",      
+        "columnMapping": {         
+          "ID": "ID",
+          "IssueName": "Name",
+          "RiskLevel": "Severity"
+        }
+      },
+      {
+        "name": "SystemA_Issues", 
+        "fileNameHint": "system_a", 
+        "uniqueIdColumn": "UniqueID", 
+        "columnMapping": {
+          "ID": "UniqueID", 
+          "IssueName": "Title",
+          "RiskLevel": "Level"
+          
+        }
+      },
+      {
+        "name": "SystemB_Findings",
+        "fileNameHint": "system_b",
+        "uniqueIdColumn": "Record Key",
+        "columnMapping": {
+          "ID": "Record Key",
+          "IssueName": "Finding Description",
+          "RiskLevel": "Impact Rating"
+        }
+      }
+      
+    ]
+  }
