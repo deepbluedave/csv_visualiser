@@ -12,9 +12,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const mainHeading = document.querySelector('h1');
     const iconKeyContainer = document.getElementById('cdg-iconKeyContainer');
     const globalSearchInput = document.getElementById('cdg-globalSearchInput');
+    const exportButton = document.getElementById('cdg-exportButton');
+
 
     // Check if essential containers were found
-    if (!fileInput || !tabControls || !viewContentContainer || !mainHeading || !globalSearchInput) {
+    if (!fileInput || !tabControls || !viewContentContainer || !mainHeading || !globalSearchInput || !exportButton ) {
         console.error("Essential DOM elements missing (controls/containers/search). Dashboard cannot initialize.");
         document.body.innerHTML = '<h1 style="color: red; text-align: center; margin-top: 50px;">Critical Error: Required HTML structure is missing. Cannot load dashboard.</h1>';
         return;
@@ -23,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Collect static DOM elements to pass around
     const domElements = {
         fileInput, uploadContainer, tabControls, viewContentContainer,
-        mainHeading, iconKeyContainer, globalSearchInput // Pass search input
+        mainHeading, iconKeyContainer, globalSearchInput, exportButton  // Pass search input
     };
 
 
@@ -142,7 +144,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 handleGlobalSearch(globalSearchInput.value); // Calls the function defined above
             }, 300); // 300ms debounce delay
         });
-   }
+    }
+    if (exportButton) exportButton.addEventListener('click', handleExportClick);
 
     // --- Core Application Functions ---
 
@@ -344,6 +347,116 @@ document.addEventListener('DOMContentLoaded', () => {
          }
      }
 
+/**
+     * Handles the click event for the export button.
+     * Determines the active tab, filters/sorts data, generates CSV, and triggers download.
+     */
+function handleExportClick() {
+    console.log("Export button clicked.");
+    if (!appState.activeTabId) {
+        console.warn("handleExportClick: No active tab selected.");
+        alert("Please select a tab to export.");
+        return;
+    }
+    if (!appState.parsedData || appState.parsedData.length === 0) {
+         console.warn("handleExportClick: No data loaded to export.");
+         alert("Please load data before exporting.");
+         return;
+    }
+
+    const tabConfig = appState.currentConfig.tabs?.find(t => t.id === appState.activeTabId);
+    if (!tabConfig) {
+        console.error(`handleExportClick: Config not found for active tab ${appState.activeTabId}`);
+        alert("Error: Could not find configuration for the active tab.");
+        return;
+    }
+
+    const exportableTypes = ['table', 'kanban','summary','counts']; // Add 'summary' later if implemented
+    if (!exportableTypes.includes(tabConfig.type)) {
+        console.log(`Export skipped: Tab type "${tabConfig.type}" is not exportable yet.`);
+        alert(`Export is not currently supported for the "${tabConfig.title}" view type.`);
+        return;
+    }
+
+    // Disable button temporarily to prevent double-clicks
+    if(exportButton) exportButton.disabled = true;
+    // Optional: Show a loading indicator
+
+    // Use setTimeout to allow UI to update (button disable) before potentially long processing
+    setTimeout(() => {
+        try {
+            console.log(`Exporting tab: ${tabConfig.title} (${tabConfig.id}), Type: ${tabConfig.type}`);
+
+            // 1. Get Data (use current parsed data)
+            const fullData = appState.parsedData;
+
+            // 2. Apply Tab Filter
+            const filteredData = applyTabFilter(fullData, tabConfig.filter, appState.currentConfig);
+            console.log(`Export - ${filteredData.length} rows after filtering.`);
+
+            // 3. Apply Item Sorting (for consistency, even if table renderer has its own sort)
+            // Resolve sort config using defaults
+            let dataForExport = [...filteredData]; // Start with filtered data
+
+            // Apply item sorting for types that use it visually before grouping/sectioning
+            if (['table', 'kanban', 'summary'].includes(tabConfig.type)) {
+               const itemSortConfig = tabConfig.config?.itemSortBy ?? appState.currentConfig.generalSettings?.defaultItemSortBy ?? null;
+               dataForExport = sortData(dataForExport, itemSortConfig, appState.currentConfig); // Sort a copy
+            }
+
+            // 4. Generate CSV Content
+            let csvContent = '';
+            let baseFilename = `dashboard-export-${tabConfig.id}`;
+
+            switch(tabConfig.type) {
+                case 'table':
+                    if (typeof generateTableCsv === 'function') {
+                        csvContent = generateTableCsv(dataForExport, tabConfig, appState.currentConfig);
+                    } else { throw new Error("generateTableCsv function not found."); }
+                    break;
+                case 'kanban':
+                    if (typeof generateKanbanCsv === 'function') {
+                        csvContent = generateKanbanCsv(dataForExport, tabConfig, appState.currentConfig);
+                    } else { throw new Error("generateKanbanCsv function not found."); }
+                    break;
+                case 'summary':
+                    if (typeof generateSummaryCsv === 'function') {
+                        csvContent = generateSummaryCsv(dataForExport, tabConfig, appState.currentConfig);
+                    } else { throw new Error("generateSummaryCsv function not found."); }
+                    break;
+                case 'counts':
+                     if (typeof generateCountsCsv === 'function') {
+                         // Counts export function handles its own aggregation from filtered data
+                        csvContent = generateCountsCsv(filteredData, tabConfig, appState.currentConfig); // Pass originally filtered data
+                    } else { throw new Error("generateCountsCsv function not found."); }
+                    break;
+                // No default needed as we checked exportableTypes earlier
+            }
+
+            // 5. Trigger Download
+            if (csvContent) {
+                // Check if triggerCsvDownload exists
+                if (typeof triggerCsvDownload === 'function') {
+                    const filename = `${baseFilename}.csv`;
+                    triggerCsvDownload(csvContent, filename);
+                } else {
+                    throw new Error("triggerCsvDownload function not found.");
+                }
+            } else {
+                console.warn("Export generation resulted in empty content.");
+                alert("Could not generate export data for this view. It might be empty after filtering.");
+            }
+
+        } catch (error) {
+            console.error("Error during export:", error);
+            alert(`An error occurred during export: ${error.message}`);
+        } finally {
+            // Re-enable button and hide loading indicator
+            if(exportButton) exportButton.disabled = false;
+        }
+    }, 10); // Small delay for UI update
+    }
+
 
     // --- UI Update Functions ---
 
@@ -364,5 +477,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+
+    
 }); // End of DOMContentLoaded listener
 // --- END OF FILE js/app.js ---

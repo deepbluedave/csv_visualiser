@@ -508,4 +508,9 @@ function sortData(dataArray, sortByConfig, globalConfig) {
     return dataArray; // Return the sorted array (same instance)
 }
 
+
+
+
+
+
 // --- END OF FILE js/renderers/renderer-shared.js ---

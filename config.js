@@ -44,7 +44,7 @@ let defaultConfig = {
         "type": "tag", "titlePrefix": "Status: ",
         "valueMap": { // Intentionally ordered for potential custom sort
           "Pending Renewal":{ "text":"⏳ Pending",  "bgColor": "#fff3cd", "textColor": "#664d03" }, // Yellow
-          "Active":         { "text":"엑 Active",   "bgColor": "#cfe2ff", "textColor": "#0a367a" }, // Blue
+          "Active":         { "text":"🟢 Active",   "bgColor": "#cfe2ff", "textColor": "#0a367a" }, // Blue
           "Mitigated":      { "text":"✅ Mitigated","bgColor": "#d4edda", "textColor": "#155724" }, // Green (Exception resolved)
           "Expired":        { "text":"⚪ Expired",  "bgColor": "#6c757d", "textColor": "#ffffff" }, // Grey
           "default":        { "bgColor": "#e9ecef", "textColor": "#495057" }
@@ -80,6 +80,29 @@ let defaultConfig = {
           "type": "tag", "titlePrefix": "Until: ",
           "valueMap": { "default": { "bgColor": "#fff3cd", "textColor": "#664d03", "borderColor": "#ffc107" } } // Highlight renewal date slightly
       },
+
+      //Used just for icon/key generation where tags are used
+
+      "Risk Level Icon": { // Use a distinct key name if Risk Level is already a tag
+        "type": "icon",
+        "valueMap": {
+              "Elevated": { "value": "🔥", "title": "Risk: Elevated" },
+              "High":     { "value": "🔴", "title": "Risk: High" },
+              "Medium":   { "value": "🟠", "title": "Risk: Medium" },
+              "Low":      { "value": "🟡", "title": "Risk: Low" }
+              // No default needed if you only want these specific ones in the key
+        }
+     },
+     // --- Similarly for Status icons if desired ---
+      "Status Icon": {
+           "type": "icon",
+           "valueMap": {
+                "Pending Renewal":{ "value":"⏳", "title":"Status: Pending Renewal" },
+                "Active":         { "value":"🟢", "title":"Status: Active" }, // Using a simple green circle example
+                "Mitigated":      { "value":"✅", "title":"Status: Mitigated"},
+                "Expired":        { "value":"⚪", "title":"Status: Expired" }
+           }
+      },      
 
       // --- Columns to display as plain text or handled by linkColumns ---
       "ExceptionID": { "type": "none" },
@@ -237,6 +260,7 @@ let defaultConfig = {
       "config": {
           "groupByColumn": "Application Name", // Group items within sections by App Name
           "cardLinkColumn": "Link",            // Link card titles to the exception link
+          "cardTitleColumn": "Exception Title",
           // "cardIndicatorColumns": [...] // REMOVED - Will use generalSettings.defaultCardIndicatorColumns
           // "itemSortBy": [...]         // REMOVED - Will use generalSettings.defaultItemSortBy (sorts data *before* section filtering)
           "internalLayout": { // Optional: Adjust grid layout *inside* sections

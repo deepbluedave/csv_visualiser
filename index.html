@@ -25,12 +25,17 @@
             <label for="cdg-csvFileInput">Upload CSV Data File:</label>
             <input type="file" id="cdg-csvFileInput" accept=".csv">
 
-            <!-- *** NEW SEARCH INPUT START *** -->
-            <label for="cdg-globalSearchInput" class="visually-hidden">Search:</label> <!-- Hidden label for accessibility -->
-            <input type="search" id="cdg-globalSearchInput" placeholder="Search visible items..." style="margin-left: auto; min-width: 250px; padding: 4px 8px;">
-            <!-- *** NEW SEARCH INPUT END *** -->
+            <label for="cdg-globalSearchInput" class="visually-hidden">Search:</label>
+            <input type="search" id="cdg-globalSearchInput" placeholder="Search visible items..." style="margin-left: 15px; min-width: 200px; padding: 4px 8px;"> <!-- Adjusted margin -->
 
-            <div id="cdg-iconKeyContainer">
+            <!-- *** NEW EXPORT BUTTON START *** -->
+            <button type="button" id="cdg-exportButton" title="Export Current View as CSV" style="margin-left: 10px; padding: 4px 10px; font-size: 0.9em; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                📊 Export View
+            </button>
+            <!-- *** NEW EXPORT BUTTON END *** -->
+
+            <!-- Icon Key pushed further right -->
+            <div id="cdg-iconKeyContainer" style="margin-left: auto;">
                 <!-- Key rendered here -->
             </div>
         </div>
@@ -45,7 +50,7 @@
             <!-- View containers added -->
         </div>
 
-    </div>
+    </div> 
     
     <!-- END: Dashboard Wrapper Div -->
 
@@ -60,6 +65,7 @@
     <script src="js/renderers/renderer-kanban.js"></script>
     <script src="js/renderers/renderer-summary.js"></script>
     <script src="js/renderers/renderer-counts.js"></script>
+    <script src="js/export-handler.js"></script>
 
    <!-- *** NEW: Add Vis.js Network library *** -->
    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
