@@ -1,30 +1,29 @@
 {
-  "maxUniqueValuesForDropdown": 150, 
   "masterSheetIdentifier": {
     "fileNameHint": "master_app_list",
     "appIdColumn": "Application ID",
     "lookupColumns": [
       "Application Name",
       "Business Owner",
-      "Status"
-      
+      "Status",
+      "Grade"
     ]
   },
   "outputColumns": [
-    "ApplicationID",      
-    "ApplicationName",    
-    "BusinessOwner",      
-    "Status",             
-    "SourceType",         
-    "SourceFile",         
-    "ItemID",             
-    "IssueTitle",         
-    "RiskLevel",          
-    "Description",        
-    "ItemStatus",         
-    "Hostname",           
-    "ExpiryDate"          
-    
+    "Application ID",
+    "Application Name",
+    "Grade",
+    "Business Owner",
+    "Application Status",
+    "SourceType",
+    "SourceFile",
+    "ItemID",
+    "IssueTitle",
+    "RiskLevel",
+    "Description",
+    "ItemStatus",
+    "ExpiryDate",
+    "Status"
   ],
   "dataSheetMappings": [
     {
@@ -47,9 +46,7 @@
         "ItemID": "FindingID",
         "IssueTitle": "Finding Summary",
         "RiskLevel": "Rating",
-        "ItemStatus": "Status",
-        
-        "Hostname": "Hostname" 
+        "ItemStatus": "Status"
       }
     },
     {
@@ -65,18 +62,15 @@
       }
     }
   ],
-  "savedFilters": { 
+  "savedFilters": {
     "master": {
-      "Application ID": "APP001|APP002",
-       "Status": "Production"
+      "Application ID": "APP002"
     },
     "dataSheets": {
-       "WebVulns": {
-           "Severity": "Critical|High"
-       },
-       "InfraScan": {
-           "Rating": "Urgent|Important"
-       }
+      "InfraScan": {
+        "Rating": "Urgent",
+        "Status": "Production"
+      }
     }
   }
 }

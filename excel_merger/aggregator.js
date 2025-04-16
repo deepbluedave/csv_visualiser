@@ -1,371 +1,212 @@
-const configInput = document.getElementById('configInput');
-const folderInput = document.getElementById('folderInput');
-const fileCountSpan = document.getElementById('fileCount');
-const processButton = document.getElementById('processButton');
-const downloadButton = document.getElementById('downloadButton');
+/**
+ * config_builder.js v1.3
+ * Logic for the Spreadsheet Aggregator Configuration Builder page.
+ * Correction: Added explicit checks for `config` object existence BEFORE accessing its properties.
+ */
+
+// --- DOM Elements ---
+const masterSampleInput = document.getElementById('masterSampleInput');
+const masterFileInfo = document.getElementById('masterFileInfo');
+const dataSheetSamplesContainer = document.getElementById('dataSheetSamplesContainer');
+const addDataTypeButton = document.getElementById('addDataTypeButton');
+const outputColumnsText = document.getElementById('outputColumnsText');
+const updateMappingUIButton = document.getElementById('updateMappingUIButton');
+const masterConfigSection = document.getElementById('masterConfigSection');
+const masterFileNameHint = document.getElementById('masterFileNameHint');
+const masterAppIdColumn = document.getElementById('masterAppIdColumn');
+const masterLookupColumns = document.getElementById('masterLookupColumns');
+const dataSheetMappingSection = document.getElementById('dataSheetMappingSection');
+const dataSheetMappingPlaceholder = document.getElementById('dataSheetMappingPlaceholder');
+const dataSheetMappingsContainer = document.getElementById('dataSheetMappingsContainer');
+const maxUniqueValuesInput = document.getElementById('maxUniqueValues');
+const generateConfigButton = document.getElementById('generateConfigButton');
 const statusLog = document.getElementById('statusLog');
 
-let config = null;
-let uploadedFiles = null;
-let aggregatedWorkbook = null; // To store the final workbook object
+// --- State Variables ---
+let masterHeaders = [];
+let dataSheetSamples = {};
+let outputColumns = [];
+let config = null; // Initialize config as null globally
 
-// --- Logging Utility ---
-function logStatus(message, isError = false) {
+// --- Utility ---
+function logBuilderStatus(message, isError = false) {
     console.log(message);
     const logEntry = document.createElement('div');
     logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-    if (isError) {
-        logEntry.style.color = 'red';
-        console.error(message);
-    }
+    if (isError) { logEntry.style.color = 'red'; console.error(message); }
     statusLog.appendChild(logEntry);
-    statusLog.scrollTop = statusLog.scrollHeight; // Auto-scroll
+    statusLog.scrollTop = statusLog.scrollHeight;
 }
 
-// --- Enable/Disable Process Button ---
-function checkEnableProcessButton() {
-    processButton.disabled = !(config && uploadedFiles && uploadedFiles.length > 0);
+// --- Core Logic ---
+
+function readHeaders(file) {
+    // ... (No changes needed in readHeaders) ...
+    return new Promise((resolve, reject) => { if (!file) { reject(new Error("No file provided.")); return; } const reader = new FileReader(); reader.onload = (e) => { try { const data = e.target.result; const workbook = XLSX.read(data, { type: 'array', sheetRows: 1 }); const firstSheetName = workbook.SheetNames[0]; if (!firstSheetName) throw new Error(`No sheets in ${file.name}`); const worksheet = workbook.Sheets[firstSheetName]; const headerData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: null }); if (!headerData?.[0]?.length) throw new Error(`No header row found in ${file.name}`); const headers = headerData[0].map(h => (h ? String(h).trim() : null)).filter(h => h); if (headers.length === 0) throw new Error(`No valid headers found in ${file.name}`); logBuilderStatus(`Read ${headers.length} headers from ${file.name}.`); resolve(headers); } catch (error) { logBuilderStatus(`Error reading headers from ${file.name}: ${error.message}`, true); reject(error); } }; reader.onerror = (e) => { logBuilderStatus(`File read error for ${file.name}: ${reader.error}`, true); reject(new Error(`Failed to read file.`)); }; reader.readAsArrayBuffer(file); });
 }
 
-// --- Event Listeners ---
-configInput.addEventListener('change', handleConfigUpload);
-folderInput.addEventListener('change', handleFolderUpload);
-processButton.addEventListener('click', processFiles);
-downloadButton.addEventListener('click', downloadOutput);
-
-// --- Handlers ---
-function handleConfigUpload(event) {
-    const file = event.target.files[0];
-    if (!file) {
-        logStatus('No configuration file selected.', true);
-        return;
-    }
-    if (!file.name.endsWith('.json')) {
-        logStatus('Configuration file must be a .json file.', true);
-        configInput.value = ''; // Clear selection
-        return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        try {
-            config = JSON.parse(e.target.result);
-            // Basic config validation (can be expanded)
-            if (!config.masterSheetIdentifier || !config.outputColumns || !config.sheetMappings) {
-               throw new Error("Config file missing required keys: masterSheetIdentifier, outputColumns, sheetMappings");
-            }
-            if (!config.sheetMappings.find(m => m.name === config.masterSheetIdentifier.name)) {
-                throw new Error(`Config validation failed: No sheetMapping found with name matching masterSheetIdentifier.name ('${config.masterSheetIdentifier.name}')`);
-            }
-            logStatus(`Configuration '${file.name}' loaded successfully.`);
-            checkEnableProcessButton();
-        } catch (error) {
-            logStatus(`Error parsing config file: ${error.message}`, true);
-            config = null;
-            configInput.value = ''; // Clear selection
-            checkEnableProcessButton();
-        }
-    };
-    reader.onerror = () => {
-        logStatus(`Error reading config file: ${reader.error}`, true);
-        config = null;
-        checkEnableProcessButton();
-    };
-    reader.readAsText(file);
+function updateMasterConfigUI() {
+    // ... (No changes needed in updateMasterConfigUI) ...
+     if (masterHeaders.length > 0) { masterConfigSection.style.display = 'block'; masterAppIdColumn.innerHTML = '<option value="">-- Select Master App ID Column --</option>'; masterHeaders.forEach(h => { masterAppIdColumn.add(new Option(h, h)); }); masterLookupColumns.innerHTML = ''; masterHeaders.forEach(header => { const div = document.createElement('div'); const inputId = `lookup-${header.replace(/[^a-zA-Z0-9]/g, '_')}`; const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.id = inputId; checkbox.value = header; checkbox.name = 'lookupColumns'; const label = document.createElement('label'); label.htmlFor = inputId; label.appendChild(checkbox); label.appendChild(document.createTextNode(` ${header}`)); div.appendChild(label); masterLookupColumns.appendChild(div); }); } else { masterConfigSection.style.display = 'none'; } checkGenerateButtonState();
 }
 
-function handleFolderUpload(event) {
-    console.log('handleFolderUpload triggered.'); // 1. Does the function even run?
-    console.log('Raw event.target.files:', event.target.files); // 2. What does the browser initially give us?
-
-    const allFiles = Array.from(event.target.files);
-    console.log('All selected items (converted to Array):', allFiles); // 3. What's in the array before filtering?
-
-    // Log details for each file before filtering
-    allFiles.forEach((file, index) => {
-        console.log(`File ${index}: Name='${file.name}', Type='${file.type}', Lowercase Name='${file.name.toLowerCase()}', endsWith('.xlsx')=${file.name.toLowerCase().endsWith('.xlsx')}, startsWith('~$')=${file.name.startsWith('~$')}`);
-    });
-
-    // The filter logic
-    uploadedFiles = allFiles.filter(file =>
-        file.name.toLowerCase().endsWith('.xlsx') && !file.name.startsWith('~$')
-    );
-    console.log('Filtered uploadedFiles:', uploadedFiles); // 4. What files remain after filtering?
-
-    const count = uploadedFiles.length;
-    fileCountSpan.textContent = `${count} file${count !== 1 ? 's' : ''} selected`;
-
-    if (count === 0 && event.target.files.length > 0) {
-         logStatus('No .xlsx files (excluding temp files starting with ~$) found in the selected items.', true); // More specific message
-    } else if (count > 0) {
-        logStatus(`${count} spreadsheet file(s) ready.`);
-    } else {
-         logStatus('No spreadsheet files selected or detected.');
-    }
-
-    downloadButton.style.display = 'none';
-    aggregatedWorkbook = null;
-    checkEnableProcessButton();
+async function handleMasterUpload(event) {
+    // ... (No changes needed in handleMasterUpload) ...
+     const file = event.target.files[0]; masterHeaders = []; masterFileInfo.textContent = ''; masterConfigSection.style.display = 'none'; if (file) { masterFileInfo.textContent = `Selected: ${file.name}`; try { masterHeaders = await readHeaders(file); updateMasterConfigUI(); } catch (error) { masterFileInfo.textContent = `Error: ${error.message}`; } } checkGenerateButtonState();
 }
 
-async function processFiles() {
-    if (!config || !uploadedFiles || uploadedFiles.length === 0) {
-        logStatus('Configuration and spreadsheet files must be loaded first.', true);
+function addDataTypeSection() {
+    // ... (No changes needed in addDataTypeSection) ...
+     const typeIndex = document.querySelectorAll('.data-sheet-type').length; const typeIdBase = `dataType${typeIndex}`; const div = document.createElement('div'); div.className = 'data-sheet-type'; div.id = `${typeIdBase}-section`; const nameLabel = document.createElement('label'); nameLabel.htmlFor = `${typeIdBase}-name`; nameLabel.textContent = `Data Sheet Type Name:`; const nameInput = document.createElement('input'); nameInput.type = 'text'; nameInput.id = `${typeIdBase}-name`; nameInput.placeholder = 'e.g., WebVulns, InfraScan (unique)'; nameInput.addEventListener('change', (e) => handleTypeNameChange(e, div)); const fileLabel = document.createElement('label'); fileLabel.htmlFor = `${typeIdBase}-file`; fileLabel.textContent = `Sample File for this Type:`; const fileInput = document.createElement('input'); fileInput.type = 'file'; fileInput.id = `${typeIdBase}-file`; fileInput.accept = '.xlsx'; fileInput.addEventListener('change', (e) => handleDataSheetUpload(e, div)); const fileInfo = document.createElement('div'); fileInfo.className = 'file-info'; fileInfo.id = `${typeIdBase}-fileInfo`; div.appendChild(nameLabel); div.appendChild(nameInput); div.appendChild(fileLabel); div.appendChild(fileInput); div.appendChild(fileInfo); dataSheetSamplesContainer.appendChild(div);
+}
+
+function handleTypeNameChange(event, typeDivElement) {
+    // ... (No changes needed in handleTypeNameChange) ...
+     const oldTypeName = typeDivElement.dataset.typeName; const newTypeName = event.target.value.trim().replace(/[^a-zA-Z0-9_-]/g, '_'); if (!newTypeName) { if (oldTypeName && dataSheetSamples[oldTypeName]) { logBuilderStatus(`Type name cleared. Removing data for "${oldTypeName}".`, false); delete dataSheetSamples[oldTypeName]; typeDivElement.dataset.typeName = ''; event.target.value = ''; regenerateMappingUI(); checkGenerateButtonState(); } return; } if (newTypeName === oldTypeName) return; if (dataSheetSamples[newTypeName]) { logBuilderStatus(`Error: Type name "${newTypeName}" already exists.`, true); event.target.value = oldTypeName || ''; return; } if (oldTypeName && dataSheetSamples[oldTypeName]) { dataSheetSamples[newTypeName] = dataSheetSamples[oldTypeName]; delete dataSheetSamples[oldTypeName]; logBuilderStatus(`Renamed data sheet type "${oldTypeName}" to "${newTypeName}".`, false); } else { dataSheetSamples[newTypeName] = { file: null, headers: [], hint: '', appIdCol: '' }; logBuilderStatus(`Added new data sheet type "${newTypeName}".`, false); } typeDivElement.dataset.typeName = newTypeName; event.target.value = newTypeName; regenerateMappingUI(); checkGenerateButtonState();
+}
+
+async function handleDataSheetUpload(event, typeDivElement) {
+    // ... (No changes needed in handleDataSheetUpload) ...
+     const file = event.target.files[0]; const typeName = typeDivElement.dataset.typeName; const fileInfo = typeDivElement.querySelector('.file-info'); fileInfo.textContent = ''; if (!typeName) { logBuilderStatus("Please enter a Type Name first.", true); event.target.value = ''; return; } if (!dataSheetSamples[typeName]) dataSheetSamples[typeName] = { file: null, headers: [], hint: '', appIdCol: '' }; dataSheetSamples[typeName].headers = []; dataSheetSamples[typeName].file = null; if (file) { fileInfo.textContent = `Selected: ${file.name}`; dataSheetSamples[typeName].file = file; try { dataSheetSamples[typeName].headers = await readHeaders(file); regenerateMappingUI(); } catch (error) { fileInfo.textContent = `Error reading sample: ${error.message}`; dataSheetSamples[typeName].headers = []; dataSheetSamples[typeName].file = null; regenerateMappingUI(); } } else { regenerateMappingUI(); } checkGenerateButtonState();
+}
+
+function updateOutputColumnsAndUI() {
+    // ... (No changes needed in updateOutputColumnsAndUI) ...
+     outputColumns = outputColumnsText.value.split('\n').map(line => line.trim()).filter(line => line); if(outputColumns.length > 0) logBuilderStatus(`Updated output columns (${outputColumns.length}). Updating mapping UI...`, false); else logBuilderStatus(`Output columns cleared.`, false); regenerateMappingUI(); checkGenerateButtonState();
+}
+
+/** Generates the dynamic mapping configuration section. */
+function regenerateMappingUI() {
+    dataSheetMappingsContainer.innerHTML = ''; // Clear existing
+
+    // *** ADDED CHECK: Ensure config is loaded before proceeding ***
+    if (!config) {
+        logBuilderStatus("Config not loaded yet. Cannot generate mapping UI.", false);
+        dataSheetMappingPlaceholder.textContent = "Upload a config file first.";
+        dataSheetMappingPlaceholder.style.display = 'block';
+        return; // Exit if config isn't ready
+    }
+    // *** END ADDED CHECK ***
+
+    let haveOutputCols = outputColumns.length > 0;
+    let haveHeaders = Object.values(dataSheetSamples).some(ds => ds?.headers?.length > 0);
+    let canMap = haveOutputCols && haveHeaders;
+
+    if (!canMap) {
+        dataSheetMappingPlaceholder.textContent = "Upload data sheet samples and define output columns above to configure mappings."; // Restore original text
+        dataSheetMappingPlaceholder.style.display = 'block';
+        checkGenerateButtonState();
         return;
     }
 
-    logStatus('Starting aggregation process...');
-    processButton.disabled = true;
-    downloadButton.style.display = 'none';
-    aggregatedWorkbook = null;
-    // Clear previous logs slightly
-    statusLog.innerHTML = '';
-    logStatus('Processing started...');
+    dataSheetMappingPlaceholder.style.display = 'none';
+    const sortedTypeNames = Object.keys(dataSheetSamples).sort();
 
+    sortedTypeNames.forEach(typeName => {
+        const sample = dataSheetSamples[typeName];
+        if (!sample?.headers?.length) return;
 
-    const aggregatedData = {}; // Store data keyed by unique ID: { uniqueId: {outputCol1: val1, outputCol2: val2, ...} }
-    let masterFileProcessed = false;
-    let masterMapping = null;
+        const sectionDiv = document.createElement('div'); sectionDiv.className = 'data-sheet-mapping-type';
+        const title = document.createElement('h3'); title.textContent = `Mapping for: ${typeName}`; sectionDiv.appendChild(title);
 
-    // --- Find Master Sheet Mapping ---
-    masterMapping = config.sheetMappings.find(m => m.name === config.masterSheetIdentifier.name);
-    if (!masterMapping) {
-         // This check is technically redundant due to config validation, but good practice
-        logStatus(`Critical Error: Master sheet mapping ('${config.masterSheetIdentifier.name}') not found in sheetMappings.`, true);
-        processButton.disabled = false; // Re-enable button on critical failure
-        return;
-    }
-    logStatus(`Using mapping '${masterMapping.name}' for Master Sheet.`);
+        // File Name Hint
+        const hintGroup = document.createElement('div'); hintGroup.className = 'config-group';
+        const hintLabel = document.createElement('label'); hintLabel.htmlFor = `hint-${typeName}`; hintLabel.textContent = 'File Name Hint:';
+        const hintInput = document.createElement('input'); hintInput.type = 'text'; hintInput.id = `hint-${typeName}`; hintInput.placeholder = `e.g., ${typeName.toLowerCase()}_scan`; hintInput.value = sample.hint || ''; hintInput.addEventListener('change', (e) => { sample.hint = e.target.value.trim(); checkGenerateButtonState(); });
+        hintGroup.appendChild(hintLabel); hintGroup.appendChild(hintInput); sectionDiv.appendChild(hintGroup);
 
-    // --- Process Master Sheet First ---
-    const masterFile = uploadedFiles.find(f => f.name.includes(config.masterSheetIdentifier.fileNameHint));
-    if (!masterFile) {
-        logStatus(`Master sheet (containing '${config.masterSheetIdentifier.fileNameHint}') not found in uploaded files. Processing stopped.`, true);
-        processButton.disabled = false;
-        return;
-    }
+        // App ID Column
+        const appIdGroup = document.createElement('div'); appIdGroup.className = 'config-group';
+        const appIdLabel = document.createElement('label'); appIdLabel.htmlFor = `appId-${typeName}`; appIdLabel.textContent = 'Application ID Column (in this sheet type):';
+        const appIdSelect = document.createElement('select'); appIdSelect.id = `appId-${typeName}`; appIdSelect.innerHTML = `<option value="">-- Select ${typeName} Header --</option>`;
+        sample.headers.forEach(header => { const option = new Option(header, header); option.selected = (header === sample.appIdCol); appIdSelect.appendChild(option); });
+        appIdSelect.addEventListener('change', (e) => { sample.appIdCol = e.target.value; checkGenerateButtonState(); });
+        appIdGroup.appendChild(appIdLabel); appIdGroup.appendChild(appIdSelect); sectionDiv.appendChild(appIdGroup);
 
-    logStatus(`Processing Master File: ${masterFile.name}...`);
-    try {
-        const masterData = await readFileData(masterFile);
-        const masterUniqueIdCol = config.masterSheetIdentifier.uniqueIdColumn; // Use the specific ID from masterSheetIdentifier
-        const masterOutputIdCol = config.outputColumns[0]; // Assuming the first output column is the ID
+        // Column Mappings
+        const mappingTitle = document.createElement('h4'); mappingTitle.textContent = 'Map Output Columns to Input Columns:'; mappingTitle.style.cssText = 'font-size: 1em; margin-top: 15px;'; sectionDiv.appendChild(mappingTitle);
 
-        masterData.forEach((row, index) => {
-            const uniqueId = row[masterUniqueIdCol];
-            if (uniqueId === undefined || uniqueId === null || String(uniqueId).trim() === '') {
-                logStatus(`Warning: Row ${index + 2} in Master file '${masterFile.name}' has a missing or empty Unique ID ('${masterUniqueIdCol}'). Skipping row.`, true);
-                return;
-            }
-             if (aggregatedData[uniqueId]) {
-                logStatus(`Warning: Duplicate Unique ID '${uniqueId}' found in Master file '${masterFile.name}' (Row ${index + 2}). Prior row data may be overwritten during master processing.`, true);
-                // Allow overwrite within master processing itself, but log it.
-            }
+        outputColumns.forEach(outputCol => {
+             // Skip meta columns
+             if (outputCol === 'SourceType' || outputCol === 'SourceFile') return;
+             // Skip master lookup columns (config is guaranteed to exist here due to check above)
+             let isLookup = config.masterSheetIdentifier.lookupColumns.includes(outputCol);
+             if (isLookup) return;
+             // Skip the primary App ID output column
+             if (outputColumns.length > 0 && outputCol === outputColumns[0]) return;
 
-            aggregatedData[uniqueId] = {}; // Initialize object for this ID
-
-            // Map columns from master based on its mapping
-            for (const [outputCol, inputCol] of Object.entries(masterMapping.columnMapping)) {
-                 if (config.outputColumns.includes(outputCol)) { // Only map if it's a desired output column
-                    aggregatedData[uniqueId][outputCol] = row[inputCol];
-                 }
-            }
-            // Ensure the primary ID column is correctly populated using the master's value
-             aggregatedData[uniqueId][masterOutputIdCol] = uniqueId;
-
-            // Add source info
-            aggregatedData[uniqueId]['SourceFile'] = masterFile.name;
-            aggregatedData[uniqueId]['SourceSheetType'] = masterMapping.name;
+            const itemDiv = document.createElement('div'); itemDiv.className = 'mapping-item';
+            const outLabel = document.createElement('label'); outLabel.textContent = `${outputCol}:`; outLabel.htmlFor = `map-${typeName}-${outputCol}`;
+            const select = document.createElement('select'); select.id = `map-${typeName}-${outputCol}`; select.dataset.outputColumn = outputCol;
+            select.innerHTML = '<option value="">(No Mapping)</option>';
+            sample.headers.forEach(header => { if (header === sample.appIdCol) return; select.add(new Option(header, header)); });
+            itemDiv.appendChild(outLabel); itemDiv.appendChild(select); sectionDiv.appendChild(itemDiv);
         });
-        masterFileProcessed = true;
-        logStatus(`Master file '${masterFile.name}' processed. ${Object.keys(aggregatedData).length} unique records initialized.`);
-
-    } catch (error) {
-        logStatus(`Error processing master file ${masterFile.name}: ${error.message}`, true);
-        processButton.disabled = false; // Re-enable on error
-        return; // Stop processing if master fails
-    }
-
-    // --- Process Other Data Sheets ---
-    for (const file of uploadedFiles) {
-        if (file === masterFile) continue; // Skip the already processed master file
-
-        const mapping = findSheetMapping(file.name, config);
-        if (!mapping) {
-            logStatus(`Warning: No mapping found for file '${file.name}'. Skipping file.`, true);
-            continue;
-        }
-
-        logStatus(`Processing Data File: ${file.name} (using mapping '${mapping.name}')...`);
-        try {
-            const fileData = await readFileData(file);
-            const fileUniqueIdCol = mapping.uniqueIdColumn; // ID column name for *this* sheet type
-            let processedRowCount = 0;
-            let skippedOrphanCount = 0;
-
-            fileData.forEach((row, index) => {
-                const uniqueId = row[fileUniqueIdCol];
-                 if (uniqueId === undefined || uniqueId === null || String(uniqueId).trim() === '') {
-                    logStatus(`Warning: Row ${index + 2} in '${file.name}' has missing or empty Unique ID ('${fileUniqueIdCol}'). Skipping row.`, true);
-                    return;
-                 }
-
-
-                if (aggregatedData[uniqueId]) {
-                    // Record exists from master, merge/overwrite data based on mapping
-                    for (const [outputCol, inputCol] of Object.entries(mapping.columnMapping)) {
-                         // Don't overwrite the primary ID column from data sheets
-                        if (outputCol !== config.outputColumns[0] && config.outputColumns.includes(outputCol)) {
-                             // Add/overwrite data for mapped columns *if* the value exists in the input row
-                             if (row[inputCol] !== undefined) {
-                                aggregatedData[uniqueId][outputCol] = row[inputCol];
-                             }
-                        }
-                    }
-                    // Optionally update source info if needed, e.g., create a list
-                    // aggregatedData[uniqueId]['SourceFiles'] = (aggregatedData[uniqueId]['SourceFiles'] || [masterFile.name]).concat(file.name);
-                    processedRowCount++;
-                } else {
-                    // ID from this sheet not found in master sheet's IDs
-                    logStatus(`Info: ID '${uniqueId}' from file '${file.name}' (Row ${index + 2}) not found in master sheet records. Skipping row.`, false); // Log as info, not error
-                    skippedOrphanCount++;
-                }
-            });
-             logStatus(`File '${file.name}' processed. Merged data for ${processedRowCount} matching records. Skipped ${skippedOrphanCount} orphan records.`);
-
-        } catch (error) {
-            logStatus(`Error processing file ${file.name}: ${error.message}`, true);
-            // Decide whether to continue or stop on single file error
-            // continue; // Continue with next file
-             logStatus(`Processing stopped due to error in file ${file.name}.`, true);
-             processButton.disabled = false; // Re-enable on error
-             return; // Stop processing entirely
-        }
-    }
-
-    // --- Prepare Final Output ---
-    logStatus("Preparing final output data...");
-    const finalOutputArray = [];
-    // Use the order of IDs as they appeared in the master file (or just object keys)
-    const masterIds = Object.keys(aggregatedData);
-
-    for (const id of masterIds) {
-        const record = aggregatedData[id];
-        const outputRow = {};
-        // Ensure all defined output columns exist in each row
-        for (const header of config.outputColumns) {
-            // Provide a default value (e.g., null or empty string) if data wasn't found
-            outputRow[header] = record[header] !== undefined ? record[header] : null;
-        }
-        finalOutputArray.push(outputRow);
-    }
-
-    if (finalOutputArray.length === 0) {
-         logStatus("Aggregation complete, but no data rows were generated.", true);
-         processButton.disabled = false;
-         return;
-    }
-
-    // --- Generate Excel Workbook ---
-    try {
-        const ws = XLSX.utils.json_to_sheet(finalOutputArray, { header: config.outputColumns });
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Aggregated_Data");
-        aggregatedWorkbook = wb; // Store workbook for download
-
-        logStatus(`Aggregation successful! ${finalOutputArray.length} records compiled.`);
-        downloadButton.style.display = 'inline-block'; // Show download button
-    } catch (error) {
-         logStatus(`Error generating final Excel file: ${error.message}`, true);
-    } finally {
-        processButton.disabled = false; // Re-enable process button
-    }
-}
-
-
-function downloadOutput() {
-    if (!aggregatedWorkbook) {
-        logStatus('No aggregated data available to download.', true);
-        return;
-    }
-    logStatus('Preparing download...');
-    try {
-        // Generate filename (e.g., aggregated_YYYYMMDD_HHMMSS.xlsx)
-        const timestamp = new Date().toISOString().replace(/[-:.]/g, "").slice(0, 15);
-        const filename = `aggregated_output_${timestamp}.xlsx`;
-
-        XLSX.writeFile(aggregatedWorkbook, filename);
-        logStatus(`Download started as '${filename}'.`);
-    } catch (error) {
-        logStatus(`Error triggering download: ${error.message}`, true);
-    }
-}
-
-// --- Helper Functions ---
-
-// Reads an Excel file and returns data from the first sheet as an array of objects
-function readFileData(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const data = e.target.result;
-                const workbook = XLSX.read(data, { type: 'array' });
-                const firstSheetName = workbook.SheetNames[0];
-                if (!firstSheetName) {
-                    reject(new Error(`File '${file.name}' contains no sheets.`));
-                    return;
-                }
-                const worksheet = workbook.Sheets[firstSheetName];
-                // header: 1 tells sheet_to_json to use the first row as headers
-                // defval: null ensures missing cells become null instead of undefined
-                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: null });
-
-                // Convert array of arrays to array of objects
-                if (jsonData.length < 1) {
-                    resolve([]); // Empty sheet
-                    return;
-                }
-                const headers = jsonData[0].map(h => String(h).trim()); // Trim header whitespace
-                const dataRows = jsonData.slice(1).map(rowArray => {
-                    const rowObject = {};
-                    headers.forEach((header, index) => {
-                         if (header) { // Only map columns with actual headers
-                             rowObject[header] = rowArray[index];
-                         }
-                    });
-                    return rowObject;
-                });
-
-                resolve(dataRows);
-            } catch (error) {
-                reject(new Error(`Failed to parse sheet data in '${file.name}': ${error.message}`));
-            }
-        };
-        reader.onerror = (e) => {
-            reject(new Error(`Failed to read file '${file.name}': ${reader.error}`));
-        };
-        reader.readAsArrayBuffer(file); // Read as ArrayBuffer for SheetJS
+        dataSheetMappingsContainer.appendChild(sectionDiv);
     });
+    checkGenerateButtonState();
 }
 
-// Finds the correct mapping configuration for a given filename
-function findSheetMapping(fileName, configData) {
-     // Prioritize matching master first if the filename hints at it
-    if (fileName.includes(configData.masterSheetIdentifier.fileNameHint)) {
-        const masterMap = configData.sheetMappings.find(m => m.name === configData.masterSheetIdentifier.name);
-        if (masterMap) return masterMap;
-    }
-     // Then try other mappings based on their hints
-    for (const mapping of configData.sheetMappings) {
-        // Skip the master mapping check if already done or not applicable
-        if (mapping.name === configData.masterSheetIdentifier.name && fileName.includes(configData.masterSheetIdentifier.fileNameHint)) {
-            continue;
-        }
-        if (mapping.fileNameHint && fileName.includes(mapping.fileNameHint)) {
-            return mapping;
-        }
-    }
-    // Fallback: maybe add a regex match or exact filename match later if needed
-    return null; // No mapping found
+/** Checks if the Generate button should be enabled */
+function checkGenerateButtonState() {
+    // *** ADDED CHECK: Ensure config is loaded before checking its properties ***
+    let masterInfoComplete = config && masterFileNameHint.value.trim() !== '' && masterAppIdColumn.value !== '';
+    // *** END ADDED CHECK ***
+    let masterSampleUploaded = masterHeaders.length > 0;
+    let allDataSheetsComplete = Object.keys(dataSheetSamples).length > 0 && Object.entries(dataSheetSamples).every(([key, ds]) => ds && ds.headers?.length > 0 && ds.hint && ds.appIdCol);
+    let outputColsDefined = outputColumns.length > 0;
+    generateConfigButton.disabled = !(masterSampleUploaded && masterInfoComplete && outputColsDefined && allDataSheetsComplete);
 }
+
+
+/** Builds the final config object */
+function buildConfigObject() {
+    // *** ADDED CHECK: Ensure config is loaded ***
+    if (!config || !config.masterSheetIdentifier) {
+        logBuilderStatus("Cannot build config: Master config details missing or config file not loaded.", true);
+        throw new Error("Master configuration is not properly loaded or defined.");
+    }
+    // *** END ADDED CHECK ***
+
+    logBuilderStatus("Building configuration object...");
+    const finalConfig = {};
+    finalConfig.masterSheetIdentifier = { fileNameHint: masterFileNameHint.value.trim(), appIdColumn: masterAppIdColumn.value, lookupColumns: Array.from(masterLookupColumns.querySelectorAll('input:checked')).map(cb => cb.value) };
+    finalConfig.outputColumns = outputColumns;
+    finalConfig.maxUniqueValuesForDropdown = parseInt(maxUniqueValuesInput.value, 10) || 150;
+    finalConfig.dataSheetMappings = [];
+    Object.keys(dataSheetSamples).sort().forEach(typeName => {
+        const sample = dataSheetSamples[typeName];
+        if (!sample || !sample.headers?.length || !sample.hint || !sample.appIdCol) return;
+        const mappingEntry = { name: typeName, fileNameHint: sample.hint, appIdColumn: sample.appIdCol, columnMapping: {} };
+        dataSheetMappingsContainer.querySelectorAll(`select[id^="map-${typeName}-"]`).forEach(select => {
+            if (select.value) mappingEntry.columnMapping[select.dataset.outputColumn] = select.value;
+        });
+        finalConfig.dataSheetMappings.push(mappingEntry);
+    });
+    logBuilderStatus("Configuration object built.");
+    return finalConfig;
+}
+
+/** Triggers download of a JSON object */
+function downloadJson(jsonObject, baseFilename) { /* ... (No changes needed) ... */ let jsonString; try { jsonString = JSON.stringify(jsonObject, null, 2); } catch (e) { logBuilderStatus(`JSON Error: ${e.message}`, true); return; } try { const blob = new Blob([jsonString], { type: "application/json;charset=utf-8" }); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = baseFilename.endsWith('.json') ? baseFilename : `${baseFilename}.json`; document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url); logBuilderStatus(`Download started: '${link.download}'.`, false); } catch (e) { logBuilderStatus(`Download link error: ${e.message}`, true); } }
+
+/** Handles the Generate button click */
+function handleGenerateConfig() { if (generateConfigButton.disabled) return; try { const configObject = buildConfigObject(); downloadJson(configObject, 'config.json'); } catch (error) { logBuilderStatus(`Failed to build/download config: ${error.message}`, true); } }
+
+
+// --- Event Listeners Setup ---
+masterSampleInput.addEventListener('change', handleMasterUpload);
+addDataTypeButton.addEventListener('click', addDataTypeSection);
+outputColumnsText.addEventListener('input', checkGenerateButtonState); // Check state only
+updateMappingUIButton.addEventListener('click', updateOutputColumnsAndUI); // Explicit UI update
+generateConfigButton.addEventListener('click', handleGenerateConfig);
+// Check generate button state when master inputs change
+masterFileNameHint.addEventListener('input', checkGenerateButtonState);
+masterAppIdColumn.addEventListener('change', checkGenerateButtonState);
+masterLookupColumns.addEventListener('change', checkGenerateButtonState);
+
+
+// --- Initial Setup ---
+logBuilderStatus("Config Builder Initialized.");
+addDataTypeSection(); // Add the first section
+checkGenerateButtonState(); // Check initial state

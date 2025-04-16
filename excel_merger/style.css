@@ -1,93 +1,118 @@
-body {
-    font-family: sans-serif;
-    line-height: 1.6;
-    margin: 20px;
-    background-color: #f4f4f4;
-}
+/* --- Base styles (body, h1, h2, control-section, action-buttons, label, input[type=file], button, status, statusLog, fileCount) --- */
+/* ... (Keep styles from v5) ... */
+body { font-family: sans-serif; line-height: 1.6; margin: 20px; background-color: #f4f4f4; }
+h1, h2 { color: #333; text-align: center; }
+.control-section { background-color: #fff; padding: 15px; margin-bottom: 15px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.action-buttons { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.action-buttons .info-text { font-size: 0.85em; color: #555; margin-left: 15px; flex-basis: 100%; margin-top: 5px; }
+label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; }
+input[type="file"] { display: block; margin-bottom: 10px; }
+button { background-color: #007bff; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-size: 1em; transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease; }
+button:disabled { background-color: #cccccc; color: #666; cursor: not-allowed; }
+button:hover:not(:disabled) { background-color: #0056b3; }
+#saveConfigButton { background-color: #ffc107; color: #333; }
+#saveConfigButton:hover:not(:disabled) { background-color: #e0a800; }
+#downloadButton { background-color: #28a745; }
+#downloadButton:hover:not(:disabled) { background-color: #218838; }
+#status { margin-top: 20px; background-color: #e9ecef; padding: 15px; border-radius: 5px; border: 1px solid #ced4da; }
+#status h2 { margin-top: 0; font-size: 1.2em; color: #495057; text-align: left; }
+#statusLog { font-family: monospace; white-space: pre-wrap; word-wrap: break-word; max-height: 300px; overflow-y: auto; background-color: #fff; padding: 10px; border: 1px solid #ddd; font-size: 0.9em; }
+#fileCount { font-style: italic; color: #666; margin-left: 10px; }
 
-h1, h2 {
-    color: #333;
-    text-align: center;
-}
 
-.control-section {
-    background-color: #fff;
-    padding: 15px;
-    margin-bottom: 15px;
-    border-radius: 5px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
+/* --- Filter Section & Tab Styling --- */
+/* ... (Keep tab styles from v5 - tab-links, tab-content, tab-pane etc.) ... */
+#filterContainer { background-color: #e8e8f0; border: 1px dashed #aab; }
+.tab-links { border-bottom: 1px solid #aaa; margin-bottom: 10px; padding-bottom: 0; display: flex; flex-wrap: wrap; gap: 4px; }
+.tab-links button { padding: 9px 14px; cursor: pointer; border: 1px solid #bbb; border-bottom: 1px solid #aaa; background-color: #d8d8e0; color: #333; border-radius: 4px 4px 0 0; font-size: 0.9em; margin-bottom: -1px; position: relative; }
+.tab-links button:hover { background-color: #c8c8d0; border-color: #aaa; color: #000; }
+.tab-links button.active { background-color: #fff; border-color: #aaa; border-bottom: 1px solid #fff; color: #0056b3; font-weight: bold; z-index: 1; }
+.tab-content { background-color: #fff; padding: 15px; border: 1px solid #aaa; border-top: none; border-radius: 0 0 4px 4px; }
+.tab-content .tab-pane { display: none; }
+.tab-content .tab-pane.active { display: block; }
+.tab-content fieldset { border: none; padding: 0; margin: 0; }
+.tab-content legend { display: none; }
 
-label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
-    color: #555;
-}
 
-input[type="file"] {
-    display: block;
+/* --- Filter Input Group Styling (Updated for Picklist) --- */
+.filter-group {
     margin-bottom: 10px;
+    display: grid;
+    /* Adjust columns: Label, Text Input + Mapping Info, Picklist controls */
+    grid-template-columns: 180px 1fr auto; /* Label | Input Area | Picklist Area */
+    gap: 5px 10px; /* Row gap, Column gap */
+    align-items: start;
 }
 
-button {
-    background-color: #007bff;
-    color: white;
-    border: none;
-    padding: 10px 15px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 1em;
-    transition: background-color 0.2s ease;
-}
-
-button:disabled {
-    background-color: #cccccc;
-    cursor: not-allowed;
-}
-
-button:hover:not(:disabled) {
-    background-color: #0056b3;
-}
-
-#downloadButton {
-    background-color: #28a745; /* Green */
-}
-
-#downloadButton:hover:not(:disabled) {
-    background-color: #218838;
-}
-
-
-#status {
-    margin-top: 20px;
-    background-color: #e9ecef;
-    padding: 15px;
-    border-radius: 5px;
-    border: 1px solid #ced4da;
-}
-
-#status h2 {
-    margin-top: 0;
-    font-size: 1.2em;
-    color: #495057;
-    text-align: left;
-}
-
-#statusLog {
-    font-family: monospace;
-    white-space: pre-wrap; /* Allows wrapping */
-    word-wrap: break-word; /* Breaks long words */
-    max-height: 300px;
-    overflow-y: auto; /* Add scrollbar if needed */
-    background-color: #fff;
-    padding: 10px;
-    border: 1px solid #ddd;
+.filter-group label {
+    grid-column: 1 / 2;
+    margin-bottom: 0;
+    font-weight: normal;
     font-size: 0.9em;
+    text-align: right;
+    color: #444;
+    padding-top: 5px;
+    padding-right: 5px;
 }
 
-#fileCount {
+/* Wrapper for Text Input & Mapping Info */
+.filter-group .input-wrapper {
+    grid-column: 2 / 3;
+    display: flex; /* Use flex for vertical layout */
+    flex-direction: column;
+}
+
+.filter-group input[type="text"] {
+    padding: 5px 8px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    width: 100%; /* Take full width of wrapper */
+    box-sizing: border-box;
+    /* margin-bottom: 3px; Remove margin if mapping info is always present */
+}
+
+/* Wrapper for Picklist Dropdown & Add Button */
+.filter-group .picklist-wrapper {
+    grid-column: 3 / 4;
+    display: flex;
+    gap: 5px; /* Space between dropdown and button */
+    align-items: center; /* Align vertically */
+    padding-top: 1px; /* Align slightly better with top of text box */
+}
+
+.filter-group select {
+    padding: 4px 6px; /* Slightly less padding than text input */
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    background-color: #fff;
+    max-width: 200px; /* Prevent extremely wide dropdowns */
+    flex-grow: 1; /* Allow dropdown to take available space */
+}
+
+.filter-group .add-filter-button {
+    padding: 4px 8px; /* Smaller button */
+    font-size: 0.9em;
+    line-height: 1; /* Ensure text fits */
+    background-color: #6c757d; /* Grey button */
+    min-width: 30px; /* Ensure '+' is visible */
+    text-align: center;
+    flex-shrink: 0; /* Don't let button shrink */
+}
+.filter-group .add-filter-button:hover:not(:disabled) {
+    background-color: #5a6268;
+}
+
+
+/* Style for invalid regex input */
+.filter-group input[type="text"][style*="border-color: red"] {
+    background-color: #fee;
+}
+
+/* Mapping Info Styling */
+.mapping-info {
+    font-size: 0.8em;
+    color: #555;
     font-style: italic;
-    color: #666;
-    margin-left: 10px;
+    margin-top: 3px; /* Space between input and info */
+    display: block;
 }

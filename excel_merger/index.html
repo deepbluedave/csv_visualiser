@@ -15,19 +15,43 @@
         <input type="file" id="configInput" accept=".json">
     </div>
 
+    <!-- Filter Configuration Section -->
+    <div id="filterContainer" class="control-section" style="display: none;">
+        <h2>Optional Filters (Applied Before Aggregation)</h2>
+        <p>Use text/regex field directly, or select from dropdown and click '+' to add.</p>
+
+        <!-- Tab Structure -->
+        <div id="filterTabs">
+            <div class="tab-links" id="filterTabLinks">
+                <!-- Tab buttons will be generated here -->
+            </div>
+            <div class="tab-content" id="filterTabContent">
+                <!-- Tab content panes (fieldsets) will be generated here -->
+            </div>
+        </div>
+        <!-- END: Tab Structure -->
+
+         <p style="font-size: 0.9em; margin-top: 15px; border-top: 1px solid #ccc; padding-top: 10px;">
+           <strong>Note:</strong> Master filters are applied first. Only data items linking to a master record that passes its filters will be considered. Data sheet filters are then applied to those remaining items.
+        </p>
+    </div>
+    <!-- END Filter Section -->
+
     <div class="control-section">
         <label for="folderInput">2. Select Spreadsheet Folder (.xlsx):</label>
         <input type="file" id="folderInput" webkitdirectory directory multiple accept=".xlsx">
         <span id="fileCount">0 files selected</span>
     </div>
 
-    <div class="control-section">
+    <div class="control-section action-buttons">
         <button id="processButton" disabled>3. Process Files</button>
+        <button id="saveConfigButton" disabled>Save Config w/ Filters</button>
+        <button id="downloadButton" style="display: none;">Download Aggregated File</button>
+         <p class="info-text">
+            "Save Config" downloads a <span style="font-weight: bold;">new</span> config file including current filters. You need to replace your old config file manually if desired.
+        </p>
     </div>
 
-    <div class="control-section">
-         <button id="downloadButton" style="display: none;">4. Download Aggregated File</button>
-    </div>
 
     <div id="status">
         <h2>Status</h2>
@@ -35,9 +59,6 @@
     </div>
 
     <!-- Load SheetJS library -->
-    <!-- Option 1: Local file -->
-    <!-- <script src="lib/xlsx.full.min.js"></script> -->
-    <!-- Option 2: CDN -->
      <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <!-- Load your custom script -->
