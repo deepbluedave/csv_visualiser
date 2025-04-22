@@ -336,16 +336,22 @@
 }
 #cdg-dashboard-wrapper .tag {
     display: inline-block;
-    padding: 1px 4px;
-    border-radius: 10px;
+    padding: 1px 4px; /* Keep padding */
+    border-radius: 10px; /* Keep border-radius */
     font-size: 0.9em;
     font-weight: 500;
-    line-height: 1.1;
+    line-height: 1.2; /* Adjust line-height slightly for wrapped text */
     border: 1px solid transparent;
-    vertical-align: baseline;
+    /* vertical-align: baseline; */ /* Change vertical alignment */
+    vertical-align: top; /* Or 'middle'. 'top' often looks better with wrapped content */
     text-align: center;
-    white-space: nowrap;
+    /* white-space: nowrap; */ /* <<< REMOVE or change this line */
+    white-space: normal; /* <<< ADD this line (allows wrapping) */
     margin: 2px;
+    /* Optional: Help break long words if necessary */
+    overflow-wrap: break-word;
+    word-break: break-word; /* More aggressive breaking if needed */
+    max-width: 100%; /* Ensure tag doesn't try to overflow its container horizontally */
 }
 #cdg-dashboard-wrapper .tag.tag-default {
     background-color: var(--color-tag-default-bg);

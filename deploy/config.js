@@ -6,11 +6,19 @@ let defaultConfig = {
 
   "generalSettings": {
     "dashboardTitle": "InfoSec Exception Tracker",
-    "csvUrl": null, // Load infosec_exceptions.csv via upload
+    "csvUrl": "https://www.csv.com/id/1224", // Load infosec_exceptions.csv via upload
     "trueValues": [ "true", "TRUE", "yes", "y", "1", "✓", "x", "on" ],
     "csvDelimiter": ",",
     "multiValueColumns": [ /* "Mitigating Controls Summary" could be if detailed */ ],
-    "linkColumns": [ "Link" ],
+    "linkColumns": [ "Link","ExceptionID" ],
+
+    "linkPrefixes": {
+      // Map Column Name to its URL prefix
+      // The cell value will be appended directly to this prefix.
+      "ExceptionID": "https://jira.example.com/browse/id/", // Example for JIRA tickets
+      // "AnotherIDColumn": "https://service.example.com/details?id="
+      // Columns listed in linkColumns but NOT here will be treated as potentially full URLs
+    },    
 
     // --- ADDED: Default settings for cards/items ---
     "defaultCardIndicatorColumns": [ // Common indicators for Kanban/Summary cards
@@ -19,11 +27,12 @@ let defaultConfig = {
          "Standard Excepted",
          "Renewal Date",
          "Owner",
-         "Link"
+         "ExceptionID",
+
     ],
     "defaultItemSortBy": [ // Common sort order within Kanban/Summary groups
+      { "column": "Renewal Date", "direction": "asc" },
       { "column": "Risk Level", "direction": "custom", "order": ["Elevated", "High", "Medium", "Low"] },
-      { "column": "Renewal Date", "direction": "asc" }
     ]
     // --- END ADDED ---
   },
@@ -124,20 +133,20 @@ let defaultConfig = {
       "filter": null,
       "config": {
         "displayColumns": [
-           "Application Name", "Exception Title", "Standard Excepted", "Risk Level", "Status", "Renewal Date", "Owner", "Approver", "Link"
+           "Application Name", "Exception Title", "Standard Excepted", "Risk Level", "Status", "Renewal Date", "Owner", "Approver", "ExceptionID", "Link"
         ],
         "columnWidths": {
             "default": "120px", "Application Name": "180px", "Exception Title": "250px", "Standard Excepted": "150px",
-            "Risk Level": "90px", "Status": "110px", "Renewal Date": "100px", "Owner": "100px", "Approver": "100px", "Link": "50px"
+            "Risk Level": "90px", "Status": "110px", "Renewal Date": "100px", "Owner": "100px", "Approver": "100px", "Link": "50px","ExceptionID": "30px"
         },
         "headerOrientations": {
             "default": "vertical", "Application Name": "horizontal", "Exception Title": "horizontal", "Standard Excepted": "horizontal"
         },
-        "sortBy": [ // Table sort is different from itemSortBy, keep this
+/*        "sortBy": [ // Table sort is different from itemSortBy, keep this
             { "column": "Renewal Date", "direction": "asc" },
             { "column": "Risk Level", "direction": "custom", "order": ["Elevated", "High", "Medium", "Low"] },
             { "column": "Application Name", "direction": "asc" }
-        ]
+        ]*/
       }
     },
 

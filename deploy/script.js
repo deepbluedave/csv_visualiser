@@ -120,17 +120,39 @@ function generateIndicatorsHTML(row, columnName, config) {
 
     // --- Global Link Column Check (Highest Priority) ---
     if (linkColumns.includes(columnName)) {
-        const valuesToCheck = Array.isArray(value) ? value : [value];
+        // --- START REPLACEMENT ---
+        const prefixes = config.generalSettings?.linkPrefixes || {};
+        const prefix = prefixes[columnName]; // Get prefix for this specific column
+        const valuesToCheck = Array.isArray(value) ? value : [value]; // Handle multi-value
+
         valuesToCheck.forEach(singleValue => {
-            const url = String(singleValue || '').trim();
-            if (url.startsWith('http://') || url.startsWith('https://')) {
-                // <<< CHANGE: Push link HTML to array
-                generatedHtmlArray.push(`<a href="${url}" target="_blank" rel="noopener noreferrer" title="Open Link: ${url}" class="card-link-icon">🔗</a>`);
+            const cellValue = String(singleValue ?? '').trim(); // Get the ID or potential URL
+            let fullUrl = null;
+            let linkTitle = '';
+
+            if (prefix && cellValue) {
+                // Prefix exists AND cell value is not empty
+                fullUrl = prefix + cellValue; // Construct the URL
+                linkTitle = `Open Link: ${fullUrl}`;
+            } else if (!prefix && cellValue) {
+                // No prefix defined for this column, treat cellValue as potential full URL
+                if (cellValue.startsWith('http://') || cellValue.startsWith('https://')) {
+                    fullUrl = cellValue;
+                    linkTitle = `Open Link: ${fullUrl}`;
+                }
+                 // Optional: Handle non-URL text in link columns without prefix (currently ignored)
+                 // else { console.log(`Value in link column "${columnName}" is not a URL: ${cellValue}`); }
             }
-            // Optionally handle non-URL text in link columns if needed, or ignore it
+
+            // Only add the link HTML if a valid URL was constructed/found
+            if (fullUrl) {
+                generatedHtmlArray.push(`<a href="${fullUrl}" target="_blank" rel="noopener noreferrer" title="${linkTitle}" class="card-link-icon">🔗</a>`);
+            }
         });
-        return generatedHtmlArray; // <<< CHANGE: Return the array of links
+         // --- END REPLACEMENT ---
+        return generatedHtmlArray;
     }
+
 
     // --- Standard Indicator Style Logic ---
     if (!styleConfig || styleConfig.type === 'none') return generatedHtmlArray; // <<< CHANGE: Return empty array
@@ -1279,7 +1301,10 @@ function renderTable(filteredData, tabConfig, globalConfig, targetElement, showM
     }
 
     // --- *** NEW: Apply Sorting *** ---
-    const sortByConfig = tabConfig.config?.sortBy;
+    // Resolve the sort configuration: Use tab-specific 'sortBy' if defined,
+    // otherwise fallback to global 'defaultItemSortBy', else null.
+    const sortByConfig = tabConfig.config?.sortBy ?? globalConfig.generalSettings?.defaultItemSortBy ?? null;
+    
     const dataToRender = sortData([...filteredData], sortByConfig, globalConfig); // Use helper, sort a copy
 
     const validHeaders = globalConfig.csvHeaders || [];
@@ -1338,20 +1363,64 @@ function renderTable(filteredData, tabConfig, globalConfig, targetElement, showM
 
                 // Link Column Handling
                 if (linkColumns.includes(header)) {
-                    const url = String(value || '').trim();
-                    if (url.startsWith('http://') || url.startsWith('https://')) {
-                        cellHTML = `<a href="${url}" target="_blank" rel="noopener noreferrer" title="Open Link: ${url}" class="table-link-csv-dashboard-icon">🔗</a>`;
-                        cellTitle = `Link: ${url}`;
+                    // --- START REPLACEMENT ---
+                    const prefixes = globalConfig.generalSettings?.linkPrefixes || {};
+                    const prefix = prefixes[header]; // Get prefix for this specific column
+                    const valuesToCheck = Array.isArray(value) ? value : [value]; // Handle potential multi-value
+
+                    const linksHtmlArray = [];
+                    const linksTitleArray = [];
+
+                    valuesToCheck.forEach(singleValue => {
+                        const cellValue = String(singleValue ?? '').trim(); // Get the ID or potential URL
+                        let fullUrl = null;
+                        let linkTitle = '';
+                        let isInvalid = false;
+
+                        if (prefix && cellValue) {
+                            // Prefix exists AND cell value is not empty
+                            fullUrl = prefix + cellValue; // Construct the URL
+                            linkTitle = `Open Link: ${fullUrl}`;
+                        } else if (!prefix && cellValue) {
+                            // No prefix defined for this column, treat cellValue as potential full URL
+                            if (cellValue.startsWith('http://') || cellValue.startsWith('https://')) {
+                                fullUrl = cellValue;
+                                linkTitle = `Open Link: ${fullUrl}`;
+                            } else {
+                                // Value exists, but no prefix and not a URL - treat as invalid link data for table display
+                                isInvalid = true;
+                                linksHtmlArray.push(`<span class="cell-text">${cellValue}</span>`); // Show raw ID/text
+                                linksTitleArray.push(cellValue); // Use raw value for title
+                            }
+                        }
+                        // If empty value, do nothing (no link, no text)
+
+                        // Add the link HTML if a valid URL was constructed/found
+                        if (fullUrl) {
+                            // *** Use the correct class for table links ***
+                            linksHtmlArray.push(`<a href="${fullUrl}" target="_blank" rel="noopener noreferrer" title="${linkTitle}" class="table-link-icon">🔗</a>`);
+                            linksTitleArray.push(linkTitle);
+                        }
+                        // If invalid, we already pushed the raw text above
+                    });
+
+                    // Join the HTML and titles (handle multiple links in one cell if needed, though less common for tables)
+                    cellHTML = linksHtmlArray.join('<br>'); // Use line break if multiple links possible
+                    cellTitle = linksTitleArray.join('; ');
+
+                    // Set alignment and potentially invalid class
+                    if (linksHtmlArray.length > 0 && !linksHtmlArray.some(html => html.includes('cell-text'))) {
+                        // If we have links and none are just raw text spans
                         cellTextAlign = 'center'; // Center link icons
-                    } else if (url) {
-                        cellHTML = `<span class="cell-text">${url}</span>`; // Wrap non-URL text
-                        cellTitle = url;
-                        td.classList.add('link-column-invalid-url');
+                    } else if (linksHtmlArray.some(html => html.includes('cell-text'))) {
+                        td.classList.add('link-column-invalid-url'); // Mark cell if it contains non-URL text
+                        cellTextAlign = 'left'; // Align left if showing raw text/IDs
                     } else {
-                       // Ensure empty cell if no URL
-                       cellHTML = '';
-                       cellTitle = header; // Set default title for empty cell
+                         // Cell is empty (no value or prefix didn't apply)
+                         cellTitle = header; // Default title for empty cell
+                         cellTextAlign = 'center'; // Center empty cell
                     }
+                     // --- END REPLACEMENT ---
                 }
                 // Standard Column Handling
                 else {
@@ -2110,22 +2179,29 @@ function getFormattedIndicatorText(value, columnName, globalConfig) {
 
     // --- Global Link Column Check ---
     if (linkColumns.includes(columnName)) {
-        const url = stringValue.trim();
-        if (url.startsWith('http://') || url.startsWith('https://')) {
-            // <<< CHANGE: Return the actual URL for CSV export >>>
-            // return '🔗'; // Old: return emoji
-            return url;    // New: return the URL string
+        // --- START REPLACEMENT ---
+        const prefixes = globalConfig.generalSettings?.linkPrefixes || {};
+        const prefix = prefixes[columnName];
+        const cellValue = stringValue.trim(); // stringValue is already defined from single value handling
+
+        if (prefix && cellValue) {
+            // Prefix exists and value is not empty: return the constructed URL
+            return prefix + cellValue;
+        } else if (!prefix && cellValue) {
+            // No prefix: check if the cell value itself is a URL
+            if (cellValue.startsWith('http://') || cellValue.startsWith('https://')) {
+                return cellValue; // Return the full URL
+            } else {
+                // It's in linkColumns, but has no prefix and isn't a URL - return the raw value (the ID)
+                return cellValue;
+            }
+        } else {
+             // Value is empty, return empty string
+             return '';
         }
-        // Return raw value if it's in a link column but not a valid URL
-        return stringValue;
+         // --- END REPLACEMENT ---
     }
-
-    // --- Standard Indicator Style Logic ---
-    if (!styleConfig || styleConfig.type === 'none') {
-        // No specific style, return the raw string value
-        return stringValue;
-    }
-
+    
     try {
         // --- ICON type ---
         if (styleConfig.type === 'icon') {
@@ -3033,7 +3109,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // Check if essential containers were found
-    if (!fileInput || !tabControls || !viewContentContainer || !mainHeading || !globalSearchInput || !exportButton ) {
+    if (!fileInput || !tabControls || !viewContentContainer || !mainHeading || !globalSearchInput || !exportButton) {
         console.error("Essential DOM elements missing (controls/containers/search). Dashboard cannot initialize.");
         document.body.innerHTML = '<h1 style="color: red; text-align: center; margin-top: 50px;">Critical Error: Required HTML structure is missing. Cannot load dashboard.</h1>';
         return;
@@ -3070,7 +3146,7 @@ document.addEventListener('DOMContentLoaded', () => {
      * Targets table rows, or entire group blocks in Kanban/Summary views.
      * @param {string} searchTerm The text or regex pattern to search for.
      */
-     function handleGlobalSearch(searchTerm) {
+    function handleGlobalSearch(searchTerm) {
         const term = searchTerm.trim(); // Don't lowercase yet for regex
         // console.log(`Performing search for: "${term}" on tab: ${appState.activeTabId}`); // Debug logging
 
@@ -3183,8 +3259,8 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log(`Default active tab set to: ${appState.activeTabId}`);
         } else {
             console.warn("No enabled tabs found in configuration.");
-            if(tabControls) tabControls.innerHTML = '<p style="color: red; padding: 10px;">Error: No enabled tabs configured.</p>';
-            if(viewContentContainer) viewContentContainer.innerHTML = '';
+            if (tabControls) tabControls.innerHTML = '<p style="color: red; padding: 10px;">Error: No enabled tabs configured.</p>';
+            if (viewContentContainer) viewContentContainer.innerHTML = '';
             return;
         }
 
@@ -3198,7 +3274,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log("No CSV URL configured. Enabling file upload.");
             updateUiForLoadMode('file');
             showMessageOnLoad(appState.activeTabId); // Show "Upload CSV" in default tab
-             // No need to call showView here, messageOnLoad handles initial state
+            // No need to call showView here, messageOnLoad handles initial state
         }
     }
 
@@ -3238,24 +3314,54 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
         } catch (error) {
-             console.error("ERROR during data loading or processing:", error);
-             parsedData = [];
-             currentConfig.csvHeaders = [];
-             const errorMsg = `Error: ${error.message}. Check console (F12) and verify CSV/config.`;
-             currentConfig.tabs?.forEach(tab => {
-                 if (tab.enabled !== false) showMessage(errorMsg, tab.id);
-             });
-             clearAllViews(true);
-             if (typeof alert !== 'undefined') alert(errorMsg);
+            // --- THIS IS THE BLOCK TO MODIFY ---
+            console.error("ERROR during data loading or processing:", error);
+            parsedData = [];
+            currentConfig.csvHeaders = [];
+
+            // --- START MODIFICATION ---
+
+            // Check if the error likely came from a URL load attempt
+            // (We know loadFunction is loadDataFromUrl if config.generalSettings.csvUrl was set)
+            const wasUrlLoadAttempt = !!currentConfig.generalSettings?.csvUrl;
+
+            if (wasUrlLoadAttempt) {
+                // Specific handling for URL load failure: Fallback to file upload
+                console.log("URL load failed. Falling back to file upload mode.");
+                updateUiForLoadMode('file'); // Re-enable the file input UI
+
+                const friendlyErrorMsg = `Failed to load data from URL. Please upload a CSV file instead. (Error: ${error.message})`;
+                // Show the user-friendly message only in the *currently active* tab's placeholder
+                if (appState.activeTabId) {
+                    showMessage(friendlyErrorMsg, appState.activeTabId);
+                } else {
+                    // Fallback if active tab isn't set (less likely here, but safe)
+                    currentConfig.tabs?.forEach(tab => {
+                        if (tab.enabled !== false) showMessage(friendlyErrorMsg, tab.id);
+                    });
+                }
+                // Clear views but keep placeholders visible for the message
+                clearAllViews(true);
+
+            } else {
+                // Handling for errors during file upload processing or parsing
+                const errorMsg = `Error processing file: ${error.message}. Check console (F12) and verify CSV/config.`;
+                currentConfig.tabs?.forEach(tab => {
+                    if (tab.enabled !== false) showMessage(errorMsg, tab.id);
+                });
+                clearAllViews(true);
+                if (typeof alert !== 'undefined') alert(errorMsg); // Alert for file processing errors might be okay
+            }
+            // --- END MODIFICATION ---
 
         } finally {
-             // Ensure the correct default/active view is visible after processing
-             // Use the activeTabId already set, or find the first enabled one as fallback
-             const targetTab = appState.activeTabId || currentConfig.tabs?.find(t => t.enabled !== false)?.id;
-             if (targetTab) {
+            // Ensure the correct default/active view is visible after processing
+            // Use the activeTabId already set, or find the first enabled one as fallback
+            const targetTab = appState.activeTabId || currentConfig.tabs?.find(t => t.enabled !== false)?.id;
+            if (targetTab) {
                 showView(targetTab); // Call view-manager's showView to make the active tab visible
-             }
-             if (fileInput) fileInput.value = ''; // Reset file input regardless of success/failure
+            }
+            if (fileInput) fileInput.value = ''; // Reset file input regardless of success/failure
         }
     }
 
@@ -3279,51 +3385,51 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             try {
-                 const filteredData = applyTabFilter(parsedData, tabConfig.filter, currentConfig);
-                 // console.log(`Tab "${tabConfig.title}" (${tabConfig.id}): ${filteredData.length} rows after filtering.`); // Debug
+                const filteredData = applyTabFilter(parsedData, tabConfig.filter, currentConfig);
+                // console.log(`Tab "${tabConfig.title}" (${tabConfig.id}): ${filteredData.length} rows after filtering.`); // Debug
 
-                 // Basic Config Validation (Example)
-                 let configValid = true;
-                 let errorMsg = '';
-                 if (!currentConfig.csvHeaders || currentConfig.csvHeaders.length === 0 && parsedData.length > 0) {
+                // Basic Config Validation (Example)
+                let configValid = true;
+                let errorMsg = '';
+                if (!currentConfig.csvHeaders || currentConfig.csvHeaders.length === 0 && parsedData.length > 0) {
                     // Allow rendering if headers are empty but data might be too (e.g. graph from non-tabular source?)
                     // configValid = false; errorMsg = 'CSV Headers not available for validation.'
-                 } else {
+                } else {
                     // Specific validations
-                     if (tabConfig.type === 'kanban' && (!tabConfig.config?.groupByColumn || !currentConfig.csvHeaders.includes(tabConfig.config.groupByColumn))) {
-                         configValid = false; errorMsg = `Kanban 'groupByColumn' ("${tabConfig.config?.groupByColumn || ''}") is missing or invalid.`;
-                     }
-                     if (tabConfig.type === 'counts' && (!tabConfig.config?.groupByColumn || !currentConfig.csvHeaders.includes(tabConfig.config.groupByColumn))) {
-                         configValid = false; errorMsg = `Counts 'groupByColumn' ("${tabConfig.config?.groupByColumn || ''}") is missing or invalid.`;
-                     }
-                      if (tabConfig.type === 'graph' && (!tabConfig.config?.primaryNodeIdColumn || !currentConfig.csvHeaders.includes(tabConfig.config.primaryNodeIdColumn))) {
-                          configValid = false; errorMsg = `Graph 'primaryNodeIdColumn' ("${tabConfig.config?.primaryNodeIdColumn || ''}") is missing or invalid.`;
-                      }
-                 }
+                    if (tabConfig.type === 'kanban' && (!tabConfig.config?.groupByColumn || !currentConfig.csvHeaders.includes(tabConfig.config.groupByColumn))) {
+                        configValid = false; errorMsg = `Kanban 'groupByColumn' ("${tabConfig.config?.groupByColumn || ''}") is missing or invalid.`;
+                    }
+                    if (tabConfig.type === 'counts' && (!tabConfig.config?.groupByColumn || !currentConfig.csvHeaders.includes(tabConfig.config.groupByColumn))) {
+                        configValid = false; errorMsg = `Counts 'groupByColumn' ("${tabConfig.config?.groupByColumn || ''}") is missing or invalid.`;
+                    }
+                    if (tabConfig.type === 'graph' && (!tabConfig.config?.primaryNodeIdColumn || !currentConfig.csvHeaders.includes(tabConfig.config.primaryNodeIdColumn))) {
+                        configValid = false; errorMsg = `Graph 'primaryNodeIdColumn' ("${tabConfig.config?.primaryNodeIdColumn || ''}") is missing or invalid.`;
+                    }
+                }
 
-                 if (!configValid) { throw new Error(`Invalid configuration: ${errorMsg}`); }
+                if (!configValid) { throw new Error(`Invalid configuration: ${errorMsg}`); }
 
-                 // Call the correct renderer based on type
-                 switch (tabConfig.type) {
-                    case 'table':   renderTable(filteredData, tabConfig, currentConfig, targetElement, showMessage); break;
-                    case 'kanban':  renderKanban(filteredData, tabConfig, currentConfig, targetElement, showMessage); break;
+                // Call the correct renderer based on type
+                switch (tabConfig.type) {
+                    case 'table': renderTable(filteredData, tabConfig, currentConfig, targetElement, showMessage); break;
+                    case 'kanban': renderKanban(filteredData, tabConfig, currentConfig, targetElement, showMessage); break;
                     case 'summary': renderSummaryView(filteredData, tabConfig, currentConfig, targetElement, showMessage); break;
-                    case 'counts':  renderCountsView(filteredData, tabConfig, currentConfig, targetElement, showMessage); break;
-                    case 'graph':   renderGraph(filteredData, tabConfig, currentConfig, targetElement, showMessage); break;
+                    case 'counts': renderCountsView(filteredData, tabConfig, currentConfig, targetElement, showMessage); break;
+                    case 'graph': renderGraph(filteredData, tabConfig, currentConfig, targetElement, showMessage); break;
                     default:
                         console.warn(`renderAllTabs: Unknown tab type "${tabConfig.type}" for tab "${tabConfig.title}".`);
                         showMessage(`Unknown view type configured: "${tabConfig.type}"`, tabConfig.id);
                 }
             } catch (renderError) {
-                 console.error(`Error rendering tab "${tabConfig.title}" (${tabConfig.id}):`, renderError);
-                 showMessage(`Error rendering tab: ${renderError.message}`, tabConfig.id);
-                 // Ensure targetElement is cleared on error to prevent showing partial/broken content
-                 if (targetElement) targetElement.innerHTML = '';
-                 setMessagePlaceholder(tabConfig.id, `Error rendering tab: ${renderError.message}`, true); // Show error in placeholder
+                console.error(`Error rendering tab "${tabConfig.title}" (${tabConfig.id}):`, renderError);
+                showMessage(`Error rendering tab: ${renderError.message}`, tabConfig.id);
+                // Ensure targetElement is cleared on error to prevent showing partial/broken content
+                if (targetElement) targetElement.innerHTML = '';
+                setMessagePlaceholder(tabConfig.id, `Error rendering tab: ${renderError.message}`, true); // Show error in placeholder
             }
         });
-         // After rendering all tabs, apply dynamic styles based on config
-         applyConfigStyles(currentConfig);
+        // After rendering all tabs, apply dynamic styles based on config
+        applyConfigStyles(currentConfig);
     }
 
 
@@ -3349,129 +3455,129 @@ document.addEventListener('DOMContentLoaded', () => {
      * @param {Event} event The click event.
      */
     function handleTabClick(event) {
-         const button = event.target.closest('.tab-button');
-         if (button) {
-             const tabId = button.getAttribute('data-tab-id');
-             if (tabId && tabId !== appState.activeTabId) {
-                 console.log(`Switching view to tab: ${tabId}`);
-                 // Clear search input VISUALLY when changing tabs
-                 if (globalSearchInput) {
+        const button = event.target.closest('.tab-button');
+        if (button) {
+            const tabId = button.getAttribute('data-tab-id');
+            if (tabId && tabId !== appState.activeTabId) {
+                console.log(`Switching view to tab: ${tabId}`);
+                // Clear search input VISUALLY when changing tabs
+                if (globalSearchInput) {
                     globalSearchInput.value = '';
-                 }
-                 // Show the new view (which will also clear the search filter via handleGlobalSearch(''))
-                 showView(tabId); // Calls view-manager's showView
-             }
-         }
-     }
-
-/**
-     * Handles the click event for the export button.
-     * Determines the active tab, filters/sorts data, generates CSV, and triggers download.
-     */
-function handleExportClick() {
-    console.log("Export button clicked.");
-    if (!appState.activeTabId) {
-        console.warn("handleExportClick: No active tab selected.");
-        alert("Please select a tab to export.");
-        return;
-    }
-    if (!appState.parsedData || appState.parsedData.length === 0) {
-         console.warn("handleExportClick: No data loaded to export.");
-         alert("Please load data before exporting.");
-         return;
-    }
-
-    const tabConfig = appState.currentConfig.tabs?.find(t => t.id === appState.activeTabId);
-    if (!tabConfig) {
-        console.error(`handleExportClick: Config not found for active tab ${appState.activeTabId}`);
-        alert("Error: Could not find configuration for the active tab.");
-        return;
-    }
-
-    const exportableTypes = ['table', 'kanban','summary','counts']; // Add 'summary' later if implemented
-    if (!exportableTypes.includes(tabConfig.type)) {
-        console.log(`Export skipped: Tab type "${tabConfig.type}" is not exportable yet.`);
-        alert(`Export is not currently supported for the "${tabConfig.title}" view type.`);
-        return;
-    }
-
-    // Disable button temporarily to prevent double-clicks
-    if(exportButton) exportButton.disabled = true;
-    // Optional: Show a loading indicator
-
-    // Use setTimeout to allow UI to update (button disable) before potentially long processing
-    setTimeout(() => {
-        try {
-            console.log(`Exporting tab: ${tabConfig.title} (${tabConfig.id}), Type: ${tabConfig.type}`);
-
-            // 1. Get Data (use current parsed data)
-            const fullData = appState.parsedData;
-
-            // 2. Apply Tab Filter
-            const filteredData = applyTabFilter(fullData, tabConfig.filter, appState.currentConfig);
-            console.log(`Export - ${filteredData.length} rows after filtering.`);
-
-            // 3. Apply Item Sorting (for consistency, even if table renderer has its own sort)
-            // Resolve sort config using defaults
-            let dataForExport = [...filteredData]; // Start with filtered data
-
-            // Apply item sorting for types that use it visually before grouping/sectioning
-            if (['table', 'kanban', 'summary'].includes(tabConfig.type)) {
-               const itemSortConfig = tabConfig.config?.itemSortBy ?? appState.currentConfig.generalSettings?.defaultItemSortBy ?? null;
-               dataForExport = sortData(dataForExport, itemSortConfig, appState.currentConfig); // Sort a copy
-            }
-
-            // 4. Generate CSV Content
-            let csvContent = '';
-            let baseFilename = `dashboard-export-${tabConfig.id}`;
-
-            switch(tabConfig.type) {
-                case 'table':
-                    if (typeof generateTableCsv === 'function') {
-                        csvContent = generateTableCsv(dataForExport, tabConfig, appState.currentConfig);
-                    } else { throw new Error("generateTableCsv function not found."); }
-                    break;
-                case 'kanban':
-                    if (typeof generateKanbanCsv === 'function') {
-                        csvContent = generateKanbanCsv(dataForExport, tabConfig, appState.currentConfig);
-                    } else { throw new Error("generateKanbanCsv function not found."); }
-                    break;
-                case 'summary':
-                    if (typeof generateSummaryCsv === 'function') {
-                        csvContent = generateSummaryCsv(dataForExport, tabConfig, appState.currentConfig);
-                    } else { throw new Error("generateSummaryCsv function not found."); }
-                    break;
-                case 'counts':
-                     if (typeof generateCountsCsv === 'function') {
-                         // Counts export function handles its own aggregation from filtered data
-                        csvContent = generateCountsCsv(filteredData, tabConfig, appState.currentConfig); // Pass originally filtered data
-                    } else { throw new Error("generateCountsCsv function not found."); }
-                    break;
-                // No default needed as we checked exportableTypes earlier
-            }
-
-            // 5. Trigger Download
-            if (csvContent) {
-                // Check if triggerCsvDownload exists
-                if (typeof triggerCsvDownload === 'function') {
-                    const filename = `${baseFilename}.csv`;
-                    triggerCsvDownload(csvContent, filename);
-                } else {
-                    throw new Error("triggerCsvDownload function not found.");
                 }
-            } else {
-                console.warn("Export generation resulted in empty content.");
-                alert("Could not generate export data for this view. It might be empty after filtering.");
+                // Show the new view (which will also clear the search filter via handleGlobalSearch(''))
+                showView(tabId); // Calls view-manager's showView
             }
-
-        } catch (error) {
-            console.error("Error during export:", error);
-            alert(`An error occurred during export: ${error.message}`);
-        } finally {
-            // Re-enable button and hide loading indicator
-            if(exportButton) exportButton.disabled = false;
         }
-    }, 10); // Small delay for UI update
+    }
+
+    /**
+         * Handles the click event for the export button.
+         * Determines the active tab, filters/sorts data, generates CSV, and triggers download.
+         */
+    function handleExportClick() {
+        console.log("Export button clicked.");
+        if (!appState.activeTabId) {
+            console.warn("handleExportClick: No active tab selected.");
+            alert("Please select a tab to export.");
+            return;
+        }
+        if (!appState.parsedData || appState.parsedData.length === 0) {
+            console.warn("handleExportClick: No data loaded to export.");
+            alert("Please load data before exporting.");
+            return;
+        }
+
+        const tabConfig = appState.currentConfig.tabs?.find(t => t.id === appState.activeTabId);
+        if (!tabConfig) {
+            console.error(`handleExportClick: Config not found for active tab ${appState.activeTabId}`);
+            alert("Error: Could not find configuration for the active tab.");
+            return;
+        }
+
+        const exportableTypes = ['table', 'kanban', 'summary', 'counts']; // Add 'summary' later if implemented
+        if (!exportableTypes.includes(tabConfig.type)) {
+            console.log(`Export skipped: Tab type "${tabConfig.type}" is not exportable yet.`);
+            alert(`Export is not currently supported for the "${tabConfig.title}" view type.`);
+            return;
+        }
+
+        // Disable button temporarily to prevent double-clicks
+        if (exportButton) exportButton.disabled = true;
+        // Optional: Show a loading indicator
+
+        // Use setTimeout to allow UI to update (button disable) before potentially long processing
+        setTimeout(() => {
+            try {
+                console.log(`Exporting tab: ${tabConfig.title} (${tabConfig.id}), Type: ${tabConfig.type}`);
+
+                // 1. Get Data (use current parsed data)
+                const fullData = appState.parsedData;
+
+                // 2. Apply Tab Filter
+                const filteredData = applyTabFilter(fullData, tabConfig.filter, appState.currentConfig);
+                console.log(`Export - ${filteredData.length} rows after filtering.`);
+
+                // 3. Apply Item Sorting (for consistency, even if table renderer has its own sort)
+                // Resolve sort config using defaults
+                let dataForExport = [...filteredData]; // Start with filtered data
+
+                // Apply item sorting for types that use it visually before grouping/sectioning
+                if (['table', 'kanban', 'summary'].includes(tabConfig.type)) {
+                    const itemSortConfig = tabConfig.config?.itemSortBy ?? appState.currentConfig.generalSettings?.defaultItemSortBy ?? null;
+                    dataForExport = sortData(dataForExport, itemSortConfig, appState.currentConfig); // Sort a copy
+                }
+
+                // 4. Generate CSV Content
+                let csvContent = '';
+                let baseFilename = `dashboard-export-${tabConfig.id}`;
+
+                switch (tabConfig.type) {
+                    case 'table':
+                        if (typeof generateTableCsv === 'function') {
+                            csvContent = generateTableCsv(dataForExport, tabConfig, appState.currentConfig);
+                        } else { throw new Error("generateTableCsv function not found."); }
+                        break;
+                    case 'kanban':
+                        if (typeof generateKanbanCsv === 'function') {
+                            csvContent = generateKanbanCsv(dataForExport, tabConfig, appState.currentConfig);
+                        } else { throw new Error("generateKanbanCsv function not found."); }
+                        break;
+                    case 'summary':
+                        if (typeof generateSummaryCsv === 'function') {
+                            csvContent = generateSummaryCsv(dataForExport, tabConfig, appState.currentConfig);
+                        } else { throw new Error("generateSummaryCsv function not found."); }
+                        break;
+                    case 'counts':
+                        if (typeof generateCountsCsv === 'function') {
+                            // Counts export function handles its own aggregation from filtered data
+                            csvContent = generateCountsCsv(filteredData, tabConfig, appState.currentConfig); // Pass originally filtered data
+                        } else { throw new Error("generateCountsCsv function not found."); }
+                        break;
+                    // No default needed as we checked exportableTypes earlier
+                }
+
+                // 5. Trigger Download
+                if (csvContent) {
+                    // Check if triggerCsvDownload exists
+                    if (typeof triggerCsvDownload === 'function') {
+                        const filename = `${baseFilename}.csv`;
+                        triggerCsvDownload(csvContent, filename);
+                    } else {
+                        throw new Error("triggerCsvDownload function not found.");
+                    }
+                } else {
+                    console.warn("Export generation resulted in empty content.");
+                    alert("Could not generate export data for this view. It might be empty after filtering.");
+                }
+
+            } catch (error) {
+                console.error("Error during export:", error);
+                alert(`An error occurred during export: ${error.message}`);
+            } finally {
+                // Re-enable button and hide loading indicator
+                if (exportButton) exportButton.disabled = false;
+            }
+        }, 10); // Small delay for UI update
     }
 
 
@@ -3495,6 +3601,6 @@ function handleExportClick() {
     }
 
 
-    
+
 }); // End of DOMContentLoaded listener
 // --- END OF FILE js/app.js ---
