@@ -8,44 +8,53 @@
  */
 function parseCSVLine(line, delimiter = ',') {
     const values = [];
-    let currentPos = 0;
-    let insideQuotes = false;
     let currentValue = '';
+    let insideQuotes = false;
 
-    while (currentPos < line.length) {
-        const char = line[currentPos];
+    for (let i = 0; i < line.length; i++) {
+        const char = line[i];
 
         if (insideQuotes) {
             if (char === '"') {
-                if (currentPos + 1 < line.length && line[currentPos + 1] === '"') {
-                    currentValue += '"';
-                    currentPos++;
+                // Check for escaped quote ("") by looking ahead
+                if (i + 1 < line.length && line[i + 1] === '"') {
+                    currentValue += '"'; // Append a single quote
+                    i++; // Skip the second quote of the pair
                 } else {
+                    // This is the closing quote
                     insideQuotes = false;
+                    // We DON'T append this quote to currentValue
                 }
             } else {
+                // Character inside quotes
                 currentValue += char;
             }
-        } else {
+        } else { // Not inside quotes
             if (char === '"') {
-                if (currentValue === '') {
-                   insideQuotes = true;
-                } else {
-                   currentValue += char;
-                }
+                // Start of a quoted field. Assume fields don't start mid-value.
+                // Any previous currentValue should arguably have been pushed by a delimiter.
+                // If currentValue has content here, it might indicate malformed CSV,
+                // but we'll proceed assuming it's the start of a new quoted field.
+                insideQuotes = true;
+                // Do not append the opening quote to currentValue
             } else if (char === delimiter) {
+                // End of a field
                 values.push(currentValue);
-                currentValue = '';
+                currentValue = ''; // Reset for the next field
             } else {
+                // Regular character outside quotes
                 currentValue += char;
             }
         }
-        currentPos++;
-    }
+    } // End for loop
 
+    // Add the last value after the loop finishes
     values.push(currentValue);
+
+    // Trim whitespace from each parsed value AFTER parsing is complete
     return values.map(v => v.trim());
 }
+
 
 /**
  * Parses the entire CSV text content.
