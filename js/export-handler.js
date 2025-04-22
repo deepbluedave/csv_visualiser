@@ -29,22 +29,29 @@ function getFormattedIndicatorText(value, columnName, globalConfig) {
 
     // --- Global Link Column Check ---
     if (linkColumns.includes(columnName)) {
-        const url = stringValue.trim();
-        if (url.startsWith('http://') || url.startsWith('https://')) {
-            // <<< CHANGE: Return the actual URL for CSV export >>>
-            // return '🔗'; // Old: return emoji
-            return url;    // New: return the URL string
+        // --- START REPLACEMENT ---
+        const prefixes = globalConfig.generalSettings?.linkPrefixes || {};
+        const prefix = prefixes[columnName];
+        const cellValue = stringValue.trim(); // stringValue is already defined from single value handling
+
+        if (prefix && cellValue) {
+            // Prefix exists and value is not empty: return the constructed URL
+            return prefix + cellValue;
+        } else if (!prefix && cellValue) {
+            // No prefix: check if the cell value itself is a URL
+            if (cellValue.startsWith('http://') || cellValue.startsWith('https://')) {
+                return cellValue; // Return the full URL
+            } else {
+                // It's in linkColumns, but has no prefix and isn't a URL - return the raw value (the ID)
+                return cellValue;
+            }
+        } else {
+             // Value is empty, return empty string
+             return '';
         }
-        // Return raw value if it's in a link column but not a valid URL
-        return stringValue;
+         // --- END REPLACEMENT ---
     }
-
-    // --- Standard Indicator Style Logic ---
-    if (!styleConfig || styleConfig.type === 'none') {
-        // No specific style, return the raw string value
-        return stringValue;
-    }
-
+    
     try {
         // --- ICON type ---
         if (styleConfig.type === 'icon') {

@@ -120,17 +120,39 @@ function generateIndicatorsHTML(row, columnName, config) {
 
     // --- Global Link Column Check (Highest Priority) ---
     if (linkColumns.includes(columnName)) {
-        const valuesToCheck = Array.isArray(value) ? value : [value];
+        // --- START REPLACEMENT ---
+        const prefixes = config.generalSettings?.linkPrefixes || {};
+        const prefix = prefixes[columnName]; // Get prefix for this specific column
+        const valuesToCheck = Array.isArray(value) ? value : [value]; // Handle multi-value
+
         valuesToCheck.forEach(singleValue => {
-            const url = String(singleValue || '').trim();
-            if (url.startsWith('http://') || url.startsWith('https://')) {
-                // <<< CHANGE: Push link HTML to array
-                generatedHtmlArray.push(`<a href="${url}" target="_blank" rel="noopener noreferrer" title="Open Link: ${url}" class="card-link-icon">🔗</a>`);
+            const cellValue = String(singleValue ?? '').trim(); // Get the ID or potential URL
+            let fullUrl = null;
+            let linkTitle = '';
+
+            if (prefix && cellValue) {
+                // Prefix exists AND cell value is not empty
+                fullUrl = prefix + cellValue; // Construct the URL
+                linkTitle = `Open Link: ${fullUrl}`;
+            } else if (!prefix && cellValue) {
+                // No prefix defined for this column, treat cellValue as potential full URL
+                if (cellValue.startsWith('http://') || cellValue.startsWith('https://')) {
+                    fullUrl = cellValue;
+                    linkTitle = `Open Link: ${fullUrl}`;
+                }
+                 // Optional: Handle non-URL text in link columns without prefix (currently ignored)
+                 // else { console.log(`Value in link column "${columnName}" is not a URL: ${cellValue}`); }
             }
-            // Optionally handle non-URL text in link columns if needed, or ignore it
+
+            // Only add the link HTML if a valid URL was constructed/found
+            if (fullUrl) {
+                generatedHtmlArray.push(`<a href="${fullUrl}" target="_blank" rel="noopener noreferrer" title="${linkTitle}" class="card-link-icon">🔗</a>`);
+            }
         });
-        return generatedHtmlArray; // <<< CHANGE: Return the array of links
+         // --- END REPLACEMENT ---
+        return generatedHtmlArray;
     }
+
 
     // --- Standard Indicator Style Logic ---
     if (!styleConfig || styleConfig.type === 'none') return generatedHtmlArray; // <<< CHANGE: Return empty array

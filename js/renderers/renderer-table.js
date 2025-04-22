@@ -107,20 +107,64 @@ function renderTable(filteredData, tabConfig, globalConfig, targetElement, showM
 
                 // Link Column Handling
                 if (linkColumns.includes(header)) {
-                    const url = String(value || '').trim();
-                    if (url.startsWith('http://') || url.startsWith('https://')) {
-                        cellHTML = `<a href="${url}" target="_blank" rel="noopener noreferrer" title="Open Link: ${url}" class="table-link-csv-dashboard-icon">🔗</a>`;
-                        cellTitle = `Link: ${url}`;
+                    // --- START REPLACEMENT ---
+                    const prefixes = globalConfig.generalSettings?.linkPrefixes || {};
+                    const prefix = prefixes[header]; // Get prefix for this specific column
+                    const valuesToCheck = Array.isArray(value) ? value : [value]; // Handle potential multi-value
+
+                    const linksHtmlArray = [];
+                    const linksTitleArray = [];
+
+                    valuesToCheck.forEach(singleValue => {
+                        const cellValue = String(singleValue ?? '').trim(); // Get the ID or potential URL
+                        let fullUrl = null;
+                        let linkTitle = '';
+                        let isInvalid = false;
+
+                        if (prefix && cellValue) {
+                            // Prefix exists AND cell value is not empty
+                            fullUrl = prefix + cellValue; // Construct the URL
+                            linkTitle = `Open Link: ${fullUrl}`;
+                        } else if (!prefix && cellValue) {
+                            // No prefix defined for this column, treat cellValue as potential full URL
+                            if (cellValue.startsWith('http://') || cellValue.startsWith('https://')) {
+                                fullUrl = cellValue;
+                                linkTitle = `Open Link: ${fullUrl}`;
+                            } else {
+                                // Value exists, but no prefix and not a URL - treat as invalid link data for table display
+                                isInvalid = true;
+                                linksHtmlArray.push(`<span class="cell-text">${cellValue}</span>`); // Show raw ID/text
+                                linksTitleArray.push(cellValue); // Use raw value for title
+                            }
+                        }
+                        // If empty value, do nothing (no link, no text)
+
+                        // Add the link HTML if a valid URL was constructed/found
+                        if (fullUrl) {
+                            // *** Use the correct class for table links ***
+                            linksHtmlArray.push(`<a href="${fullUrl}" target="_blank" rel="noopener noreferrer" title="${linkTitle}" class="table-link-icon">🔗</a>`);
+                            linksTitleArray.push(linkTitle);
+                        }
+                        // If invalid, we already pushed the raw text above
+                    });
+
+                    // Join the HTML and titles (handle multiple links in one cell if needed, though less common for tables)
+                    cellHTML = linksHtmlArray.join('<br>'); // Use line break if multiple links possible
+                    cellTitle = linksTitleArray.join('; ');
+
+                    // Set alignment and potentially invalid class
+                    if (linksHtmlArray.length > 0 && !linksHtmlArray.some(html => html.includes('cell-text'))) {
+                        // If we have links and none are just raw text spans
                         cellTextAlign = 'center'; // Center link icons
-                    } else if (url) {
-                        cellHTML = `<span class="cell-text">${url}</span>`; // Wrap non-URL text
-                        cellTitle = url;
-                        td.classList.add('link-column-invalid-url');
+                    } else if (linksHtmlArray.some(html => html.includes('cell-text'))) {
+                        td.classList.add('link-column-invalid-url'); // Mark cell if it contains non-URL text
+                        cellTextAlign = 'left'; // Align left if showing raw text/IDs
                     } else {
-                       // Ensure empty cell if no URL
-                       cellHTML = '';
-                       cellTitle = header; // Set default title for empty cell
+                         // Cell is empty (no value or prefix didn't apply)
+                         cellTitle = header; // Default title for empty cell
+                         cellTextAlign = 'center'; // Center empty cell
                     }
+                     // --- END REPLACEMENT ---
                 }
                 // Standard Column Handling
                 else {
