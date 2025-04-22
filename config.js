@@ -6,7 +6,7 @@ let defaultConfig = {
 
   "generalSettings": {
     "dashboardTitle": "InfoSec Exception Tracker",
-    "csvUrl": null, // Load infosec_exceptions.csv via upload
+    "csvUrl": "https://www.csv.com/id/1224", // Load infosec_exceptions.csv via upload
     "trueValues": [ "true", "TRUE", "yes", "y", "1", "✓", "x", "on" ],
     "csvDelimiter": ",",
     "multiValueColumns": [ /* "Mitigating Controls Summary" could be if detailed */ ],
