@@ -45,7 +45,10 @@ function renderTable(filteredData, tabConfig, globalConfig, targetElement, showM
     }
 
     // --- *** NEW: Apply Sorting *** ---
-    const sortByConfig = tabConfig.config?.sortBy;
+    // Resolve the sort configuration: Use tab-specific 'sortBy' if defined,
+    // otherwise fallback to global 'defaultItemSortBy', else null.
+    const sortByConfig = tabConfig.config?.sortBy ?? globalConfig.generalSettings?.defaultItemSortBy ?? null;
+    
     const dataToRender = sortData([...filteredData], sortByConfig, globalConfig); // Use helper, sort a copy
 
     const validHeaders = globalConfig.csvHeaders || [];

@@ -22,8 +22,8 @@ let defaultConfig = {
          "Link"
     ],
     "defaultItemSortBy": [ // Common sort order within Kanban/Summary groups
+      { "column": "Renewal Date", "direction": "asc" },
       { "column": "Risk Level", "direction": "custom", "order": ["Elevated", "High", "Medium", "Low"] },
-      { "column": "Renewal Date", "direction": "asc" }
     ]
     // --- END ADDED ---
   },
@@ -133,11 +133,11 @@ let defaultConfig = {
         "headerOrientations": {
             "default": "vertical", "Application Name": "horizontal", "Exception Title": "horizontal", "Standard Excepted": "horizontal"
         },
-        "sortBy": [ // Table sort is different from itemSortBy, keep this
+/*        "sortBy": [ // Table sort is different from itemSortBy, keep this
             { "column": "Renewal Date", "direction": "asc" },
             { "column": "Risk Level", "direction": "custom", "order": ["Elevated", "High", "Medium", "Low"] },
             { "column": "Application Name", "direction": "asc" }
-        ]
+        ]*/
       }
     },
 
