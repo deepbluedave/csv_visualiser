@@ -1,0 +1,12 @@
+FindingID,Target App ID,Finding Summary,Rating,Description,Status,Hostname
+INF-550,APP002,Open SMB Port,Urgent,Port 445 open on exposed interface,Action Needed,vm-crm-web-01
+INF-551,APP004,Outdated OS Patch,Important,Windows patch KB456 not installed,Needs Review,infra-track-02
+INF-552,APP007,FTP Server Running,Moderate,FTP service active on legacy server,Completed,legacy-ftp
+INF-553,APP001,Anonymous LDAP Bind,Urgent,LDAP allows anonymous bind,Mitigated,ldap-prod-01
+INF-554,APP005,Default Credentials,Low,Default admin/admin still active,Action Needed,docs-node-03
+INF-555,APP004,Weak SSH Keys,Important,SSH keys less than 2048 bits,Needs Review,asset-tracker-1
+INF-556,APP001,SSLv3 Enabled,Moderate,SSLv3 still supported in server config,Completed,billing-srv
+INF-557,APP003,SNMP v1/v2 Enabled,Important,Weak SNMP community strings detected,Needs Review,hr-backend
+INF-558,APP003,Open RDP Port,Moderate,Port 3389 exposed to the internet,Mitigated,hr-frontend
+INF-559,APP002,Null Sessions,Low,NetBIOS shares allow null sessions,Action Needed,crm-core-db
+INF-560,APP005,Insecure Protocols,Important,,Needs Review,docs-proxy

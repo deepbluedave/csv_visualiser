@@ -1,0 +1,8 @@
+Application ID,Grade,Application Name,Business Owner,Status
+APP001,A,Billing System,Alice Thorpe,Production
+APP002,A,CRM Portal,Ben Chandler,Development
+APP003,D,HR Suite,Carla Jenkins,Retired
+APP004,D,Asset Tracker,David Nwosu,Production
+APP005,C,SecureDocs,Emily Wang,Production
+APP002,,CRM Portal (Duplicate),Ben Chandler,Development
+,,Travel Reimbursement,Fiona Li,Development
