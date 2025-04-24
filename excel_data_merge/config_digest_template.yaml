@@ -1,0 +1,91 @@
+# config_succinct_text.yaml
+
+# --- Output Settings ---
+output_file: './output/succinct_app_report.txt'
+
+# --- Master Source Info ---
+master_source:
+  file_path: './master_app_list_q4.xlsx'
+  sheet_name: Sheet1
+  primary_key_column: Application ID
+  include_master_columns: # For the main header per app
+    Application ID: AppID
+    Application Name: ApplicationName
+    Business Owner: BusinessOwner
+    Status: MasterAppStatus
+
+# --- Selection Criteria ---
+selection_criteria:
+  # --- Option 1: Filter master list ---
+  master_filters:
+    - column: Business Owner
+      operator: in
+      value: ['Alice Thorpe', 'David Nwosu']
+
+  # --- Option 2: Specify App IDs directly ---
+  # app_ids: ['APP001', 'APP004', 'APP005']
+
+# --- Detail Source Definitions & Display Format ---
+# Define sources, which columns to extract, and how to format them.
+detail_sources:
+
+  - file_path: './exceptions_log_current.xlsx'
+    sheet_name: Sheet1
+    foreign_key_column: App ID
+    # Define aliases for columns needed in the format string
+    display_fields: # Map { "Alias" : "Source Column Name" }
+      ID: Exception ID
+      Status: Approval Status
+      Expires: Expiry Date
+      Desc: Summary
+      RiskLvl: Risk # Use different alias if 'Risk' is ambiguous
+    # Format string uses the ALIASES defined above in {Alias}
+    # We'll handle missing fields gracefully in the script (e.g., display 'N/A')
+    format_string: "EXC: [{ID} | {Status} | Expires: {Expires}] {Desc} (Risk: {RiskLvl})"
+
+  - file_path: './infra_scan_results_oct.xlsx'
+    sheet_name: Sheet1
+    foreign_key_column: Target App ID
+    display_fields:
+      ID: FindingID
+      Rate: Rating
+      Stat: Status
+      Desc: Finding Summary
+      Host: Hostname
+    format_string: "INF: [{ID} | {Rate} | {Stat}] {Desc} (Host: {Host})"
+
+  - file_path: './web_vuln_scan_nov.xlsx'
+    sheet_name: Sheet1
+    foreign_key_column: CARID
+    display_fields:
+      ID: Vulnerability ID
+      Sev: Severity
+      Stat: Finding Status
+      Name: Vulnerability Name
+      # Opinion: Notes # Example if you wanted to include it
+    format_string: "WEB: [{ID} | {Sev} | {Stat}] {Name}"
+
+  - file_path: './code_scan_results.xlsx'
+    sheet_name: Sheet1
+    foreign_key_column: AppRefID
+    display_fields:
+      ID: FindingID
+      Sev: SeverityRating
+      Stat: Status
+      Num: SecretCount # Keep the count
+      Path: FilePath
+    format_string: "CODE: [{ID} | Sev: {Sev} | {Stat}] {Num} Secrets in {Path}"
+
+
+# --- Text Formatting Options ---
+formatting_options:
+   app_header_format: "=== App: {AppID} ({ApplicationName}) | Owner: {BusinessOwner} | Status: {MasterAppStatus} ==="
+   app_separator: "\n--------------------------------------------------\n"
+   finding_prefix: "  - " # Prefix for each finding line
+   # (No finding header needed anymore)
+   # (No field format needed anymore)
+   # (No field separator needed anymore)
+   # (No finding separator needed anymore - each finding is one line)
+   no_findings_message: "  - No findings found for this application."
+   # Optional: Sort findings? Maybe by source type then ID?
+   # sort_findings_by: ['_source_type_index', 'ID'] #Requires adding index during processing
