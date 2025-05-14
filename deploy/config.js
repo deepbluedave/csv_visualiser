@@ -1,361 +1,330 @@
 // --- START OF FILE config.js ---
 
 let defaultConfig = {
-  "configVersion": 8.1, // Incremented version for tracking changes
-  "csvHeaders": [], // Auto-populated
+  "configVersion": 9.0, // Incremented version
+  "csvHeaders": [], // Auto-populated on CSV load
 
   "generalSettings": {
-    "dashboardTitle": "InfoSec Exception Tracker",
-    "csvUrl": "https://www.csv.com/id/1224", // Load infosec_exceptions.csv via upload
-    "trueValues": ["true", "TRUE", "yes", "y", "1", "✓", "x", "on"],
+    "dashboardTitle": "Aethelgard's Arcane Archives",
+    "csvUrl": null, // Use null for upload initially, fallback works if URL specified & fails
+    // "csvUrl": "./sample_data/aethelgard_archive.csv", // Example if hosting locally
+    "trueValues": ["TRUE", "true", "Yes", "1", "Cursed", "Dangerous"], // Flexible true values
     "csvDelimiter": ",",
-    "multiValueColumns": [ /* "Mitigating Controls Summary" could be if detailed */],
-    "linkColumns": ["Link", "ExceptionID"],
-
+    "multiValueColumns": ["Keywords", "RelatedItems"], // Columns with comma-separated values
+    "linkColumns": ["WikiLink", "ItemID"], // Columns that CAN be links
     "linkPrefixes": {
-      // Map Column Name to its URL prefix
-      // The cell value will be appended directly to this prefix.
-      "ExceptionID": "https://jira.example.com/browse/id/", // Example for JIRA tickets
-      // "AnotherIDColumn": "https://service.example.com/details?id="
-      // Columns listed in linkColumns but NOT here will be treated as potentially full URLs
+      // Defines prefix for columns in linkColumns that DON'T contain full URLs
+      "ItemID": "https://aethelgard-archive.local/wiki/item/"
+      // WikiLink is NOT listed here, so its values are treated as full URLs if they look like them
     },
-
-    // --- ADDED: Default settings for cards/items ---
-    "defaultCardIndicatorColumns": [ // Common indicators for Kanban/Summary cards
-      "Application Name",
-      "Risk Level",
-      "Standard Excepted",
-      "Renewal Date",
-      "Owner",
-      "ExceptionID",
-
+    "defaultCardIndicatorColumns": [ // Default indicators on Kanban/Summary cards
+      "ItemType",
+      "DangerLevel",
+      "ResearchStatus",
+      "LocationFound",
+      "IsCursed" // Added cursed status to default indicators
     ],
-    "defaultItemSortBy": [ // Common sort order within Kanban/Summary groups
-      { "column": "Renewal Date", "direction": "asc" },
-      { "column": "Risk Level", "direction": "custom", "order": ["Elevated", "High", "Medium", "Low"] },
+    "defaultItemSortBy": [ // Default sort order for items within groups/tables
+      { "column": "DangerLevel", "direction": "custom", "order": ["Existential Risk", "Significant Threat", "Minor Anomaly", "Mundane"] },
+      { "column": "DiscoveryDate", "direction": "desc" }
     ]
-    // --- END ADDED ---
   },
 
   "indicatorStyles": {
-    // --- Tags --- (Existing styles remain the same)
-    "Risk Level": {
-      "type": "tag", "titlePrefix": "Risk: ",
+    // --- Columns handled by linkColumns/linkPrefixes or plain text ---
+    "ItemID": { "type": "none" },
+    "ItemName": { "type": "none" },
+    "DiscoveryDate": { "type": "none" },
+    "RelatedItems": { "type": "none" }, // Usually just text or handled by graph
+    "ArchiveSection": { "type": "none" },
+    "WikiLink": { "type": "none" },
+    "Notes": { "type": "none" },
+
+    // --- Icons ---
+    "ItemType": {
+      "type": "icon", "titlePrefix": "Type: ",
       "valueMap": {
-        "Elevated": { "text": "🔥 Elevated", "bgColor": "#6f1d1b", "textColor": "#ffffff" }, // Dark Red
-        "High": { "text": "🔴 High", "bgColor": "#dc3545", "textColor": "#ffffff" }, // Red
-        "Medium": { "text": "🟠 Medium", "bgColor": "#fd7e14", "textColor": "#ffffff" }, // Orange
-        "Low": { "text": "🟡 Low", "bgColor": "#ffc107", "textColor": "#343a40" }, // Yellow
-        "default": { "bgColor": "#adb5bd", "textColor": "#ffffff" } // Grey
+        "Scroll":           { "value": "📜", "title": "Scroll" },
+        "Artifact":         { "value": "💎", "title": "Artifact" },
+        "Potion":           { "value": "🧪", "title": "Potion" },
+        "Bestiary Note":    { "value": "🐾", "title": "Bestiary Note" },
+        "Location Fragment":{ "value": "🗺️", "title": "Location Fragment" },
+        "Research Log":     { "value": "🔬", "title": "Research Log" },
+        "default":          { "value": "❓", "title": "Unknown Item Type" }
       }
     },
-    "Status": {
+    "IsCursed": {
+      "type": "icon",
+      "trueCondition": { "value": "☠️", "title": "Cursed!", "cssClass": "icon-cursed" },
+      // Hide false values explicitly
+      "valueMap": { "FALSE": {"value": ""}, "false": {"value": ""}, "0": {"value":""}, "": {"value":""} }
+    },
+    "RequiresContainment": {
+      "type": "icon",
+      "trueCondition": { "value": "🔒", "title": "Containment Required" },
+      "valueMap": { "FALSE": {"value": ""}, "false": {"value": ""}, "0": {"value":""}, "": {"value":""} } // Hide false
+    },
+
+    // --- Tags ---
+    "LocationFound": {
+      "type": "tag", "titlePrefix": "Location: ",
+      "valueMap": {
+        "Sunken Library":   { "bgColor": "#cfe2ff", "textColor": "#0a367a" }, // Blue
+        "Obsidian Peak":    { "bgColor": "#adb5bd", "textColor": "#ffffff" }, // Grey
+        "Whispering Caves": { "bgColor": "#e9d8fd", "textColor": "#5e3a8c" }, // Purple
+        "Astral Plane":     { "bgColor": "#495057", "textColor": "#ffffff" }, // Dark Grey
+        "Unknown":          { "bgColor": "#f8f9fa", "textColor": "#6c757d" }, // Light Grey
+        "default":          { "bgColor": "#e9ecef", "textColor": "#495057" }
+      }
+    },
+    "ResearcherAssigned": {
+      "type": "tag", "titlePrefix": "Scholar: ",
+      "valueMap": {
+        "Elara Meadowlight": { "bgColor": "#e2f0d9", "textColor": "#537d3b" },
+        "Borin Stonehand":   { "bgColor": "#fef4e5", "textColor": "#885f25" },
+        "Zara the Subtle":   { "bgColor": "#fce8f3", "textColor": "#8f2c5f" },
+        "Pending Assignment":{ "bgColor": "#fff3cd", "textColor": "#664d03" },
+        "default":           { "bgColor": "#e9ecef", "textColor": "#495057" }
+      }
+    },
+    "ResearchStatus": {
       "type": "tag", "titlePrefix": "Status: ",
-      "valueMap": { // Intentionally ordered for potential custom sort
-        "Pending Renewal": { "text": "⏳ Pending", "bgColor": "#fff3cd", "textColor": "#664d03" }, // Yellow
-        "Active": { "text": "🟢 Active", "bgColor": "#cfe2ff", "textColor": "#0a367a" }, // Blue
-        "Mitigated": { "text": "✅ Mitigated", "bgColor": "#d4edda", "textColor": "#155724" }, // Green (Exception resolved)
-        "Expired": { "text": "⚪ Expired", "bgColor": "#6c757d", "textColor": "#ffffff" }, // Grey
-        "default": { "bgColor": "#e9ecef", "textColor": "#495057" }
-      }
-    },
-    "Standard Excepted": {
-      "type": "tag", "titlePrefix": "Std: ",
-      "styleRules": [ // Use rules for more flexibility
-        { "matchType": "regex", "pattern": "SEC-IAM", "style": { "bgColor": "#ddebf7", "textColor": "#2a5d8a" } }, // IAM = Blue
-        { "matchType": "regex", "pattern": "SEC-NET", "style": { "bgColor": "#fce8f3", "textColor": "#8f2c5f" } }, // Network = Pink
-        { "matchType": "regex", "pattern": "SEC-WEB", "style": { "bgColor": "#e2f0d9", "textColor": "#537d3b" } }, // Web = Green
-        { "matchType": "regex", "pattern": "SEC-VULN", "style": { "bgColor": "#f8d7da", "textColor": "#58151c" } }, // Vuln = Red
-        { "matchType": "regex", "pattern": "SEC-CRYPTO", "style": { "bgColor": "#e9d8fd", "textColor": "#5e3a8c" } }, // Crypto = Purple
-        { "matchType": "regex", "pattern": "SEC-DATA", "style": { "bgColor": "#fff0e6", "textColor": "#8a4c2a" } }, // Data = Orange
-        { "matchType": "regex", "pattern": "SEC-DEV", "style": { "bgColor": "#d1ecf1", "textColor": "#0c5460" } }, // Dev = Cyan
-        { "matchType": "regex", "pattern": "SEC-LOG", "style": { "bgColor": "#fef4e5", "textColor": "#885f25" } }  // Logging = Sandy
+      "styleRules": [ // Use rules for specific emphasis
+        { "matchType": "exact", "value": "Uncatalogued", "style": { "bgColor": "#f8f9fa", "textColor": "#6c757d" } },
+        { "matchType": "exact", "value": "Requires Containment", "style": { "bgColor": "#f8d7da", "textColor": "#58151c", "text": "🔒 Requires Containment"} },
+        { "matchType": "exact", "value": "Verified Safe", "style": { "bgColor": "#d1e7dd", "textColor": "#0f5132", "text": "✅ Verified Safe" } },
+        { "matchType": "exact", "value": "Archival Recommended", "style": { "bgColor": "#6c757d", "textColor": "#ffffff" } }
       ],
-      "defaultStyle": { "bgColor": "#e9ecef", "textColor": "#495057" }
+      "defaultStyle": { "bgColor": "#cfe2ff", "textColor": "#0a367a" } // Default for "Analysis Pending", "Active Research" etc.
     },
-    "Owner": {
-      "type": "tag", "titlePrefix": "Owner: ",
-      "valueMap": { "default": { "bgColor": "#dee2e6", "textColor": "#495057" } }
+    "DangerLevel": {
+      "type": "tag", "titlePrefix": "Danger: ",
+      "styleRules": [ // Use rules for severity levels
+        { "matchType": "exact", "value": "Existential Risk", "style": { "bgColor": "#6f1d1b", "textColor": "#ffffff", "text": "💀 Existential Risk" } },
+        { "matchType": "exact", "value": "Significant Threat", "style": { "bgColor": "#dc3545", "textColor": "#ffffff", "text": "❗ Significant Threat"} },
+        { "matchType": "exact", "value": "Minor Anomaly", "style": { "bgColor": "#ffc107", "textColor": "#343a40", "text": "⚠️ Minor Anomaly" } },
+        { "matchType": "exact", "value": "Mundane", "style": { "bgColor": "#d1e7dd", "textColor": "#0f5132", "text": "⚪ Mundane" } }
+      ],
+      "defaultStyle": { "bgColor": "#e9ecef", "textColor": "#495057" } // Fallback for unknown levels
     },
-    "Approver": {
-      "type": "tag", "titlePrefix": "Approver: ",
-      "valueMap": { "default": { "bgColor": "#d4edda", "textColor": "#155724" } }
-    },
-    "Origination Date": {
-      "type": "tag", "titlePrefix": "From: ",
-      "valueMap": { "default": { "bgColor": "#f8f9fa", "textColor": "#6c757d" } }
-    },
-    "Renewal Date": {
-      "type": "tag", "titlePrefix": "Until: ",
-      "valueMap": { "default": { "bgColor": "#fff3cd", "textColor": "#664d03", "borderColor": "#ffc107" } } // Highlight renewal date slightly
-    },
-
-    //Used just for icon/key generation where tags are used
-
-    "Risk Level Icon": { // Use a distinct key name if Risk Level is already a tag
-      "type": "icon",
-      "valueMap": {
-        "Elevated": { "value": "🔥", "title": "Risk: Elevated" },
-        "High": { "value": "🔴", "title": "Risk: High" },
-        "Medium": { "value": "🟠", "title": "Risk: Medium" },
-        "Low": { "value": "🟡", "title": "Risk: Low" }
-        // No default needed if you only want these specific ones in the key
-      }
-    },
-    // --- Similarly for Status icons if desired ---
-    "Status Icon": {
-      "type": "icon",
-      "valueMap": {
-        "Pending Renewal": { "value": "⏳", "title": "Status: Pending Renewal" },
-        "Active": { "value": "🟢", "title": "Status: Active" }, // Using a simple green circle example
-        "Mitigated": { "value": "✅", "title": "Status: Mitigated" },
-        "Expired": { "value": "⚪", "title": "Status: Expired" }
-      }
-    },
-
-    // --- Columns to display as plain text or handled by linkColumns ---
-    "ExceptionID": { "type": "none" },
-    "Application Name": { "type": "none" },
-    "Exception Title": { "type": "none" },
-    "Justification Summary": { "type": "none" },
-    "Mitigating Controls Summary": { "type": "none" },
-    "Link": { "type": "none" } // Handled by linkColumns
+    "Keywords": {
+      "type": "tag", "titlePrefix": "Keyword: ",
+      "layout": "stacked", // Stack multiple keywords vertically
+      "defaultStyle": { "bgColor": "#dee2e6", "textColor": "#495057" } // Simple default style
+    }
   },
 
   // --- Tab Definitions ---
   "tabs": [
-    // --- Tab 1: Master List (All Exceptions) ---
+    // --- Tab 1: Master Catalog (Table) ---
     {
-      "id": "master-list",
-      "title": "📚 All Exceptions",
-      "type": "table", // No cardIndicatorColumns or itemSortBy used here
+      "id": "master-catalog",
+      "title": "📜 Master Catalog",
+      "type": "table",
+      "enabled": true,
+      "filter": null, // Show all items
+      "config": {
+        "displayColumns": [ // Select and order columns
+          "ItemID", // Will render as link based on linkColumns/linkPrefixes
+          "ItemName",
+          "ItemType",
+          "DangerLevel",
+          "ResearchStatus",
+          "LocationFound",
+          "IsCursed",
+          "RequiresContainment",
+          "Keywords", // Multi-value column
+          "WikiLink" // Will render link icon if value is a valid URL
+        ],
+        "columnWidths": { // Customize widths
+          "default": "100px",
+          "ItemID": "60px",
+          "ItemName": "250px",
+          "ItemType": "50px",
+          "DangerLevel": "140px",
+          "ResearchStatus": "160px",
+          "Keywords": "200px",
+          "IsCursed": "50px",
+          "RequiresContainment": "50px",
+          "WikiLink": "50px"
+        },
+        "headerOrientations": { // Customize header text direction
+          "default": "vertical", // Most vertical
+          "ItemName": "horizontal",
+          "Keywords": "horizontal"
+        },
+        "sortBy": [ // Specific initial sort for this table
+          { "column": "DiscoveryDate", "direction": "desc" },
+          { "column": "ItemName", "direction": "asc" }
+        ]
+      }
+    },
+
+    // --- Tab 2: Table Sorted by Default ---
+    {
+      "id": "default-sort-table",
+      "title": "⚠️ Sorted by Danger",
+      "type": "table",
       "enabled": true,
       "filter": null,
       "config": {
-        "displayColumns": [
-          "Application Name", "Exception Title", "Standard Excepted", "Risk Level", "Status", "Renewal Date", "Owner", "Approver", "ExceptionID", "Link"
-        ],
-        "columnWidths": {
-          "default": "120px", "Application Name": "180px", "Exception Title": "250px", "Standard Excepted": "150px",
-          "Risk Level": "90px", "Status": "110px", "Renewal Date": "100px", "Owner": "100px", "Approver": "100px", "Link": "50px", "ExceptionID": "30px"
-        },
-        "headerOrientations": {
-          "default": "vertical", "Application Name": "horizontal", "Exception Title": "horizontal", "Standard Excepted": "horizontal"
-        },
-        /*        "sortBy": [ // Table sort is different from itemSortBy, keep this
-                    { "column": "Renewal Date", "direction": "asc" },
-                    { "column": "Risk Level", "direction": "custom", "order": ["Elevated", "High", "Medium", "Low"] },
-                    { "column": "Application Name", "direction": "asc" }
-                ]*/
+        "displayColumns": ["ItemName", "DangerLevel", "DiscoveryDate", "ResearchStatus"],
+        // No "sortBy" defined here, so it will use generalSettings.defaultItemSortBy
+        "columnWidths": { "ItemName": "250px", "DangerLevel": "140px" },
+        "headerOrientations": { "default": "horizontal" }
       }
     },
 
-    // --- Tab 2: Kanban by Status (Uses Defaults) ---
+    // --- Tab 3: Research Workflow (Kanban) ---
     {
-      "id": "kanban-status",
-      "title": "📊 Status Board",
+      "id": "research-workflow",
+      "title": "🔬 Research Status",
       "type": "kanban",
       "enabled": true,
-      "filter": null,
-      "config": {
-        "groupByColumn": "Status",
-        "groupSortBy": ["Pending Renewal", "Active", "Mitigated", "Expired"], // Logical workflow order
-        "cardTitleColumn": "Exception Title",
-        // "cardIndicatorColumns": [...] // REMOVED - Uses generalSettings.defaultCardIndicatorColumns
-        "cardLinkColumn": "Link",
-        // "itemSortBy": [...] // REMOVED - Uses generalSettings.defaultItemSortBy
-        "layout": { "minColumnWidth": "320px", "columnGap": "15px", "itemGap": "10px" }
-      }
-    },
-
-    // --- Tab 3: Kanban by Risk Level (Overrides Indicators, Uses Default Sort) ---
-    {
-      "id": "kanban-risk",
-      "title": "🔥 By Risk Level",
-      "type": "kanban",
-      "enabled": true,
-      "filter": { "logic": "AND", "conditions": [{ "column": "Status", "filterType": "valueInList", "filterValue": ["Active", "Pending Renewal"] }] }, // Only show active/pending risk
-      "config": {
-        "groupByColumn": "Risk Level",
-        "groupSortBy": ["Elevated", "High", "Medium", "Low"], // Custom risk order
-        "cardTitleColumn": "Exception Title",
-        "cardIndicatorColumns": [ // <<<< OVERRIDE: Keeping this specific list because it includes 'Status'
-          "Application Name",
-          "Status", // Include Status on the card for this view
-          "Standard Excepted",
-          "Renewal Date",
-          "Owner",
-          "Link"
-        ],
-        "cardLinkColumn": "Link",
-        "itemSortBy": [ // <<<< OVERRIDE: Sorting only by Renewal Date here, not Risk Level
-          { "column": "Renewal Date", "direction": "asc" }
-        ],
-        "layout": { "minColumnWidth": "340px", "columnGap": "12px", "itemGap": "8px" }
-      }
-    },
-
-    // --- Tab 4: Kanban by Application (Overrides Sort, Uses Default Indicators) ---
-    {
-      "id": "kanban-app",
-      "title": "💻 By Application",
-      "type": "kanban",
-      "enabled": true,
-      "filter": { "logic": "AND", "conditions": [{ "column": "Status", "filterType": "valueInList", "filterValue": ["Active", "Pending Renewal"] }] }, // Only show active/pending exceptions
-      "config": {
-        "groupByColumn": "Application Name",
-        "groupSortBy": "keyAsc", // Sort applications alphabetically
-        "cardTitleColumn": "Exception Title",
-        // "cardIndicatorColumns": [...] // REMOVED - Uses generalSettings.defaultCardIndicatorColumns
-        "cardLinkColumn": "Link",
-        "itemSortBy": [ // <<<< OVERRIDE: Different sort order for this view
-          { "column": "Risk Level", "direction": "custom", "order": ["Elevated", "High", "Medium", "Low"] },
-          { "column": "Renewal Date", "direction": "asc" }
-        ],
-        "layout": { "minColumnWidth": "360px", "columnGap": "12px", "itemGap": "8px", "maxItemsPerGroupInColumn": 5, "preventStackingAboveItemCount": 10 }
-      }
-    },
-
-    // --- Tab 5: Pending/Expired Review Table ---
-    {
-      "id": "review-needed",
-      "title": "⏳ Review Needed",
-      "type": "table", // No cardIndicatorColumns or itemSortBy used here
-      "enabled": true,
-      "bgColor": "#fff3cd", "textColor": "#664d03", // Yellowish tab
-      "filter": {
-        "logic": "OR", // Show if either Pending or Expired
-        "conditions": [
-          { "column": "Status", "filterType": "valueEquals", "filterValue": "Pending Renewal" },
-          { "column": "Status", "filterType": "valueEquals", "filterValue": "Expired" }
-        ]
+      "bgColor": "#e2f0d9", // Custom tab color
+      "textColor": "#537d3b",
+      "filter": { // Filter out items already deemed safe or archived
+          "logic": "AND",
+          "conditions": [
+              { "column": "ResearchStatus", "filterType": "valueNotInList", "filterValue": ["Verified Safe", "Archival Recommended"] }
+          ]
       },
       "config": {
-        "displayColumns": ["Renewal Date", "Status", "Application Name", "Exception Title", "Risk Level", "Owner", "Link", "Justification Summary", "Mitigating Controls Summary"],
-        "columnWidths": { "Renewal Date": "100px", "Status": "110px", "Application Name": "150px", "Exception Title": "200px", "Risk Level": "90px", "Owner": "100px", "Link": "50px", "Justification Summary": "250px", "Mitigating Controls Summary": "250px" },
-        "headerOrientations": { "default": "horizontal" },
-        "sortBy": [ // Table sort is different from itemSortBy, keep this
-          { "column": "Renewal Date", "direction": "asc" }
-        ]
+        "groupByColumn": "ResearchStatus",
+        "groupSortBy": ["Requires Containment", "Uncatalogued", "Analysis Pending", "Active Research"], // Custom sort order for columns
+        "cardTitleColumn": "ItemName",
+        // "cardIndicatorColumns": null, // Explicitly null would use the default defined in generalSettings
+        "cardLinkColumn": "ItemID", // Link card title using prefix
+        // "itemSortBy": null, // Explicitly null would use the default defined in generalSettings
+        "layout": {
+          "minColumnWidth": "320px",
+          "columnGap": "15px",
+          "itemGap": "10px",
+          "maxItemsPerGroupInColumn": 3, // Allow stacking up to 5 small groups vertically
+          "preventStackingAboveItemCount": 5 // Groups >10 items get their own column space
+        }
       }
     },
 
-    // --- config.js snippet ---
+    // --- Tab 4: Regional Threats (Summary) ---
     {
-      "id": "risk-counts-per-app",
-      "title": "📈 Risk Counts",
-      "type": "counts", // No cardIndicatorColumns or itemSortBy used here
-      "enabled": true,
-      "filter": { // Optional: Keep the tab-level filter or remove if you want counts across all statuses
-        "logic": "AND",
-        "conditions": [
-          { "column": "Status", "filterType": "valueInList", "filterValue": ["Active", "Pending Renewal"] }
-        ]
-      },
-      "config": {
-        "groupByColumn": "Application Name", // Group by application
-        "counters": [
-          // --- NEW PREDEFINED COUNTER using AND logic ---
-          {
-            "title": "Active High/Medium Risk", // Descriptive title
-            "logic": "AND", // Both conditions must be true
-            "conditions": [
-              {
-                "column": "Risk Level",
-                "filterType": "valueInList", // Use valueInList for OR logic on Risk Level
-                "filterValue": ["High", "Medium"]
-              },
-              {
-                "column": "Status",
-                "filterType": "valueEquals",
-                "filterValue": "Active"
-              }
-            ],
-            "display": { "type": "icon", "value": "🟠" } // Optional: Display icon for this counter
-          },
-
-          // --- Existing Dynamic 'countAllValues' Counters ---
-          // Note: If both predefined and countAllValues are present, the view might render them
-          // in separate sections depending on the renderer's implementation. Export might also prioritize one type.
-          { "title": "Risk", "column": "Risk Level", "filterType": "countAllValues" },
-          { "title": "Status", "column": "Status", "filterType": "countAllValues" },
-          { "title": "Owner", "column": "Owner", "filterType": "countAllValues" },
-          { "title": "Renewal Date", "column": "Renewal Date", "filterType": "countAllValues" }
-        ]
-      }
-    },
-    // --- End config.js snippet ---    // Add other view types (Summary, etc.) applying the same logic:
-    // Remove cardIndicatorColumns and itemSortBy if they match the defaults in generalSettings.
-    // --- Tab 7: Summary Overview ---
-    {
-      "id": "summary-overview",
-      "title": "👀 Exception Overview",
+      "id": "regional-threats",
+      "title": "🗺️ Regional Threats",
       "type": "summary",
       "enabled": true,
-      "filter": null, // Start by showing all exceptions, sections will filter further
+      "filter": { // Only show items that pose some risk
+        "logic": "AND",
+        "conditions": [
+          { "column": "DangerLevel", "filterType": "valueIsNot", "filterValue": "Mundane" }
+        ]
+      },
       "config": {
-        "groupByColumn": "Application Name", // Group items within sections by App Name
-        "cardLinkColumn": "Link",            // Link card titles to the exception link
-        "cardTitleColumn": "Exception Title",
-        // "cardIndicatorColumns": [...] // REMOVED - Will use generalSettings.defaultCardIndicatorColumns
-        // "itemSortBy": [...]         // REMOVED - Will use generalSettings.defaultItemSortBy (sorts data *before* section filtering)
-        "internalLayout": { // Optional: Adjust grid layout *inside* sections
-          "minColumnWidth": "380px",
-          "columnGap": "15px",
-          "itemGap": "10px"
-          // "maxItemsPerGroupInColumn": 3 // Example if needed
+        "groupByColumn": "DangerLevel", // Sub-group items WITHIN sections by danger level
+        "cardIndicatorColumns": [ // Override default indicators for this view
+          "ItemType",
+          "ResearchStatus",
+          "IsCursed",
+          "RequiresContainment",
+          "ItemID" // Show ItemID link on card
+        ],
+        "cardLinkColumn": "ItemID", // Also link the card title
+        // "itemSortBy": null, // Will use default sort (by danger, then date) before sectioning
+        "internalLayout": { // Layout settings for the grid INSIDE each section
+          "minColumnWidth": "350px",
+          "columnGap": "10px",
+          "itemGap": "8px"
         },
-        "sections": [
-          // Order sections by priority of attention needed
+        "sections": [ // Define the sections based on LocationFound
+          { "id": "sec-obsidian", "title": "Obsidian Peak Findings", "filterColumn": "LocationFound", "filterType": "valueEquals", "filterValue": "Obsidian Peak", "bgColor": "#e9ecef" },
+          { "id": "sec-sunken", "title": "Sunken Library Discoveries", "filterColumn": "LocationFound", "filterType": "valueEquals", "filterValue": "Sunken Library", "bgColor": "#d1ecf1" },
+          { "id": "sec-whispering", "title": "Whispering Caves Mysteries", "filterColumn": "LocationFound", "filterType": "valueEquals", "filterValue": "Whispering Caves", "bgColor": "#fff3cd" },
+          { "id": "sec-astral", "title": "Astral Plane Anomalies", "filterColumn": "LocationFound", "filterType": "valueEquals", "filterValue": "Astral Plane", "bgColor": "#495057", "textColor": "#ffffff"},
+          { "id": "sec-unknown", "title": "Unlocated Threats", "filterColumn": "LocationFound", "filterType": "valueEquals", "filterValue": "Unknown", "textColor": "#6c757d" },
+          { "id": "sec-catchall", "title": "Other Locations", "filterColumn": null, "filterType": "catchAll", "bgColor": "#f8f9fa" } // Catch any remaining locations
+        ]
+      }
+    },
+
+    // --- Tab 5: Archive Statistics (Counts) ---
+    {
+      "id": "archive-stats",
+      "title": "📊 Statistics",
+      "type": "counts",
+      "enabled": true,
+      "filter": null, // Count across all items
+      "config": {
+        "groupByColumn": "LocationFound", // Group counts by location
+        "counters": [
+          // Predefined counter (simple)
           {
-            "id": "summary-expired",
-            "title": "💀 Expired (Needs Archival/Closure)",
-            "filterColumn": "Status",
-            "filterType": "valueEquals",
-            "filterValue": "Expired",
-            "bgColor": "#6c757d", // Grey background
-            "textColor": "#ffffff"  // White text
+            "title": "☠️ Cursed Items",
+            "logic": "AND", // Technically only one condition
+            "conditions": [
+              { "column": "IsCursed", "filterType": "booleanTrue" }
+            ]
+            // Optional display can be added
           },
+          // Predefined counter (multi-condition)
           {
-            "id": "summary-pending",
-            "title": "⏳ Pending Renewal",
-            "filterColumn": "Status",
-            "filterType": "valueEquals",
-            "filterValue": "Pending Renewal",
-            "bgColor": "#fff3cd", // Yellow background
-            "textColor": "#664d03"  // Dark yellow text
+            "title": "Contained Threats",
+            "logic": "AND",
+            "conditions": [
+              { "column": "RequiresContainment", "filterType": "booleanTrue" },
+              { "column": "ResearchStatus", "filterType": "valueEquals", "filterValue": "Requires Containment" }
+            ],
+            "display": { "type": "icon", "value": "🔒"}
           },
+           // Predefined counter (multi-condition with list)
           {
-            "id": "summary-high-risk", // Includes Active/Pending/etc. that are High/Elevated
-            "title": "🔥 High/Elevated Risk (All Statuses)",
-            "filterColumn": "Risk Level",
-            "filterType": "valueInList",
-            "filterValue": ["High", "Elevated"],
-            "bgColor": "#f8d7da", // Light Red background
-            "textColor": "#58151c"  // Dark Red text
+            "title": "High/Existential Risk (Not Safe)",
+            "logic": "AND",
+            "conditions": [
+              { "column": "DangerLevel", "filterType": "valueInList", "filterValue": ["Significant Threat", "Existential Risk"] },
+              { "column": "ResearchStatus", "filterType": "valueIsNot", "filterValue": "Verified Safe" }
+            ],
+             "display": { "type": "icon", "value": "🚨"}
           },
+          // Dynamic counter
           {
-            "id": "summary-medium-risk", // Includes Active/Pending/etc. that are Medium
-            "title": "🟠 Medium Risk (All Statuses)",
-            "filterColumn": "Risk Level",
-            "filterType": "valueEquals",
-            "filterValue": "Medium",
-            "bgColor": "#fff0e6", // Light Orange background
-            "textColor": "#8a4c2a"  // Dark Orange text
+            "title": "Item Type Breakdown",
+            "column": "ItemType",
+            "filterType": "countAllValues"
           },
-          // Catch-all for remaining items (e.g., Low Risk Active/Pending, Mitigated)
+          // Dynamic counter
           {
-            "id": "summary-other",
-            "title": "⚪ Other (Low Risk Active/Pending, Mitigated, etc.)",
-            "filterColumn": null, // Must be null for catchAll
-            "filterType": "catchAll",
-            "bgColor": "#f8f9fa", // Very Light Grey background
-            "textColor": "#6c757d"  // Grey text
+            "title": "Researcher Load",
+            "column": "ResearcherAssigned",
+            "filterType": "countAllValues"
           }
         ]
       }
-    }
+    },
 
+    // --- Tab 6: Knowledge Web (Graph) ---
+    {
+      "id": "knowledge-web",
+      "title": "🕸️ Knowledge Web",
+      "type": "graph",
+      "enabled": true,
+      "filter": null, // Graph the whole archive
+      "config": {
+        "primaryNodeIdColumn": "ItemID",
+        "primaryNodeLabelColumn": "ItemName",
+        "categoryNodeColumns": ["ItemType", "LocationFound", "Keywords", "ResearcherAssigned"], // Connect items to multiple category types
+        "nodeColorColumn": "DangerLevel", // Color primary nodes by danger level
+        "categoryNodeStyle": { // Make category nodes visually distinct
+          "shape": "dot",
+          "color": { "background": "#EEEEEE", "border": "#CCCCCC" },
+          "font": { "size": 10, "color": "#555555"},
+          "size": 5 // Make category dots smaller
+        },
+        "nodeTooltipColumns": ["ItemType", "ResearchStatus", "DangerLevel", "DiscoveryDate", "RequiresContainment", "IsCursed"], // Info on hover
+        "edgeDirection": "undirected",
+        "layoutEngine": "forceDirected", // Use physics-based layout
+        "physicsEnabled": true,
+        "nodeShape": "ellipse" // Default shape for items
+      }
+    }
   ]
 };
 // --- END OF FILE config.js ---

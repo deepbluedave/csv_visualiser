@@ -1,9 +1,0 @@
-Exception ID,App ID,Summary,Risk,Approval Status,Expiry Date
-EX-01,APP003,Extended use of legacy HR tool,Medium,Approved,2025-06-30
-EX-02,APP004,Allow FTP temporarily,High,Pending,2025-05-15
-EX-03,APP009,,Low,Approved,2025-09-01
-EX-04,APP001,Delay TLS 1.0 deprecation,,Approved,2025-07-20
-EX-05,APP005,Exception for document scanner,Acceptable,Expired,2024-12-31
-EX-06,APP005,USB access allowed for 1 device,Medium,Approved,2025-08-15
-EX-07,APP006,VPN Split Tunneling Permitted,High,Pending,2025-10-01
-EX-08,APP001,Firewall rule for vendor access,Low,Rejected,2025-04-30
