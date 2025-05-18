@@ -35,18 +35,36 @@ h1 {
     background-color: #f9f9f9;
 }
 
-.file-inputs label {
-    display: block;
-    margin-top: 10px;
-    margin-bottom: 3px;
-    font-weight: bold;
-    font-size: 0.9em;
+.file-inputs-horizontal {
+    display: flex;
+    flex-wrap: wrap; /* Allow wrapping on smaller screens */
+    gap: 20px;      /* Space between each file input group */
+    align-items: flex-end; /* Align items to the bottom if they have different heights */
+    margin-bottom: 15px; /* Space before actions */
 }
 
-.file-inputs input[type="file"] {
-    display: block;
-    margin-bottom: 10px;
+.file-input-group {
+    display: flex;
+    flex-direction: column; /* Stack label above input */
+}
+
+.file-input-group label {
+    /* display: block; */ /* Already block from general label style */
+    margin-top: 0; /* Remove top margin if not needed */
+    margin-bottom: 5px;
+    font-weight: bold;
+    font-size: 0.85em; /* Slightly smaller label */
+    color: #444;
+}
+
+.file-input-group input[type="file"] {
+    display: block; /* Or inline-block if you want them side-by-side within a group which is less common */
+    margin-bottom: 0; /* Remove bottom margin as gap handles spacing */
     padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    font-size: 0.9em; /* Match other inputs potentially */
+    max-width: 250px; /* Optional: constrain width of file inputs */
 }
 
 .actions {
@@ -95,6 +113,7 @@ h1 {
 #editorGridContainer table {
     width: 100%;
     border-collapse: collapse;
+    table-layout: fixed;
 }
 
 /* Default for TH and TD - reduced padding, vertical-align middle */

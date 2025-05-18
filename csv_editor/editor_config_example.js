@@ -2,6 +2,14 @@
 
 window.editorConfig = {
     "editorSchemaVersion": 1.0,
+
+    // --- NEW: Optional URLs for pre-loading ---
+    "preloadUrls": {
+        "viewerConfigUrl": "../alt_config/fantasy_world_atlas.js", // Example: Relative path or full URL
+        "csvDataUrl": "../sample_data/fantasy_world_atlas.csv"       // Example: Relative path or full URL
+        // Note: editor_config.js itself is always loaded manually first.
+    },
+
     "csvOutputOptions": {
         "delimiter": ",",
         "booleanTrueValue": "TRUE",
@@ -13,13 +21,13 @@ window.editorConfig = {
             "label": "Entry Name",
             "type": "text",
             "required": true,
-            "columnWidth": "250px"
+            "columnWidth": "350px"
         },
         {
             "name": "Region",
             "label": "Region",
             "type": "select", // Single select dropdown/popup
-            "required": true,
+            "required": false,
             "optionsSource": "viewerConfigValueMap", // Derives from viewer_config.indicatorStyles.Region.valueMap
             // "options": [], // Can be empty if fully derived, or add more/override here
             "viewerStyleColumnName": "Region", // For live tag preview in cell
@@ -38,7 +46,7 @@ window.editorConfig = {
             "name": "Status",
             "label": "Status",
             "type": "select",
-            "required": true,
+            "required": false,
             "optionsSource": "viewerConfigValueMap", // Derives from viewer_config.indicatorStyles.Status.valueMap
             "viewerStyleColumnName": "Status",
             "columnWidth": "160px"
@@ -81,7 +89,7 @@ window.editorConfig = {
             "required": false,
             "optionsSource": "viewerConfigValueMap", // Derives from viewer_config.indicatorStyles["Complexity/Size"].valueMap
             "viewerStyleColumnName": "Complexity/Size",
-            "columnWidth": "120px",
+            "columnWidth": "60px",
             "orientation": "vertical" // <<<< ADD THIS LINE
         },
         {
@@ -90,7 +98,7 @@ window.editorConfig = {
             "type": "checkbox",
             "required": false,
             // "viewerStyleColumnName": "Art Needed" // Implied, for icon display
-            "columnWidth": "100px",
+            "columnWidth": "60px",
             "orientation": "vertical" // <<<< ADD THIS LINE
         },
         {
@@ -99,7 +107,7 @@ window.editorConfig = {
             "type": "checkbox",
             "required": false,
             // "viewerStyleColumnName": "Plot Hook Included" // Implied, for icon display
-            "columnWidth": "100px",
+            "columnWidth": "60px",
             "orientation": "vertical" // <<<< ADD THIS LINE
         },
         {
@@ -108,21 +116,21 @@ window.editorConfig = {
             "type": "date",
             "required": false,
             "viewerStyleColumnName": "Draft Date", // For tag styling if defined in viewer
-            "columnWidth": "120px"
+            "columnWidth": "100px"
         },
         {
             "name": "Wiki Link",
             "label": "Wiki Link",
             "type": "text", // Could be enhanced to 'url' type with validation later
             "required": false,
-            "columnWidth": "250px"
+            "columnWidth": "150px"
         },
         {
             "name": "Inspiration Link",
             "label": "Inspiration Link",
             "type": "text", // Could be enhanced to 'url' type with validation later
             "required": false,
-            "columnWidth": "250px"
+            "columnWidth": "150px"
         }
         // Example of a purely numeric field if you add one to your CSV:
         // {
