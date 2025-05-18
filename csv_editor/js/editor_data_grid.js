@@ -25,7 +25,7 @@ function renderGridStructure(columnDefinitions) {
         const tr = document.createElement('tr');
         const th = document.createElement('th');
         th.textContent = "Load Editor Config to define columns.";
-        th.colSpan = 10;
+        th.colSpan = 10; // Arbitrary large number
         tr.appendChild(th);
         editorGridThead.appendChild(tr);
         return;
@@ -53,7 +53,7 @@ function renderGridStructure(columnDefinitions) {
 
     const thActions = document.createElement('th');
     thActions.textContent = "Actions";
-    thActions.style.width = "80px"; // Fixed width for actions
+    thActions.style.width = "80px";
     tr.appendChild(thActions);
     editorGridThead.appendChild(tr);
     console.log("Grid structure (headers) rendered based on editor config.");
@@ -88,7 +88,13 @@ function validateCell(td, value, colDef) {
         if (colDef.type === 'multi-select') {
             isEmpty = !Array.isArray(value) || value.length === 0;
         } else {
+            // For single select, an empty string value ('') is considered "empty" for required check
+            // unless it's the explicit "No Selection" option.
+            // The (No Selection) option has value = ""
             isEmpty = value === null || value === undefined || String(value).trim() === '';
+            if (colDef.type === 'select' && value === '') { // If it's a select and value is empty string (our "no selection")
+                isEmpty = true; // It is indeed empty for validation purposes if required
+            }
         }
         if (isEmpty) {
             isValid = false;
@@ -96,7 +102,7 @@ function validateCell(td, value, colDef) {
         }
     }
 
-    if (isValid && colDef.validationRegex && String(value).trim() !== '' && !['select', 'multi-select', 'checkbox'].includes(colDef.type)) {
+    if (isValid && colDef.validationRegex && String(value).trim() !== '' && !['select', 'multi-select', 'checkbox', 'date', 'number'].includes(colDef.type)) {
         try {
             const regex = new RegExp(colDef.validationRegex);
             if (!regex.test(String(value))) {
@@ -111,10 +117,9 @@ function validateCell(td, value, colDef) {
     if (!isValid) {
         td.classList.add('cell-error');
     } else {
-        // Only reset title if it was an error message before
         if (td.title.startsWith(colDef.label) && (td.title.includes("is required") || td.title.includes("does not match pattern"))) {
             td.title = originalTitle;
-        } else if (!td.title) { // If title was empty, set it
+        } else if (!td.title && colDef.name) { // Ensure title is set if it was cleared
             td.title = originalTitle;
         }
     }
@@ -127,7 +132,6 @@ function getStyledCellDisplay(cellValue, colDef) {
     const indicatorStyleConf = viewerCfg.indicatorStyles?.[viewerStyleColName];
     const isLinkColInViewer = viewerCfg.generalSettings?.linkColumns?.includes(colDef.name);
 
-
     if (indicatorStyleConf) {
         if (indicatorStyleConf.type === 'icon') {
             let iconToShow = '';
@@ -138,12 +142,12 @@ function getStyledCellDisplay(cellValue, colDef) {
                 const valStrLower = valStr.toLowerCase();
                 let mapping = indicatorStyleConf.valueMap[valStr] ?? indicatorStyleConf.valueMap[valStrLower];
                 if (mapping === undefined) {
-                    if (valStr === '' && indicatorStyleConf.valueMap.hasOwnProperty('')) mapping = indicatorStyleConf.valueMap[''];
-                    else if (isTruthy(cellValue, viewerCfg) && indicatorStyleConf.valueMap.hasOwnProperty('true')) mapping = indicatorStyleConf.valueMap['true'];
-                    else if (!isTruthy(cellValue, viewerCfg) && indicatorStyleConf.valueMap.hasOwnProperty('false')) mapping = indicatorStyleConf.valueMap['false'];
+                    if (valStr === '' && indicatorStyleConf.valueMap.hasOwnProperty('')) { mapping = indicatorStyleConf.valueMap['']; }
+                    else if (isTruthy(cellValue, viewerCfg) && indicatorStyleConf.valueMap.hasOwnProperty('true')) { mapping = indicatorStyleConf.valueMap['true']; }
+                    else if (!isTruthy(cellValue, viewerCfg) && indicatorStyleConf.valueMap.hasOwnProperty('false')) { mapping = indicatorStyleConf.valueMap['false']; }
                 }
-                if (mapping === undefined) mapping = indicatorStyleConf.valueMap['default'];
-                if (mapping && mapping.value !== undefined) iconToShow = mapping.value;
+                if (mapping === undefined) { mapping = indicatorStyleConf.valueMap['default']; }
+                if (mapping && mapping.value !== undefined) { iconToShow = mapping.value; }
             }
             if (colDef.type === 'checkbox' && iconToShow === String(cellValue) && (String(cellValue).toUpperCase() === "TRUE" || String(cellValue).toUpperCase() === "FALSE")) {
                  return '';
@@ -154,12 +158,14 @@ function getStyledCellDisplay(cellValue, colDef) {
                 if (cellValue.length === 0) return '';
                 return cellValue.map(val => formatTag(val, viewerCfg, viewerStyleColName, indicatorStyleConf.titlePrefix) || `<span class="editor-cell-mini-tag">${val}</span>`).join(' ');
             } else {
-                return formatTag(cellValue, viewerCfg, viewerStyleColName, indicatorStyleConf.titlePrefix) || String(cellValue ?? '');
+                let formatted = formatTag(cellValue, viewerCfg, viewerStyleColName, indicatorStyleConf.titlePrefix);
+                // If formatTag returns empty (e.g. value maps to empty text/icon), show blank, not raw value for tags.
+                return formatted || (cellValue === '' ? '' : String(cellValue ?? ''));
             }
         }
     }
 
-    if (isLinkColInViewer && colDef.type !== 'checkbox') { // Don't treat styled checkboxes as generic links
+    if (isLinkColInViewer && colDef.type !== 'checkbox') {
         const urlValueStr = String(cellValue ?? '');
         if (urlValueStr.trim() !== '') {
             return `<span class="editor-cell-icon" title="Link: ${urlValueStr}">🔗</span> <span class="cell-url-display-span" title="${urlValueStr}">${urlValueStr}</span>`;
@@ -170,7 +176,9 @@ function getStyledCellDisplay(cellValue, colDef) {
         if (cellValue.length === 0) return '';
         return cellValue.map(v => `<span class="editor-cell-mini-tag">${String(v ?? '')}</span>`).join(' ');
     }
-    if (colDef.type === 'checkbox') { return ''; }
+    if (colDef.type === 'checkbox') { return ''; } // Default for checkbox is blank if no icon
+    if (colDef.type === 'select' && cellValue === '') { return '(No Selection)'; } // Display for blank select
+
     return String(cellValue ?? '');
 }
 
@@ -205,7 +213,6 @@ function renderGridData() {
                 cellValue = (colDef.type === 'multi-select' ? [] : '');
             }
 
-            // Apply alignment class based on content/type
             const styleConfForCol = _viewerConfigInstance?.indicatorStyles?.[colDef.viewerStyleColumnName || colDef.name];
             if (colDef.type === 'checkbox' ||
                 colDef.type === 'multi-select' ||
@@ -218,7 +225,6 @@ function renderGridData() {
             if (colDef.type === 'multi-select') {
                 td.classList.add('cell-type-multi-select');
             }
-
 
             td.innerHTML = getStyledCellDisplay(cellValue, colDef);
             if (!colDef.readOnly) {
@@ -252,18 +258,14 @@ function handleCellClickToEdit(event) {
     if (_activePopup && _activePopup.td !== td) { _activePopup.remove(); _activePopup = null; }
 
     let cellValue = _csvDataInstance[rowIndex][columnName];
-     // Ensure cellValue is an array for multi-select if it's not already
     if (colDef.type === 'multi-select' && !Array.isArray(cellValue)) {
         if (typeof cellValue === 'string' && cellValue.trim() !== '') {
             cellValue = cellValue.split(',').map(s => s.trim()).filter(s => s);
-        } else {
-            cellValue = [];
-        }
-        _csvDataInstance[rowIndex][columnName] = cellValue; // Update model to array type
+        } else { cellValue = []; }
+        _csvDataInstance[rowIndex][columnName] = cellValue;
     }
 
-
-    td.innerHTML = ''; // Clear current display content
+    td.innerHTML = '';
 
     let inputElement;
     if (colDef.type === 'checkbox') {
@@ -274,7 +276,7 @@ function handleCellClickToEdit(event) {
         td.innerHTML = getStyledCellDisplay(_csvDataInstance[rowIndex][columnName], colDef);
         validateCell(td, _csvDataInstance[rowIndex][columnName], colDef);
         console.log(`Checkbox Toggled: Row ${rowIndex}, Col "${columnName}" = "${_csvDataInstance[rowIndex][columnName]}"`);
-        window.dispatchEvent(new CustomEvent('editorDataChanged')); // Notify app of data change
+        window.dispatchEvent(new CustomEvent('editorDataChanged'));
         return;
     } else if (colDef.type === 'select' || colDef.type === 'multi-select') {
         createSelectPopup(td, cellValue, colDef, rowIndex, columnName);
@@ -299,27 +301,25 @@ function handleCellClickToEdit(event) {
             break;
         default: // text, url
             inputElement = document.createElement('input');
-            inputElement.type = colDef.type === 'url' ? 'url' : 'text'; // Use 'url' type if specified
+            inputElement.type = colDef.type === 'url' ? 'url' : 'text';
             inputElement.value = String(cellValue ?? '');
             break;
     }
 
     inputElement.dataset.rowIndex = rowIndex; inputElement.dataset.columnName = columnName;
-    const finishEdit = () => {
-        handleCellChange({target: inputElement}); // Save current value
+    const finishEdit = (saveChange = true) => {
+        if (saveChange) {
+            handleCellChange({target: inputElement});
+        }
         const currentValInModel = _csvDataInstance[rowIndex][columnName];
         td.innerHTML = getStyledCellDisplay(currentValInModel, colDef);
         validateCell(td, currentValInModel, colDef);
-        window.dispatchEvent(new CustomEvent('editorDataChanged'));
+        if (saveChange) window.dispatchEvent(new CustomEvent('editorDataChanged'));
     };
-    inputElement.addEventListener('blur', finishEdit);
+    inputElement.addEventListener('blur', () => finishEdit(true));
     inputElement.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') { e.preventDefault(); inputElement.blur(); }
-        else if (e.key === 'Escape') {
-            const originalValue = _csvDataInstance[rowIndex][columnName]; // Re-fetch, as it might have changed if blur also fired
-            td.innerHTML = getStyledCellDisplay(originalValue, colDef);
-            validateCell(td, originalValue, colDef); // Validate original
-        }
+        else if (e.key === 'Escape') { finishEdit(false); } // Revert to original model value
     });
 
     td.appendChild(inputElement);
@@ -335,7 +335,6 @@ function handleCellChange(event) {
     const columnName = inputElement.dataset.columnName;
 
     let newValue;
-    // Checkbox is handled by its direct toggle in handleCellClickToEdit
     if (inputElement.type === 'number') {
         newValue = inputElement.value === '' ? '' : parseFloat(inputElement.value);
         if (isNaN(newValue) && inputElement.value !== '') newValue = inputElement.value;
@@ -353,114 +352,70 @@ function handleCellChange(event) {
     }
 }
 
-/**
- * Gathers all unique options for a column.
- * Combines options from editorConfig, viewerConfig's valueMap (if applicable),
- * AND all unique existing data values from the current CSV data for that column.
- * For 'select' type columns that are NOT required, a blank option is prepended.
- * @param {object} colDef The column definition from editorConfig.
- * @returns {Array<object>} An array of option objects like {value: string, label: string}, sorted by label.
- */
 function getOptionsForColumn(colDef) {
     const optionsMap = new Map();
-
     const addOption = (value, label) => {
         const valStr = String(value ?? '');
-        // Allow explicitly adding an empty string value if defined in configs,
-        // but don't automatically pick up empty strings from data as distinct options unless desired.
-        if (valStr.trim() === '' && value !== '') return; // Avoid adding trimmed empty strings unless original was empty
-        
-        // If label is explicitly empty for a non-empty value, use a placeholder for the label in the map.
-        // The actual display will handle empty labels appropriately.
-        const mapLabel = (label === '' && valStr !== '') ? `(Empty Label for: ${valStr})` : (label || valStr);
-
+        if (valStr.trim() === '' && value !== '') return;
+        const mapLabel = (label === '' && valStr !== '') ? `(Value: ${valStr})` : (label || valStr); // Use value if label empty
         if (!optionsMap.has(valStr)) {
             optionsMap.set(valStr, mapLabel);
         } else if (label && label !== mapLabel && optionsMap.get(valStr) === valStr) {
-            // If an explicit label comes later (e.g. from config after data) and current is just value, update label
             optionsMap.set(valStr, label);
         }
     };
-
-    // 1. Options from editor_config.js (colDef.options)
     if (Array.isArray(colDef.options) && colDef.options.length > 0) {
         colDef.options.forEach(opt => {
-            if (typeof opt === 'string') {
-                addOption(opt, opt);
-            } else if (opt && typeof opt.value !== 'undefined') {
-                addOption(opt.value, opt.label || opt.value);
-            }
+            if (typeof opt === 'string') addOption(opt, opt);
+            else if (opt && typeof opt.value !== 'undefined') addOption(opt.value, opt.label || opt.value);
         });
     }
-
-    // 2. Options from viewer_config.js valueMap
     if (colDef.optionsSource === 'viewerConfigValueMap' && _viewerConfigInstance?.indicatorStyles) {
         const styleColName = colDef.viewerStyleColumnName || colDef.name;
         const styleConf = _viewerConfigInstance.indicatorStyles[styleColName];
         const valueMap = styleConf?.valueMap;
         if (valueMap) {
-            Object.keys(valueMap)
-                .filter(key => key !== 'default')
-                .forEach(key => {
-                    const label = valueMap[key].text || key;
-                    addOption(key, label);
-                });
+            Object.keys(valueMap).filter(key => key !== 'default')
+                .forEach(key => addOption(key, valueMap[key].text || key));
         }
     }
-
-    // 3. Options from existing data
     if (_csvDataInstance && Array.isArray(_csvDataInstance)) {
         _csvDataInstance.forEach(row => {
             const cellData = row[colDef.name];
             if (cellData !== undefined && cellData !== null) {
                 if (Array.isArray(cellData)) {
                     cellData.forEach(item => addOption(String(item), String(item)));
-                } else if (typeof cellData === 'string' && colDef.type === 'multi-select' && cellData.includes(',')){
-                    cellData.split(',').map(s => s.trim()).filter(s => s).forEach(item => addOption(item, item));
-                } else { // For single select or non-array multi-select, add if not just whitespace
+                } else {
                      const valStr = String(cellData);
-                     if (valStr.trim() !== '' || valStr === '') { // Add if it's an intentional empty string or non-whitespace
-                        addOption(valStr, valStr);
-                     }
+                     if (valStr.trim() !== '' || valStr === '') addOption(valStr, valStr);
                 }
             }
         });
     }
-
     const finalOptions = [];
     optionsMap.forEach((label, value) => {
-        // If label was placeholder, revert to original value for display if necessary, or use a generic "Value: X"
-        const displayLabel = label.startsWith('(Empty Label for:') ? value : label;
+        const displayLabel = label.startsWith('(Value:') ? value : label;
         finalOptions.push({ value, label: displayLabel });
     });
-
     finalOptions.sort((a, b) => a.label.toLowerCase().localeCompare(b.label.toLowerCase()));
-
-    // --- ADD BLANK OPTION FOR NON-REQUIRED SINGLE-SELECT ---
     if (colDef.type === 'select' && !colDef.required) {
-        // Check if a truly blank option (value: '') already exists from data/config
         const hasExplicitBlank = finalOptions.some(opt => opt.value === '');
         if (!hasExplicitBlank) {
-            finalOptions.unshift({ value: '', label: '(No Selection)' }); // Or just "---" or ""
+            finalOptions.unshift({ value: '', label: '(No Selection)' });
         } else {
-            // If an explicit blank option exists, ensure its label is user-friendly
             const blankOption = finalOptions.find(opt => opt.value === '');
-            if (blankOption && (blankOption.label === '' || blankOption.label === '(Empty Label for: )')) {
+            if (blankOption && (blankOption.label === '' || blankOption.label.startsWith('(Value:'))) {
                 blankOption.label = '(No Selection)';
             }
         }
     }
-    // --- END ADD BLANK OPTION ---
-
     return finalOptions;
 }
 
-
 function createSelectPopup(td, currentValueForPopup, colDef, rowIndex, columnName) {
-    // ... (no change from previous full version in the setup of popup, searchInput, optionsList) ...
     if (_activePopup) _activePopup.remove();
     const popup = document.createElement('div');
-    _activePopup = popup; _activePopup.td = td;
+    _activePopup = popup; _activePopup.td = td; // Store reference to cell
     popup.className = 'custom-select-popup';
     const rect = td.getBoundingClientRect();
     popup.style.top = `${rect.bottom + window.scrollY}px`;
@@ -468,14 +423,15 @@ function createSelectPopup(td, currentValueForPopup, colDef, rowIndex, columnNam
     popup.style.minWidth = `${Math.max(td.offsetWidth, 200)}px`;
     popup.style.zIndex = '1000';
 
-    let allOptions = getOptionsForColumn(colDef); // This now includes blank option for non-required selects
+    let allOptions = getOptionsForColumn(colDef);
     const useSearch = allOptions.length >= 15 || (colDef.type === 'multi-select' && colDef.allowNewTags);
 
+    // Initialize currentSelectionsArray as a *copy* for manipulation within the popup
     let currentSelectionsArray = [];
     if (colDef.type === 'multi-select') {
         currentSelectionsArray = Array.isArray(currentValueForPopup) ? [...currentValueForPopup.map(String)] : [];
     } else { // single select
-        currentSelectionsArray = currentValueForPopup !== undefined && currentValueForPopup !== null ? [String(currentValueForPopup)] : ['']; // Default to selecting blank if current is null/undefined
+        currentSelectionsArray = currentValueForPopup !== undefined && currentValueForPopup !== null ? [String(currentValueForPopup)] : [''];
     }
 
     const searchInput = document.createElement('input');
@@ -490,9 +446,9 @@ function createSelectPopup(td, currentValueForPopup, colDef, rowIndex, columnNam
     optionsList.className = 'popup-options-list';
     popup.appendChild(optionsList);
 
-    // updateAndClose and rerenderOptionsList are defined below or globally scoped via window
-    window._editorUpdateAndCloseFromPopup = (valueToSet) => { // Ensure this is available
-        _csvDataInstance[rowIndex][columnName] = valueToSet;
+    // This function is called by 'select' type options OR by the 'Apply' button for 'multi-select'
+    window._editorUpdateAndCloseFromPopup = (valueToSet) => {
+        _csvDataInstance[rowIndex][columnName] = valueToSet; // Update the main data model
         td.innerHTML = getStyledCellDisplay(valueToSet, colDef);
         validateCell(td, valueToSet, colDef);
         if (_activePopup === popup) { popup.remove(); _activePopup = null; }
@@ -501,44 +457,49 @@ function createSelectPopup(td, currentValueForPopup, colDef, rowIndex, columnNam
 
     const rerenderOptionsList = () => {
         const searchTerm = useSearch ? searchInput.value : '';
+        // Pass currentSelectionsArray so renderPopupOptions knows what should be checked
         filterPopupOptions(optionsList, searchTerm, allOptions, currentSelectionsArray, colDef);
     };
 
     if (useSearch) {
         searchInput.addEventListener('input', rerenderOptionsList);
         searchInput.addEventListener('keydown', (e) => {
-            // ... (keydown logic for searchInput - no change from previous full version) ...
             if (e.key === 'Enter') {
                 e.preventDefault();
                 if (colDef.type === 'multi-select' && colDef.allowNewTags && searchInput.value.trim() !== '') {
                     const newTag = searchInput.value.trim();
+                    // Add to currentSelectionsArray (the popup's working list)
                     if (!currentSelectionsArray.includes(newTag)) {
                         currentSelectionsArray.push(newTag);
                     }
+                    // Add to allOptions (the source list for the popup) if new
                     if (!allOptions.some(opt => opt.value === newTag)) {
                         allOptions.push({ value: newTag, label: newTag });
-                        allOptions.sort((a, b) => a.label.localeCompare(b.label));
+                        allOptions.sort((a, b) => a.label.toLowerCase().localeCompare(b.label.toLowerCase()));
                     }
-                    searchInput.value = '';
-                    rerenderOptionsList();
+                    searchInput.value = ''; // Clear input
+                    rerenderOptionsList(); // Re-render, new tag will be checked
                 } else if (colDef.type === 'select') {
-                    const firstVisibleOption = optionsList.querySelector('li:not([data-filtered-out="true"])'); // Assuming data-filtered-out is used by filterPopupOptions
-                    if (firstVisibleOption) firstVisibleOption.click();
+                    const firstVisibleOption = optionsList.querySelector('li:not([data-filtered-out="true"])');
+                    if (firstVisibleOption) firstVisibleOption.click(); // This will call _editorUpdateAndCloseFromPopup
                 }
             } else if (e.key === 'Escape') {
                 if (_activePopup === popup) { popup.remove(); _activePopup = null; }
-                td.innerHTML = getStyledCellDisplay(_csvDataInstance[rowIndex][columnName], colDef);
+                td.innerHTML = getStyledCellDisplay(_csvDataInstance[rowIndex][columnName], colDef); // Revert to original model value
+                validateCell(td, _csvDataInstance[rowIndex][columnName], colDef);
             }
         });
     }
 
-    rerenderOptionsList(); // Initial render of options
+    rerenderOptionsList(); // Initial render
 
     if (colDef.type === 'multi-select') {
         const applyBtn = document.createElement('button');
         applyBtn.textContent = 'Apply Selections';
         applyBtn.className = 'popup-apply-btn';
         applyBtn.addEventListener('click', () => {
+            // On Apply, currentSelectionsArray has all chosen tags (pre-existing + newly added + checked from list)
+            // Update the main data model with this complete list.
             window._editorUpdateAndCloseFromPopup([...currentSelectionsArray]); // Pass a copy
         });
         popup.appendChild(applyBtn);
@@ -551,35 +512,59 @@ function createSelectPopup(td, currentValueForPopup, colDef, rowIndex, columnNam
     setTimeout(() => { document.addEventListener('click', handleClickOutsidePopup, { once: true, capture: true }); }, 0);
 }
 
-function renderPopupOptions(listElement, optionsToDisplay, currentSelectedValuesArray, colDef) {
+function renderPopupOptions(listElement, optionsToDisplay, currentSelectedValuesArrayArg, colDef) { // Renamed arg for clarity
     listElement.innerHTML = '';
     const isMulti = colDef.type === 'multi-select';
-    // For single select, currentSelectedValuesArray will have one item (or empty string for 'No Selection')
-    // For multi-select, it's an array of selected string values.
-    const currentValuesSet = new Set(currentSelectedValuesArray.map(String));
+    // Use the passed argument directly for managing the set of selected values for this render pass
+    const currentValuesSet = new Set(currentSelectedValuesArrayArg.map(String));
 
-    if (optionsToDisplay.length === 0 && isMulti && colDef.allowNewTags) {
-        // ... (no change from previous)
-    }
-    if (optionsToDisplay.length === 0 && !(isMulti && colDef.allowNewTags)) { // Adjusted condition
-        // ... (no change from previous)
+    if (optionsToDisplay.length === 0 ) {
+        const li = document.createElement('li');
+        li.textContent = (isMulti && colDef.allowNewTags) ? "Type to add new or filter existing." : "No options match search.";
+        li.style.fontStyle = "italic"; li.style.color = "#777";
+        listElement.appendChild(li); return;
     }
 
     optionsToDisplay.forEach(opt => {
-        const li = document.createElement('li');
-        li.tabIndex = 0;
+        const li = document.createElement('li'); li.tabIndex = 0;
         if (isMulti) {
-            // ... (multi-select checkbox logic - no change from previous) ...
+            const cb = document.createElement('input'); cb.type = 'checkbox';
+            cb.value = opt.value;
+            const uniqueId = `popup-opt-${colDef.name.replace(/\W/g, '_')}-${opt.value.replace(/\W/g, '_')}-${Math.random().toString(16).slice(2)}`;
+            cb.id = uniqueId;
+            if (currentValuesSet.has(String(opt.value))) cb.checked = true;
+
+            // --- THIS IS THE CORRECTED EVENT LISTENER ---
+            cb.addEventListener('change', () => {
+                const valStr = String(opt.value);
+                // IMPORTANT: Modify currentSelectedValuesArrayArg (the one passed in)
+                // This array is the one managed by createSelectPopup's scope
+                if (cb.checked) {
+                    if (!currentSelectedValuesArrayArg.includes(valStr)) { // Check against the array itself
+                        currentSelectedValuesArrayArg.push(valStr);
+                    }
+                } else {
+                    const index = currentSelectedValuesArrayArg.indexOf(valStr);
+                    if (index > -1) {
+                        currentSelectedValuesArrayArg.splice(index, 1);
+                    }
+                }
+                // No need to update currentValuesSet here as it's rebuilt on next renderPopupOptions if filtering occurs
+                // The main thing is currentSelectedValuesArrayArg is correct for the "Apply" button
+                console.log("Popup selections changed:", currentSelectedValuesArrayArg);
+            });
+            // --- END CORRECTION ---
+
+            const label = document.createElement('label'); label.htmlFor = cb.id;
+            label.appendChild(cb); label.appendChild(document.createTextNode(opt.label));
+            li.appendChild(label);
+            li.addEventListener('click', (e) => { if (e.target !== cb && e.target !== label) cb.click(); });
+            li.addEventListener('keydown', (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); cb.click(); }});
         } else { // 'select'
-            li.textContent = opt.label;
-            li.dataset.value = opt.value;
-            // For single select, currentValuesSet will contain the single selected value string, or "" for blank
-            if (currentValuesSet.has(String(opt.value))) {
-                li.classList.add('selected');
-            }
+            li.textContent = opt.label; li.dataset.value = opt.value;
+            if (currentValuesSet.has(String(opt.value))) li.classList.add('selected');
             const selectAndClose = () => {
-                // window._editorUpdateAndCloseFromPopup is defined in createSelectPopup
-                window._editorUpdateAndCloseFromPopup(opt.value, _activePopup.td.dataset.rowIndex, _activePopup.td.dataset.columnName, colDef);
+                window._editorUpdateAndCloseFromPopup(opt.value, parseInt(_activePopup.td.dataset.rowIndex), _activePopup.td.dataset.columnName, colDef);
             };
             li.addEventListener('click', selectAndClose);
             li.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectAndClose(); }});
@@ -603,24 +588,23 @@ function handleClickOutsidePopup(event) {
             const rowIndex = parseInt(td.dataset.rowIndex);
             const columnName = td.dataset.columnName;
             const colDef = _editorConfigInstance.columns.find(c => c.name === columnName);
-
-            // For multi-select, "Apply" is explicit. If clicked outside without apply,
-            // revert to state before popup for that cell.
-            // For single-select, a click outside means no change from before popup.
+            
+            // For multi-select, if "Apply" wasn't clicked, changes made within the popup
+            // (to currentSelectionsArray) are discarded, revert to original model value.
+            // For single-select, any click on an option closes it, so this only catches clicks truly outside.
             td.innerHTML = getStyledCellDisplay(_csvDataInstance[rowIndex][columnName], colDef);
             validateCell(td, _csvDataInstance[rowIndex][columnName], colDef);
 
             _activePopup.remove();
             _activePopup = null;
-            document.removeEventListener('click', handleClickOutsidePopup, { capture: true }); // Remove this instance
+            document.removeEventListener('click', handleClickOutsidePopup, { capture: true });
         } else {
-            // Click was likely on the cell that opened it. Re-attach listener if popup still somehow exists.
-             if (_activePopup) { // Should have been removed by opening cell again
+             if (_activePopup) {
                 document.removeEventListener('click', handleClickOutsidePopup, { capture: true });
                 setTimeout(() => { document.addEventListener('click', handleClickOutsidePopup, { once: true, capture: true }); }, 0);
              }
         }
-    } else if (_activePopup) { // Click was inside the popup, re-register listener
+    } else if (_activePopup) {
         document.removeEventListener('click', handleClickOutsidePopup, { capture: true });
         setTimeout(() => { document.addEventListener('click', handleClickOutsidePopup, { once: true, capture: true }); }, 0);
     }
