@@ -1,0 +1,607 @@
+// editor_data_grid.js
+
+let _csvDataInstance = [];
+let _editorConfigInstance = null;
+let _viewerConfigInstance = null;
+let _activePopup = null;
+
+function initDataGridReferences(csvDataArrayRef, editorConfigRef, viewerConfigRef) {
+    _csvDataInstance = csvDataArrayRef;
+    _editorConfigInstance = editorConfigRef;
+    _viewerConfigInstance = viewerConfigRef;
+    console.log("DataGrid references updated in editor_data_grid.js.");
+}
+
+function renderGridStructure(columnDefinitions) {
+    const { editorGridThead } = editorDomElements;
+    if (!editorGridThead) {
+        console.error("renderGridStructure: Table header element not found.");
+        return;
+    }
+    editorGridThead.innerHTML = '';
+
+    if (!columnDefinitions || columnDefinitions.length === 0) {
+        console.warn("renderGridStructure: No column definitions provided from editor config.");
+        const tr = document.createElement('tr');
+        const th = document.createElement('th');
+        th.textContent = "Load Editor Config to define columns.";
+        th.colSpan = 10;
+        tr.appendChild(th);
+        editorGridThead.appendChild(tr);
+        return;
+    }
+
+    const tr = document.createElement('tr');
+    columnDefinitions.forEach((colDef) => {
+        const th = document.createElement('th');
+        const headerTextSpan = document.createElement('span');
+        headerTextSpan.className = 'header-text-content';
+        headerTextSpan.textContent = colDef.label || colDef.name;
+        th.appendChild(headerTextSpan);
+        th.title = `CSV Header: ${colDef.name}`;
+
+        const orientation = colDef.orientation || 'horizontal';
+        th.classList.add(`header-${orientation}`);
+
+        if (colDef.columnWidth) {
+            th.style.width = colDef.columnWidth;
+        } else {
+            th.style.width = (orientation === 'vertical') ? '50px' : '150px';
+        }
+        tr.appendChild(th);
+    });
+
+    const thActions = document.createElement('th');
+    thActions.textContent = "Actions";
+    thActions.style.width = "80px"; // Fixed width for actions
+    tr.appendChild(thActions);
+    editorGridThead.appendChild(tr);
+    console.log("Grid structure (headers) rendered based on editor config.");
+}
+
+function clearGridContent() {
+    const { editorGridTbody } = editorDomElements;
+    if (editorGridTbody) {
+        editorGridTbody.innerHTML = '';
+    }
+    if (_activePopup) {
+        _activePopup.remove();
+        _activePopup = null;
+    }
+    console.log("Grid content (tbody) cleared.");
+}
+
+function clearGridStructure() {
+    const { editorGridThead } = editorDomElements;
+    if (editorGridThead) editorGridThead.innerHTML = '';
+    clearGridContent();
+    console.log("Entire grid structure (thead and tbody) cleared.");
+}
+
+function validateCell(td, value, colDef) {
+    let isValid = true;
+    td.classList.remove('cell-error');
+    let originalTitle = `CSV Header: ${colDef.name}`;
+
+    if (colDef.required) {
+        let isEmpty = false;
+        if (colDef.type === 'multi-select') {
+            isEmpty = !Array.isArray(value) || value.length === 0;
+        } else {
+            isEmpty = value === null || value === undefined || String(value).trim() === '';
+        }
+        if (isEmpty) {
+            isValid = false;
+            td.title = `${colDef.label} is required.`;
+        }
+    }
+
+    if (isValid && colDef.validationRegex && String(value).trim() !== '' && !['select', 'multi-select', 'checkbox'].includes(colDef.type)) {
+        try {
+            const regex = new RegExp(colDef.validationRegex);
+            if (!regex.test(String(value))) {
+                isValid = false;
+                td.title = `${colDef.label} does not match pattern: ${colDef.validationRegex}. Current: "${value}"`;
+            }
+        } catch (e) {
+            console.warn(`Invalid regex in editor_config for column "${colDef.name}": ${colDef.validationRegex}`, e);
+        }
+    }
+
+    if (!isValid) {
+        td.classList.add('cell-error');
+    } else {
+        // Only reset title if it was an error message before
+        if (td.title.startsWith(colDef.label) && (td.title.includes("is required") || td.title.includes("does not match pattern"))) {
+            td.title = originalTitle;
+        } else if (!td.title) { // If title was empty, set it
+            td.title = originalTitle;
+        }
+    }
+    return isValid;
+}
+
+function getStyledCellDisplay(cellValue, colDef) {
+    const viewerStyleColName = colDef.viewerStyleColumnName || colDef.name;
+    const viewerCfg = _viewerConfigInstance || { generalSettings: {}, indicatorStyles: {} };
+    const indicatorStyleConf = viewerCfg.indicatorStyles?.[viewerStyleColName];
+    const isLinkColInViewer = viewerCfg.generalSettings?.linkColumns?.includes(colDef.name);
+
+
+    if (indicatorStyleConf) {
+        if (indicatorStyleConf.type === 'icon') {
+            let iconToShow = '';
+            if (indicatorStyleConf.trueCondition && isTruthy(cellValue, viewerCfg)) {
+                iconToShow = indicatorStyleConf.trueCondition.value || '';
+            } else if (indicatorStyleConf.valueMap) {
+                const valStr = String(cellValue ?? '');
+                const valStrLower = valStr.toLowerCase();
+                let mapping = indicatorStyleConf.valueMap[valStr] ?? indicatorStyleConf.valueMap[valStrLower];
+                if (mapping === undefined) {
+                    if (valStr === '' && indicatorStyleConf.valueMap.hasOwnProperty('')) mapping = indicatorStyleConf.valueMap[''];
+                    else if (isTruthy(cellValue, viewerCfg) && indicatorStyleConf.valueMap.hasOwnProperty('true')) mapping = indicatorStyleConf.valueMap['true'];
+                    else if (!isTruthy(cellValue, viewerCfg) && indicatorStyleConf.valueMap.hasOwnProperty('false')) mapping = indicatorStyleConf.valueMap['false'];
+                }
+                if (mapping === undefined) mapping = indicatorStyleConf.valueMap['default'];
+                if (mapping && mapping.value !== undefined) iconToShow = mapping.value;
+            }
+            if (colDef.type === 'checkbox' && iconToShow === String(cellValue) && (String(cellValue).toUpperCase() === "TRUE" || String(cellValue).toUpperCase() === "FALSE")) {
+                 return '';
+            }
+            return iconToShow ? `<span class="editor-cell-icon" title="${String(cellValue ?? '')}">${iconToShow}</span>` : (colDef.type === 'checkbox' ? '' : String(cellValue ?? ''));
+        } else if (indicatorStyleConf.type === 'tag' && typeof formatTag === 'function') {
+            if (colDef.type === 'multi-select' && Array.isArray(cellValue)) {
+                if (cellValue.length === 0) return '';
+                return cellValue.map(val => formatTag(val, viewerCfg, viewerStyleColName, indicatorStyleConf.titlePrefix) || `<span class="editor-cell-mini-tag">${val}</span>`).join(' ');
+            } else {
+                return formatTag(cellValue, viewerCfg, viewerStyleColName, indicatorStyleConf.titlePrefix) || String(cellValue ?? '');
+            }
+        }
+    }
+
+    if (isLinkColInViewer && colDef.type !== 'checkbox') { // Don't treat styled checkboxes as generic links
+        const urlValueStr = String(cellValue ?? '');
+        if (urlValueStr.trim() !== '') {
+            return `<span class="editor-cell-icon" title="Link: ${urlValueStr}">🔗</span> <span class="cell-url-display-span" title="${urlValueStr}">${urlValueStr}</span>`;
+        } else { return ''; }
+    }
+
+    if (colDef.type === 'multi-select' && Array.isArray(cellValue)) {
+        if (cellValue.length === 0) return '';
+        return cellValue.map(v => `<span class="editor-cell-mini-tag">${String(v ?? '')}</span>`).join(' ');
+    }
+    if (colDef.type === 'checkbox') { return ''; }
+    return String(cellValue ?? '');
+}
+
+function renderGridData() {
+    const { editorGridTbody } = editorDomElements;
+    if (!editorGridTbody) { console.error("renderGridData: Table body element not found."); return; }
+    clearGridContent();
+
+    if (!_editorConfigInstance || !_editorConfigInstance.columns || _editorConfigInstance.columns.length === 0) {
+        console.warn("renderGridData: No column definitions from editor config."); return;
+    }
+    const columnDefinitions = _editorConfigInstance.columns;
+
+    if (!_csvDataInstance || _csvDataInstance.length === 0) {
+        const tr = editorGridTbody.insertRow();
+        const td = tr.insertCell(); td.colSpan = columnDefinitions.length + 1;
+        td.textContent = "No CSV data loaded. Click '+ Add Row' or load a CSV.";
+        td.style.textAlign = "center"; td.style.fontStyle = "italic"; td.style.padding = "20px";
+        return;
+    }
+
+    _csvDataInstance.forEach((row, rowIndex) => {
+        const tr = editorGridTbody.insertRow();
+        tr.dataset.rowIndex = rowIndex;
+
+        columnDefinitions.forEach(colDef => {
+            const td = tr.insertCell();
+            td.dataset.columnName = colDef.name;
+            td.dataset.rowIndex = rowIndex;
+            let cellValue = row[colDef.name];
+            if (cellValue === undefined) {
+                cellValue = (colDef.type === 'multi-select' ? [] : '');
+            }
+
+            // Apply alignment class based on content/type
+            const styleConfForCol = _viewerConfigInstance?.indicatorStyles?.[colDef.viewerStyleColumnName || colDef.name];
+            if (colDef.type === 'checkbox' ||
+                colDef.type === 'multi-select' ||
+                (styleConfForCol && styleConfForCol.type === 'icon') ||
+                (colDef.type === 'select' && styleConfForCol && styleConfForCol.type === 'tag') ||
+                (_viewerConfigInstance?.generalSettings?.linkColumns?.includes(colDef.name) && !(styleConfForCol && (styleConfForCol.type === 'tag')))
+            ) {
+                td.classList.add('cell-align-center');
+            }
+            if (colDef.type === 'multi-select') {
+                td.classList.add('cell-type-multi-select');
+            }
+
+
+            td.innerHTML = getStyledCellDisplay(cellValue, colDef);
+            if (!colDef.readOnly) {
+                td.addEventListener('click', handleCellClickToEdit);
+                if (colDef.type === 'checkbox') td.classList.add('editor-cell-boolean-toggle');
+            } else {
+                td.classList.add('cell-readonly');
+            }
+            validateCell(td, cellValue, colDef);
+        });
+
+        const actionTd = tr.insertCell();
+        actionTd.classList.add('action-cell');
+        const deleteBtn = document.createElement('button');
+        deleteBtn.textContent = "Delete"; deleteBtn.dataset.rowIndex = rowIndex;
+        deleteBtn.addEventListener('click', handleDeleteRowClick);
+        actionTd.appendChild(deleteBtn);
+    });
+    console.log(`Grid data rendered: ${_csvDataInstance.length} rows.`);
+}
+
+function handleCellClickToEdit(event) {
+    let td = event.target.closest('td');
+    if (!td || td.classList.contains('cell-readonly') || td.querySelector('input, select, textarea, .custom-select-popup')) return;
+
+    const columnName = td.dataset.columnName;
+    const rowIndex = parseInt(td.dataset.rowIndex, 10);
+    const colDef = _editorConfigInstance.columns.find(c => c.name === columnName);
+    if (!colDef) return;
+
+    if (_activePopup && _activePopup.td !== td) { _activePopup.remove(); _activePopup = null; }
+
+    let cellValue = _csvDataInstance[rowIndex][columnName];
+     // Ensure cellValue is an array for multi-select if it's not already
+    if (colDef.type === 'multi-select' && !Array.isArray(cellValue)) {
+        if (typeof cellValue === 'string' && cellValue.trim() !== '') {
+            cellValue = cellValue.split(',').map(s => s.trim()).filter(s => s);
+        } else {
+            cellValue = [];
+        }
+        _csvDataInstance[rowIndex][columnName] = cellValue; // Update model to array type
+    }
+
+
+    td.innerHTML = ''; // Clear current display content
+
+    let inputElement;
+    if (colDef.type === 'checkbox') {
+        const isCurrentlyTrue = isTruthy(cellValue, _viewerConfigInstance || { generalSettings: {} });
+        const trueVal = _editorConfigInstance.csvOutputOptions?.booleanTrueValue || "TRUE";
+        const falseVal = _editorConfigInstance.csvOutputOptions?.booleanFalseValue || "FALSE";
+        _csvDataInstance[rowIndex][columnName] = isCurrentlyTrue ? falseVal : trueVal;
+        td.innerHTML = getStyledCellDisplay(_csvDataInstance[rowIndex][columnName], colDef);
+        validateCell(td, _csvDataInstance[rowIndex][columnName], colDef);
+        console.log(`Checkbox Toggled: Row ${rowIndex}, Col "${columnName}" = "${_csvDataInstance[rowIndex][columnName]}"`);
+        window.dispatchEvent(new CustomEvent('editorDataChanged')); // Notify app of data change
+        return;
+    } else if (colDef.type === 'select' || colDef.type === 'multi-select') {
+        createSelectPopup(td, cellValue, colDef, rowIndex, columnName);
+        return;
+    }
+
+    switch (colDef.type) {
+        case 'textarea':
+            inputElement = document.createElement('textarea');
+            inputElement.value = String(cellValue ?? '');
+            break;
+        case 'date':
+            inputElement = document.createElement('input'); inputElement.type = 'date';
+            try {
+                if (cellValue && !isNaN(new Date(cellValue))) inputElement.value = new Date(cellValue).toISOString().split('T')[0];
+                else inputElement.value = cellValue ?? '';
+            } catch (e) { inputElement.value = cellValue ?? ''; }
+            break;
+        case 'number':
+            inputElement = document.createElement('input'); inputElement.type = 'number';
+            inputElement.value = cellValue ?? '';
+            break;
+        default: // text, url
+            inputElement = document.createElement('input');
+            inputElement.type = colDef.type === 'url' ? 'url' : 'text'; // Use 'url' type if specified
+            inputElement.value = String(cellValue ?? '');
+            break;
+    }
+
+    inputElement.dataset.rowIndex = rowIndex; inputElement.dataset.columnName = columnName;
+    const finishEdit = () => {
+        handleCellChange({target: inputElement}); // Save current value
+        const currentValInModel = _csvDataInstance[rowIndex][columnName];
+        td.innerHTML = getStyledCellDisplay(currentValInModel, colDef);
+        validateCell(td, currentValInModel, colDef);
+        window.dispatchEvent(new CustomEvent('editorDataChanged'));
+    };
+    inputElement.addEventListener('blur', finishEdit);
+    inputElement.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); inputElement.blur(); }
+        else if (e.key === 'Escape') {
+            const originalValue = _csvDataInstance[rowIndex][columnName]; // Re-fetch, as it might have changed if blur also fired
+            td.innerHTML = getStyledCellDisplay(originalValue, colDef);
+            validateCell(td, originalValue, colDef); // Validate original
+        }
+    });
+
+    td.appendChild(inputElement);
+    if (typeof inputElement.focus === 'function') {
+        inputElement.focus();
+        if (inputElement.select) inputElement.select();
+    }
+}
+
+function handleCellChange(event) {
+    const inputElement = event.target;
+    const rowIndex = parseInt(inputElement.dataset.rowIndex, 10);
+    const columnName = inputElement.dataset.columnName;
+
+    let newValue;
+    // Checkbox is handled by its direct toggle in handleCellClickToEdit
+    if (inputElement.type === 'number') {
+        newValue = inputElement.value === '' ? '' : parseFloat(inputElement.value);
+        if (isNaN(newValue) && inputElement.value !== '') newValue = inputElement.value;
+    } else {
+        newValue = inputElement.value;
+    }
+
+    if (_csvDataInstance && _csvDataInstance[rowIndex] !== undefined && columnName !== undefined) {
+        if (_csvDataInstance[rowIndex][columnName] !== newValue) {
+            _csvDataInstance[rowIndex][columnName] = newValue;
+            console.log(`Data updated: Row ${rowIndex}, Col "${columnName}" =`, newValue);
+        }
+    } else {
+        console.error("Error updating cell: Invalid rowIndex, columnName, or data reference.");
+    }
+}
+
+function getOptionsForColumn(colDef) {
+    // ... (no change from previous full version) ...
+    let options = [];
+    if (Array.isArray(colDef.options) && colDef.options.length > 0) {
+        options = colDef.options.map(opt => typeof opt === 'string' ? {value: opt, label: opt} : opt);
+    }
+    else if (colDef.optionsSource === 'viewerConfigValueMap' && _viewerConfigInstance?.indicatorStyles) {
+        const styleColName = colDef.viewerStyleColumnName || colDef.name;
+        const styleConf = _viewerConfigInstance.indicatorStyles[styleColName];
+        const valueMap = styleConf?.valueMap;
+        if (valueMap) {
+            options = Object.keys(valueMap)
+                .filter(key => key !== 'default')
+                .map(key => ({ value: key, label: valueMap[key].text || key }));
+        }
+    }
+    return options.sort((a, b) => a.label.localeCompare(b.label));
+}
+
+function createSelectPopup(td, currentValueForPopup, colDef, rowIndex, columnName) {
+    // ... (no change from previous full version) ...
+    if (_activePopup) _activePopup.remove();
+    const popup = document.createElement('div');
+    _activePopup = popup; _activePopup.td = td;
+    popup.className = 'custom-select-popup';
+    const rect = td.getBoundingClientRect();
+    popup.style.top = `${rect.bottom + window.scrollY}px`;
+    popup.style.left = `${rect.left + window.scrollX}px`;
+    popup.style.minWidth = `${Math.max(td.offsetWidth, 200)}px`;
+    popup.style.zIndex = '1000';
+
+    let allOptions = getOptionsForColumn(colDef);
+    const useSearch = allOptions.length >= 15 || (colDef.type === 'multi-select' && colDef.allowNewTags);
+
+
+    let currentSelectionsArray = []; // This will hold the array of strings for multi-select
+    if (colDef.type === 'multi-select') {
+        currentSelectionsArray = Array.isArray(currentValueForPopup) ? [...currentValueForPopup.map(String)] : [];
+    } else { // single select
+        currentSelectionsArray = currentValueForPopup !== undefined && currentValueForPopup !== null ? [String(currentValueForPopup)] : [];
+    }
+
+
+    const searchInput = document.createElement('input');
+    if (useSearch) {
+        searchInput.type = 'search';
+        searchInput.placeholder = colDef.type === 'multi-select' && colDef.allowNewTags ? 'Search or Add New & Enter...' : 'Search options...';
+        searchInput.className = 'popup-search-input';
+        popup.appendChild(searchInput);
+    }
+
+    const optionsList = document.createElement('ul');
+    optionsList.className = 'popup-options-list';
+    popup.appendChild(optionsList);
+
+    const updateAndClose = (valueToSet) => {
+        _csvDataInstance[rowIndex][columnName] = valueToSet;
+        td.innerHTML = getStyledCellDisplay(valueToSet, colDef);
+        validateCell(td, valueToSet, colDef);
+        if (_activePopup === popup) { popup.remove(); _activePopup = null; }
+        window.dispatchEvent(new CustomEvent('editorDataChanged'));
+    };
+    // Make it globally accessible for renderPopupOptions's single-select click
+    window._editorUpdateAndCloseFromPopup = updateAndClose;
+
+
+    const rerenderOptionsList = () => {
+        const searchTerm = useSearch ? searchInput.value : '';
+        filterPopupOptions(optionsList, searchTerm, allOptions, currentSelectionsArray, colDef);
+    };
+
+    if (useSearch) {
+        searchInput.addEventListener('input', rerenderOptionsList);
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (colDef.type === 'multi-select' && colDef.allowNewTags && searchInput.value.trim() !== '') {
+                    const newTag = searchInput.value.trim();
+                    if (!currentSelectionsArray.includes(newTag)) {
+                        currentSelectionsArray.push(newTag);
+                    }
+                    if (!allOptions.some(opt => opt.value === newTag)) {
+                        allOptions.push({ value: newTag, label: newTag });
+                        allOptions.sort((a, b) => a.label.localeCompare(b.label));
+                    }
+                    searchInput.value = '';
+                    rerenderOptionsList();
+                } else if (colDef.type === 'select') {
+                    const firstVisibleOption = optionsList.querySelector('li:not([data-filtered-out="true"])');
+                    if (firstVisibleOption) firstVisibleOption.click();
+                }
+            } else if (e.key === 'Escape') {
+                if (_activePopup === popup) { popup.remove(); _activePopup = null; }
+                td.innerHTML = getStyledCellDisplay(_csvDataInstance[rowIndex][columnName], colDef); // Revert display
+            }
+        });
+    }
+
+    rerenderOptionsList();
+
+    if (colDef.type === 'multi-select') {
+        const applyBtn = document.createElement('button');
+        applyBtn.textContent = 'Apply Selections';
+        applyBtn.className = 'popup-apply-btn';
+        applyBtn.addEventListener('click', () => {
+            // finalSelectedValues should be currentSelectionsArray as it's updated by checkbox changes
+            updateAndClose([...currentSelectionsArray]); // Pass a copy
+        });
+        popup.appendChild(applyBtn);
+    }
+
+    document.body.appendChild(popup);
+    if (useSearch && searchInput) searchInput.focus();
+    else if (optionsList.firstChild) optionsList.firstChild.focus();
+
+    setTimeout(() => { document.addEventListener('click', handleClickOutsidePopup, { once: true, capture: true }); }, 0);
+}
+
+function renderPopupOptions(listElement, optionsToDisplay, currentSelectedValuesArray, colDef) {
+    listElement.innerHTML = '';
+    const isMulti = colDef.type === 'multi-select';
+    const currentValuesSet = new Set(currentSelectedValuesArray.map(String)); // Use the array passed in
+
+    if (optionsToDisplay.length === 0 && isMulti && colDef.allowNewTags) {
+        const li = document.createElement('li');
+        li.textContent = "Type to add new tags.";
+        li.style.fontStyle = "italic"; li.style.color = "#777";
+        listElement.appendChild(li); return;
+    }
+    if (optionsToDisplay.length === 0) {
+        const li = document.createElement('li');
+        li.textContent = "No options match search.";
+        li.style.fontStyle = "italic"; listElement.appendChild(li); return;
+    }
+
+    optionsToDisplay.forEach(opt => {
+        const li = document.createElement('li'); li.tabIndex = 0;
+        if (isMulti) {
+            const cb = document.createElement('input'); cb.type = 'checkbox';
+            cb.value = opt.value;
+            const uniqueId = `popup-opt-${colDef.name.replace(/\W/g, '_')}-${opt.value.replace(/\W/g, '_')}-${Math.random().toString(16).slice(2)}`;
+            cb.id = uniqueId;
+            if (currentValuesSet.has(String(opt.value))) cb.checked = true;
+            cb.addEventListener('change', () => { // Directly modify currentSelectionsArray
+                if (cb.checked) {
+                    if (!currentValuesSet.has(String(opt.value))) {
+                        currentSelectedValuesArray.push(String(opt.value)); currentValuesSet.add(String(opt.value));
+                    }
+                } else {
+                    const index = currentSelectedValuesArray.indexOf(String(opt.value));
+                    if (index > -1) currentSelectedValuesArray.splice(index, 1);
+                    currentValuesSet.delete(String(opt.value));
+                }
+            });
+            const label = document.createElement('label'); label.htmlFor = cb.id;
+            label.appendChild(cb); label.appendChild(document.createTextNode(opt.label));
+            li.appendChild(label);
+            li.addEventListener('click', (e) => { if (e.target !== cb) cb.click(); });
+            li.addEventListener('keydown', (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); cb.click(); }});
+        } else { // 'select'
+            li.textContent = opt.label; li.dataset.value = opt.value;
+            if (currentValuesSet.has(String(opt.value))) li.classList.add('selected');
+            const selectAndClose = () => {
+                const td = _activePopup.td;
+                const rowIndex = parseInt(td.dataset.rowIndex);
+                const columnName = td.dataset.columnName;
+                window._editorUpdateAndCloseFromPopup(opt.value, rowIndex, columnName, colDef); // Use window-scoped fn
+            };
+            li.addEventListener('click', selectAndClose);
+            li.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectAndClose(); }});
+        }
+        listElement.appendChild(li);
+    });
+}
+
+function filterPopupOptions(listElement, searchTerm, allOptions, currentSelectionsArray, colDef) {
+    const lowerSearchTerm = searchTerm.toLowerCase();
+    const filteredOptions = allOptions.filter(opt => opt.label.toLowerCase().includes(lowerSearchTerm));
+    renderPopupOptions(listElement, filteredOptions, currentSelectionsArray, colDef);
+}
+
+function handleClickOutsidePopup(event) {
+    if (_activePopup && !_activePopup.contains(event.target)) {
+        const td = _activePopup.td;
+        const isTargetCellOrChild = td.contains(event.target) || td === event.target;
+
+        if (!isTargetCellOrChild) {
+            const rowIndex = parseInt(td.dataset.rowIndex);
+            const columnName = td.dataset.columnName;
+            const colDef = _editorConfigInstance.columns.find(c => c.name === columnName);
+
+            // For multi-select, "Apply" is explicit. If clicked outside without apply,
+            // revert to state before popup for that cell.
+            // For single-select, a click outside means no change from before popup.
+            td.innerHTML = getStyledCellDisplay(_csvDataInstance[rowIndex][columnName], colDef);
+            validateCell(td, _csvDataInstance[rowIndex][columnName], colDef);
+
+            _activePopup.remove();
+            _activePopup = null;
+            document.removeEventListener('click', handleClickOutsidePopup, { capture: true }); // Remove this instance
+        } else {
+            // Click was likely on the cell that opened it. Re-attach listener if popup still somehow exists.
+             if (_activePopup) { // Should have been removed by opening cell again
+                document.removeEventListener('click', handleClickOutsidePopup, { capture: true });
+                setTimeout(() => { document.addEventListener('click', handleClickOutsidePopup, { once: true, capture: true }); }, 0);
+             }
+        }
+    } else if (_activePopup) { // Click was inside the popup, re-register listener
+        document.removeEventListener('click', handleClickOutsidePopup, { capture: true });
+        setTimeout(() => { document.addEventListener('click', handleClickOutsidePopup, { once: true, capture: true }); }, 0);
+    }
+}
+
+function addNewRow() {
+    if (!_editorConfigInstance || !_editorConfigInstance.columns) {
+        console.error("Cannot add new row: Editor config not loaded or has no columns."); return false;
+    }
+    if (!_csvDataInstance) {
+        console.error("Cannot add new row: Data reference not initialized."); return false;
+    }
+    const newRow = {};
+    _editorConfigInstance.columns.forEach(colDef => {
+        if (colDef.type === 'checkbox') newRow[colDef.name] = _editorConfigInstance.csvOutputOptions?.booleanFalseValue || "FALSE";
+        else if (colDef.type === 'multi-select') newRow[colDef.name] = [];
+        else newRow[colDef.name] = '';
+    });
+    _csvDataInstance.push(newRow);
+    renderGridData();
+    const { editorGridTbody } = editorDomElements;
+    if (editorGridTbody && editorGridTbody.lastChild) {
+        editorGridTbody.lastChild.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        const firstEditableCell = editorGridTbody.lastChild.querySelector('td:not(.cell-readonly)');
+        if (firstEditableCell) {
+            handleCellClickToEdit({ target: firstEditableCell });
+        }
+    }
+    window.dispatchEvent(new CustomEvent('editorDataChanged'));
+    return true;
+}
+
+function handleDeleteRowClick(event) {
+    const buttonElement = event.target;
+    const rowIndex = parseInt(buttonElement.dataset.rowIndex, 10);
+    if (confirm(`Are you sure you want to delete row ${rowIndex + 1}?`)) {
+        if (_csvDataInstance && rowIndex >= 0 && rowIndex < _csvDataInstance.length) {
+            _csvDataInstance.splice(rowIndex, 1);
+            console.log(`Row ${rowIndex} deleted.`);
+            renderGridData();
+            window.dispatchEvent(new CustomEvent('editorDataChanged'));
+        }
+    }
+}

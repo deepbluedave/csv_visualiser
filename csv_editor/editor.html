@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Config-Driven CSV Editor</title>
+    <link rel="stylesheet" href="css/editor_styles.css">
+</head>
+
+<body>
+    <div id="csv-editor-wrapper">
+        <h1>Config-Driven CSV Editor</h1>
+
+        <div class="editor-controls-area">
+            <div class="file-inputs">
+                <label for="viewerConfigFileInput">Load Viewer Config (config.js):</label>
+                <input type="file" id="viewerConfigFileInput" accept=".js">
+
+                <label for="editorConfigFileInput">Load Editor Config (editor_config.js):</label>
+                <input type="file" id="editorConfigFileInput" accept=".js">
+
+                <label for="csvDataFileInput">Load CSV Data File:</label>
+                <input type="file" id="csvDataFileInput" accept=".csv">
+            </div>
+            <div class="actions">
+                <button id="addRowBtn" disabled>+ Add Row</button>
+                <button id="sortDataBtn" disabled>Sort Data (Default)</button> <!-- NEW BUTTON -->
+                <button id="exportCsvBtn" disabled>Export to CSV</button>
+            </div>
+            <div id="statusMessages">Status: Load configuration files and a CSV.</div>
+        </div>
+
+        <div id="editorGridContainer">
+            <!-- The data grid table will be rendered here by JavaScript -->
+            <table>
+                <thead></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Load shared utilities (viewer's config.js is loaded by editor_config_handler.js if needed) -->
+    <!-- For now, assume viewer_config.js is not directly loaded here unless specifically needed by editor_app.js early on -->
+
+    <script src="js/shared_utils.js"></script> <!-- Will create this later -->
+    <script src="js/editor_dom_elements.js"></script>
+    <script src="js/editor_config_handler.js"></script>
+    <script src="js/editor_csv_parser.js"></script>
+    <script src="js/editor_csv_generator.js"></script>
+    <script src="js/editor_data_grid.js"></script>
+    <script src="js/editor_app.js"></script>
+</body>
+
+</html>

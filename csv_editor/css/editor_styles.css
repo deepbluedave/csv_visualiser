@@ -1,0 +1,346 @@
+/* editor_styles.css */
+
+/* Basic Reset & Body */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    padding: 20px;
+    background-color: #f0f0f0;
+    color: #333;
+}
+
+#csv-editor-wrapper {
+    max-width: 95%;
+    margin: 20px auto;
+    background-color: #fff;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+
+.editor-controls-area {
+    margin-bottom: 20px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+}
+
+.file-inputs label {
+    display: block;
+    margin-top: 10px;
+    margin-bottom: 3px;
+    font-weight: bold;
+    font-size: 0.9em;
+}
+
+.file-inputs input[type="file"] {
+    display: block;
+    margin-bottom: 10px;
+    padding: 5px;
+}
+
+.actions {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px dashed #ccc;
+}
+
+.actions button {
+    padding: 8px 12px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    margin-right: 8px;
+}
+
+.actions button:hover:not(:disabled) {
+    background-color: #0056b3;
+}
+
+.actions button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+#statusMessages {
+    margin-top: 10px;
+    padding: 8px;
+    background-color: #e9ecef;
+    border-radius: 4px;
+    font-size: 0.9em;
+    color: #495057;
+}
+
+#editorGridContainer {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid #ccc;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+#editorGridContainer table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+/* Default for TH and TD - reduced padding, vertical-align middle */
+#editorGridContainer th,
+#editorGridContainer td {
+    border: 1px solid #ddd;
+    padding: 3px 5px;
+    text-align: left;
+    font-size: 0.92em;
+    vertical-align: middle; /* Default to middle */
+}
+
+/* TH Specific Styling */
+#editorGridContainer th {
+    background-color: #f1f1f1;
+    font-weight: bold;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+#editorGridContainer th .header-text-content {
+    display: block; /* Needed for writing-mode and some transforms */
+}
+
+/* Horizontal Header (Default) */
+#editorGridContainer th.header-horizontal {
+    text-align: center;
+    /* vertical-align: middle; */ /* Inherited */
+}
+#editorGridContainer th.header-horizontal .header-text-content {
+    white-space: normal; /* Allow wrapping */
+}
+
+/* Vertical Header using writing-mode */
+#editorGridContainer th.header-vertical {
+    height: 130px; /* This sets the "length" of the vertical text area */
+    /* width is set by colDef.columnWidth in JS, e.g., 40px */
+    min-width: 35px;
+    padding: 4px 2px; /* Minimal padding */
+    text-align: center; /* Centers the transformed text block */
+    /* vertical-align: middle; */ /* Inherited */
+    overflow: hidden; /* Important to clip rotated text */
+}
+
+#editorGridContainer th.header-vertical .header-text-content {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    white-space: nowrap;
+    display: inline-block; /* For writing-mode to behave in a constrained way */
+    max-width: 100%; /* Span takes width of TH */
+    max-height: calc(130px - 8px); /* Span's "height" (original text length) constrained by TH height */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    /* border: 1px dashed green; */ /* Debug */
+}
+
+/* Table Body Styling */
+#editorGridContainer tbody tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+#editorGridContainer tbody tr:hover {
+    background-color: #e8f0fe;
+}
+
+/* Cell Input Styling */
+#editorGridContainer td input[type="text"],
+#editorGridContainer td input[type="url"],
+#editorGridContainer td input[type="date"],
+#editorGridContainer td input[type="number"],
+#editorGridContainer td textarea,
+#editorGridContainer td select {
+    width: 100%;
+    padding: 3px 4px;
+    border: 1px solid #ccc;
+    border-radius: 2px;
+    box-sizing: border-box;
+    font-size: inherit;
+    font-family: inherit;
+    vertical-align: middle; /* Align input with other cell content if mixed */
+}
+#editorGridContainer td textarea {
+    min-height: 30px; /* For a couple of lines */
+    resize: vertical;
+}
+#editorGridContainer td input[type="checkbox"] { /* Actual checkbox input */
+    margin: 0; /* Remove browser default margin */
+    vertical-align: middle;
+    /* Centering a lone checkbox input is best done by text-align:center on parent TD */
+}
+
+/* Validation error style */
+#editorGridContainer td.cell-error {
+    outline: 1.5px solid red; /* Make outline more prominent */
+    background-color: #fff2f2; /* Lighter red tint */
+}
+#editorGridContainer td.cell-error input,
+#editorGridContainer td.cell-error textarea,
+#editorGridContainer td.cell-error select {
+    border-color: red !important;
+    background-color: #fffafa; /* Slight tint on input itself */
+}
+
+/* Action cell for delete button */
+.action-cell {
+    width: 60px;
+    text-align: center !important;
+    vertical-align: middle !important;
+}
+.action-cell button {
+    background-color: #dc3545;
+    padding: 3px 6px;
+    font-size: 0.8em;
+}
+.action-cell button:hover:not(:disabled) {
+    background-color: #c82333;
+}
+
+/* Cell Content Alignment & Display Styling (Non-Edit Mode) */
+#editorGridContainer td.cell-align-center {
+    text-align: center;
+    /* vertical-align: middle; */ /* Inherited */
+}
+#editorGridContainer td.cell-type-multi-select {
+    /* vertical-align: middle; */ /* Inherited */
+    line-height: 1.4; /* Allow space for wrapped tags */
+}
+
+.editor-cell-mini-tag,
+#editorGridContainer td .tag { /* Style for tags from formatTag */
+    display: inline-block;
+    background-color: #e9ecef;
+    color: #495057;
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-size: 0.88em;
+    margin: 1px;
+    border: 1px solid #ced4da;
+    line-height: 1.2; /* Reduced slightly */
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+.editor-cell-icon { /* For icons in display mode */
+    font-size: 1em; /* Relative to cell font size */
+    vertical-align: middle;
+    line-height: 1;
+    display: inline-block; /* Helps with alignment */
+}
+#editorGridContainer td.editor-cell-boolean-toggle { /* The TD cell for direct boolean toggle */
+    cursor: pointer;
+    /* text-align: center; */ /* Inherited from .cell-align-center if applied */
+    /* vertical-align: middle; */ /* Inherited */
+    min-height: 22px; /* Ensure a minimum clickable area */
+}
+#editorGridContainer td.editor-cell-boolean-toggle:hover {
+    background-color: #f0f8ff;
+}
+#editorGridContainer td .cell-url-display-span { /* For truncated URL text */
+    display: inline-block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 150px; /* Adjust as needed */
+    vertical-align: middle;
+    margin-left: 3px; /* Space from link icon */
+}
+#editorGridContainer td.cell-readonly {
+    background-color: #f8f9fa;
+    color: #5a6268;
+    font-style: italic;
+}
+
+/* Custom Select Popup Styles */
+.custom-select-popup {
+    position: absolute;
+    background-color: white;
+    border: 1px solid #ccc;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    border-radius: 4px;
+    min-width: 150px;
+    max-height: 250px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 1000;
+}
+.popup-search-input {
+    width: calc(100% - 12px);
+    padding: 6px;
+    margin: 6px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    box-sizing: border-box;
+}
+.popup-options-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    flex-grow: 1;
+}
+.popup-options-list li {
+    padding: 6px 10px; /* Slightly reduced */
+    cursor: pointer;
+    font-size: 0.9em;
+    border-bottom: 1px solid #f0f0f0;
+}
+.popup-options-list li:last-child {
+    border-bottom: none;
+}
+.popup-options-list li:hover {
+    background-color: #e9f5ff;
+}
+.popup-options-list li.selected {
+    background-color: #007bff;
+    color: white;
+    font-weight: bold;
+}
+.popup-options-list li label {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    cursor: pointer;
+    font-weight: normal;
+}
+.popup-options-list li input[type="checkbox"] {
+    margin-right: 10px;
+    vertical-align: middle;
+}
+.popup-apply-btn {
+    display: block;
+    width: calc(100% - 12px);
+    padding: 8px;
+    margin: 6px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    text-align: center;
+    box-sizing: border-box;
+    font-weight: bold;
+}
+.popup-apply-btn:hover {
+    background-color: #218838;
+}
