@@ -1,13 +1,10 @@
-// --- START OF FILE config.js ---
-
 let defaultConfig = {
   "configVersion": 8.1, // Incremented version for tracking changes
   "csvHeaders": [], // Auto-populated
-
   "generalSettings": {
     "dashboardTitle": "InfoSec Exception Tracker",
-    "csvUrl": "https://www.csv.com/id/1224", // Load infosec_exceptions.csv via upload
-    "trueValues": ["true", "TRUE", "yes", "y", "1", "✓", "x", "on"],
+    "csvUrl": null,
+    "trueValues": ["true", "TRUE", "yes", "y", "1", "x", "on"],
     "csvDelimiter": ",",
     "multiValueColumns": [ /* "Mitigating Controls Summary" could be if detailed */],
     "linkColumns": ["Link", "ExceptionID"],
@@ -15,7 +12,7 @@ let defaultConfig = {
     "linkPrefixes": {
       // Map Column Name to its URL prefix
       // The cell value will be appended directly to this prefix.
-      "ExceptionID": "https://jira.example.com/browse/id/", // Example for JIRA tickets
+      "ExceptionID": "https:jira.example.com/browse/id/", // Example for JIRA tickets
       // "AnotherIDColumn": "https://service.example.com/details?id="
       // Columns listed in linkColumns but NOT here will be treated as potentially full URLs
     },

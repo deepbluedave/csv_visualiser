@@ -1,10 +1,4 @@
-// --- START OF FILE fantasy_world_atlas.js (VIEWER CONFIG) ---
-
-// Assign to window.defaultConfig for the editor's loadJsConfigurationFile to pick it up
-// (This is a workaround for loading non-module JS files as configs in the editor)
-// If this script were loaded directly by the viewer, 'let defaultConfig' would be fine.
-// window.defaultConfig = { // This line would be needed if loadJsConfigurationFile couldn't find 'let'
-let defaultConfig = { // Standard declaration for viewer, editor will adapt
+let defaultConfig = { 
   "configVersion": 4.4, // Incremented version
   "csvHeaders": [], // Auto-populated on CSV load
 
