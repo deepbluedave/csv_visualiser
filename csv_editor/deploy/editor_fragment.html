@@ -1,0 +1,52 @@
+<!-- Start csv_editor Fragment -->
+<!-- Set Character Encoding -->
+<meta charset="UTF-8">
+<link rel="stylesheet" href="style.css"><!-- UPDATE PATH IF NEEDED -->
+<div id="csv-editor-wrapper">
+        <h1>Config-Driven CSV Editor</h1>
+
+        <div class="editor-controls-area">
+            <div class="file-inputs-horizontal">
+                <div class="file-input-group">
+                    <label for="viewerConfigFileInput">Viewer Config (config.js):</label>
+                    <input type="file" id="viewerConfigFileInput" accept=".js">
+                </div>
+
+                <div class="file-input-group">
+                    <label for="editorConfigFileInput">Override Editor Config:</label> <!-- Label changed -->
+                    <input type="file" id="editorConfigFileInput" accept=".js">
+                </div>
+
+                <div class="file-input-group">
+                    <label for="csvDataFileInput">CSV Data File:</label>
+                    <input type="file" id="csvDataFileInput" accept=".csv">
+                </div>
+            </div>
+
+            <div class="actions">
+                <button id="addRowBtn" disabled>+ Add Row</button>
+                <button id="sortDataBtn" disabled>Sort Data (Default)</button>
+                <button id="exportCsvBtn" disabled>Export to CSV</button>
+            </div>
+            <div id="statusMessages">Status: Initializing...</div>
+        </div>
+
+        <div id="editorGridContainer">
+            <table>
+                <thead></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Configuration Files - Editor config loaded first -->
+    <!-- IMPORTANT: For deployment, change 'editor_config_example.js' to the actual path 
+         of your editor config file (e.g., the Confluence attachment path) -->
+    <script src="editor_config_example.js"></script> <!-- OR editor_config_fantasy_world_atlas.js -->
+
+    <!-- Utility and App Scripts -->
+
+
+<!-- loadJsConfigurationFile still used for viewer config via URL -->
+<script src="script.js"></script><!-- UPDATE PATH IF NEEDED -->
+<!-- End csv_editor Fragment -->
