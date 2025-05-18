@@ -1,10 +1,8 @@
+// editor_app.js
 document.addEventListener('DOMContentLoaded', async () => {
     console.log("EDITOR_APP: DOMContentLoaded - Initializing...");
 
     // --- State Variables ---
-    // These local variables in editor_app.js are primarily for convenience within this module's immediate scope.
-    // The single source of truth for loaded configs is managed by editor_config_handler.js (set via setXConfig, read via getXConfig).
-    // csvDataMain IS the single source of truth for the data array, passed by reference to editor_data_grid.js.
     let viewerConfigLocal = null;
     let editorConfigLocal = null;
     let csvDataMain = [];
@@ -15,8 +13,34 @@ document.addEventListener('DOMContentLoaded', async () => {
         viewerConfigFileInput, editorConfigFileInput, csvDataFileInput,
         addRowBtn, sortDataBtn, exportCsvBtn, statusMessages
     } = editorDomElements;
+    const mainPageHeading = document.querySelector('#csv-editor-wrapper h1');
 
     // --- Helper Function Definitions ---
+    function updateEditorTitles(viewerConfig) {
+        const baseTitle = viewerConfig?.generalSettings?.dashboardTitle || "CSV Data";
+        const editorPageTitle = `${baseTitle} - Editor`;
+        document.title = editorPageTitle;
+        if (mainPageHeading) {
+            mainPageHeading.textContent = editorPageTitle;
+        } else {
+            const firstH1 = document.querySelector('h1');
+            if (firstH1) firstH1.textContent = editorPageTitle;
+        }
+        console.log(`EDITOR_APP: Titles updated to "${editorPageTitle}"`);
+    }
+
+    function resetEditorTitles() {
+        const defaultEditorTitle = "Config-Driven CSV Editor";
+        document.title = defaultEditorTitle;
+        if (mainPageHeading) {
+            mainPageHeading.textContent = defaultEditorTitle;
+        } else {
+            const firstH1 = document.querySelector('h1');
+            if (firstH1) firstH1.textContent = defaultEditorTitle;
+        }
+        console.log(`EDITOR_APP: Titles reset to "${defaultEditorTitle}"`);
+    }
+
     function updateEditorStatus(message, isError = false) {
         if (isError) {
             console.error(`EDITOR_APP_STATUS (Error): ${message}`);
@@ -30,9 +54,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function checkAndEnableActions() {
-        const editorCfg = getEditorConfig(); // Use getter from config_handler
-        const viewerCfg = getViewerConfig(); // Use getter from config_handler
-
+        const editorCfg = getEditorConfig();
+        const viewerCfg = getViewerConfig();
         const canAddRow = !!(editorCfg && editorCfg.columns && editorCfg.columns.length > 0);
         const canExport = !!(editorCfg && editorCfg.columns && editorCfg.columns.length > 0 && (csvDataMain.length > 0 || (editorCfg.columns && editorCfg.columns.length > 0)));
         const canSort = !!(csvDataMain.length > 0 && viewerCfg?.generalSettings?.defaultItemSortBy?.length > 0 && editorCfg?.columns?.length > 0);
@@ -61,7 +84,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (type === 'ViewerConfig' || type === 'EditorConfig') {
                 const pseudoFileName = url.substring(url.lastIndexOf('/') + 1) || `${type.toLowerCase()}_from_url.js`;
                 const pseudoFile = new File([content], pseudoFileName, { type: 'application/javascript' });
-                return await loadJsConfigurationFile(pseudoFile, expectedGlobalVarName); // Assumes loadJsConfigurationFile is global or imported
+                return await loadJsConfigurationFile(pseudoFile, expectedGlobalVarName);
             } else if (type === 'CSVData') {
                 return content;
             }
@@ -74,7 +97,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     function confirmAndClearOnManualOverride(configTypeChanging) {
         let message = "";
         let shouldPrompt = false;
-        if (configTypeChanging === "ViewerConfig" && getViewerConfig()) { // Use getter
+        if (configTypeChanging === "ViewerConfig" && getViewerConfig()) {
             message = "Manually loading a new Viewer Config will reprocess data with new display settings. Current data will be kept. Proceed?";
             shouldPrompt = true;
         }
@@ -82,10 +105,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (!confirm(message)) { return false; }
         }
         if (configTypeChanging === "ViewerConfig") {
-             setViewerConfig(null); // Update via setter
-             viewerConfigLocal = null; // Clear local copy too
+             setViewerConfig(null);
+             viewerConfigLocal = null;
         }
-        initDataGridReferences(csvDataMain, getEditorConfig(), getViewerConfig()); // Update with current from getters
+        initDataGridReferences(csvDataMain, getEditorConfig(), getViewerConfig());
         return true;
     }
     
@@ -93,11 +116,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log("EDITOR_APP: clearAllApplicationState called for full reset.");
         csvDataMain.length = 0;
         csvHeadersFromUpload = [];
-        clearAllConfigs(); // Clears configs in editor_config_handler.js
-        viewerConfigLocal = null; // Reset local copies
+        clearAllConfigs(); 
+        viewerConfigLocal = null;
         editorConfigLocal = null;
-        initDataGridReferences(csvDataMain, null, null); // Pass nulls to grid_handler
+        initDataGridReferences(csvDataMain, null, null); 
         clearGridStructure();
+        resetEditorTitles();
         updateEditorStatus("Editor reset. Load new configurations.");
         if(viewerConfigFileInput) viewerConfigFileInput.parentElement.style.display = '';
         if(editorConfigFileInput) {
@@ -110,7 +134,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function handleConfigLoadError(configType, error) {
         updateEditorStatus(`Error loading ${configType}: ${error.message}`, true);
-        if (configType.includes("Viewer Config")) { setViewerConfig(null); viewerConfigLocal = null; }
+        if (configType.includes("Viewer Config")) { setViewerConfig(null); viewerConfigLocal = null; resetEditorTitles(); }
         if (configType.includes("Editor Config")) { setEditorConfig(null); editorConfigLocal = null; clearGridStructure(); }
         initDataGridReferences(csvDataMain, getEditorConfig(), getViewerConfig());
     }
@@ -119,6 +143,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log("EDITOR_APP: finalizeConfigAndDataLoad called. Current csvDataMain length:", csvDataMain.length);
         const edCfg = getEditorConfig();
         const viewerCfg = getViewerConfig();
+
+        if (viewerCfg) { // Update titles if viewer config is available
+            updateEditorTitles(viewerCfg);
+        } else {
+            resetEditorTitles();
+        }
 
         if (edCfg) {
             console.log("EDITOR_APP: finalizeConfigAndDataLoad - Editor config present, rendering grid structure.");
@@ -159,7 +189,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log(`EDITOR_APP: processCsvTextOnly - Parsed ${csvDataMain.length} rows.`);
         
         alignDataToEditorSchema();
-        // Default sort is checked/applied in finalizeConfigAndDataLoad
         updateEditorStatus(`CSV Data from ${sourceDescription} processed and ready: ${csvDataMain.length} rows.`);
         return true;
     }
@@ -234,7 +263,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const config = await loadFileFromUrl(viewerConfigUrl, 'ViewerConfig', 'defaultConfig');
             if (config) {
                 try {
-                    setViewerConfig(config); viewerConfigLocal = getViewerConfig(); // Update local
+                    setViewerConfig(config); viewerConfigLocal = getViewerConfig();
                     updateEditorStatus(`Viewer Config preloaded from: ${viewerConfigUrl.substring(viewerConfigUrl.lastIndexOf('/')+1)}`);
                     if (viewerConfigFileInput) viewerConfigFileInput.parentElement.style.display = 'none';
                 } catch (e) { handleConfigLoadError('Viewer Config from URL', e); if(viewerConfigFileInput) viewerConfigFileInput.parentElement.style.display = '';}
@@ -243,25 +272,23 @@ document.addEventListener('DOMContentLoaded', async () => {
             updateEditorStatus("No Viewer Config URL for preload. Manual input active.", false);
             if(viewerConfigFileInput) viewerConfigFileInput.parentElement.style.display = '';
         }
-        // Update grid module's reference to viewerConfigLocal AFTER attempting its preload
+        // Update grid module's reference to editorConfigLocal and newly loaded viewerConfigLocal
         initDataGridReferences(csvDataMain, getEditorConfig(), getViewerConfig());
-
 
         if (csvDataUrl) {
             const edCfg = getEditorConfig();
-            const viewerCfg = getViewerConfig(); // Get potentially preloaded viewerCfg
+            const viewerCfg = getViewerConfig();
             if (edCfg) {
                 const csvText = await loadFileFromUrl(csvDataUrl, 'CSVData');
                 if (csvText !== null) {
                     try {
                         clearCsvData();
                         if(processCsvTextOnly(csvText, `URL (${csvDataUrl.substring(csvDataUrl.lastIndexOf('/')+1)})`)){
-                            // csvDataMain is now populated and processed (aligned, sorted if viewerCfg was ready)
                             if (csvDataFileInput) csvDataFileInput.parentElement.style.display = 'none';
-                            if (!viewerCfg) { // Check if viewerCfg was NOT ready during processCsvTextOnly
+                            if (!viewerCfg) {
                                  updateEditorStatus("CSV Data preloaded. Viewer Config (for full display/sort) may need manual load or working URL.", true);
                             }
-                        } else { throw new Error("CSV text processing failed."); }
+                        } else { throw new Error("CSV text processing failed during preload."); }
                     } catch (e) { updateEditorStatus(`Error processing preloaded CSV: ${e.message}`, true); clearCsvData(); if(csvDataFileInput) csvDataFileInput.parentElement.style.display = '';}
                 } else { if(csvDataFileInput) csvDataFileInput.parentElement.style.display = ''; }
             } else {
@@ -279,6 +306,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function initializeEditor() {
         console.log("EDITOR_APP: initializeEditor - Starting.");
         updateEditorStatus("Initializing editor...");
+        resetEditorTitles(); // Set default titles initially
 
         if (typeof window.editorConfig === 'object' && window.editorConfig !== null) {
             console.log("EDITOR_APP: initializeEditor - Found pre-loaded window.editorConfig.");
@@ -286,18 +314,29 @@ document.addEventListener('DOMContentLoaded', async () => {
             try {
                 const initialEditorConf = JSON.parse(JSON.stringify(window.editorConfig));
                 setEditorConfig(initialEditorConf);
-                editorConfigLocal = getEditorConfig(); // Set local copy
-                initDataGridReferences(csvDataMain, editorConfigLocal, viewerConfigLocal); // Update refs
+                editorConfigLocal = getEditorConfig();
+                initDataGridReferences(csvDataMain, editorConfigLocal, viewerConfigLocal);
                 updateEditorStatus(`Initial Editor Config "${editorConfigLocal.editorSchemaVersion || 'N/A'}" loaded.`);
                 if (editorConfigFileInput) editorConfigFileInput.parentElement.style.display = 'none';
                 await attemptPreloadsFromEditorConfig(editorConfigLocal);
+                // Titles are updated within attemptPreloads (if viewer config loads) or by finalizeConfigAndDataLoad
             } catch (e) {
                 handleConfigLoadError('Initial Editor Config (embedded)', e);
-                if (editorConfigFileInput) { /* Ensure manual visible on error */ }
+                resetEditorTitles(); // Reset title on error
+                if (editorConfigFileInput) {
+                     editorConfigFileInput.parentElement.style.display = '';
+                     editorConfigFileInput.disabled = false;
+                     editorConfigFileInput.previousElementSibling.textContent = "Load Editor Config (editor_config.js):";
+                }
             }
         } else {
             updateEditorStatus("Load Editor Configuration file to begin (or ensure it's embedded and defines window.editorConfig).");
-            if (editorConfigFileInput) { /* Ensure manual visible if no preload */ }
+            resetEditorTitles(); // Ensure default title if no preloaded editor config
+            if (editorConfigFileInput) {
+                editorConfigFileInput.parentElement.style.display = '';
+                editorConfigFileInput.disabled = false;
+                editorConfigFileInput.previousElementSibling.textContent = "Load Editor Config (editor_config.js):";
+            }
         }
         console.log("EDITOR_APP: initializeEditor - Calling finalizeConfigAndDataLoad after initial setup.");
         finalizeConfigAndDataLoad();
@@ -305,32 +344,116 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // --- Initialize App State & Call Startup Function ---
-    initDataGridReferences(csvDataMain, editorConfigLocal, viewerConfigLocal);
+    initDataGridReferences(csvDataMain, editorConfigLocal, viewerConfigLocal); // Initial call
     await initializeEditor(); // Start the initialization process
 
-    // Event listeners defined after all helper functions
-    window.addEventListener('editorDataChanged', () => { /* ... as before ... */ });
-    if (viewerConfigFileInput) { /* ... as before ... */ }
-    if (editorConfigFileInput) { /* ... as before ... */ }
-    if (csvDataFileInput) { /* ... as before ... */ }
+    // --- Event Listeners (Defined after helpers) ---
+    window.addEventListener('editorDataChanged', () => {
+        console.log("EDITOR_APP: 'editorDataChanged' event received.");
+        checkAndEnableActions();
+    });
+
+    if (viewerConfigFileInput) {
+        viewerConfigFileInput.addEventListener('change', async (event) => {
+            console.log("EDITOR_APP: viewerConfigFileInput - Manual 'change' event.");
+            const file = event.target.files[0];
+            if (!file) return;
+            if (confirmAndClearOnManualOverride("Viewer Config")) {
+                updateEditorStatus(`Loading Viewer Config from file: ${file.name}...`);
+                try {
+                    const loadedConfig = await loadJsConfigurationFile(file, 'defaultConfig');
+                    setViewerConfig(loadedConfig);
+                    viewerConfigLocal = getViewerConfig();
+                    initDataGridReferences(csvDataMain, getEditorConfig(), viewerConfigLocal); // Use getEditorConfig()
+                    updateEditorTitles(viewerConfigLocal);
+                    updateEditorStatus(`Viewer Config "${file.name}" loaded manually.`);
+                    finalizeConfigAndDataLoad();
+                } catch (error) { handleConfigLoadError('Viewer Config (manual)', error); resetEditorTitles(); }
+            } else { event.target.value = ''; }
+            checkAndEnableActions();
+        });
+    }
+
+    if (editorConfigFileInput) {
+        editorConfigFileInput.addEventListener('change', async (event) => {
+            console.log("EDITOR_APP: editorConfigFileInput - Manual 'change' event (override).");
+            const file = event.target.files[0];
+            if (!file) return;
+            if (!confirm("Manually loading a new Editor Configuration will reset the editor and discard ALL current data and configurations. Proceed?")) {
+                event.target.value = ''; return;
+            }
+            clearAllApplicationState(); // This also calls resetEditorTitles()
+            updateEditorStatus(`Loading OVERRIDE Editor Config from file: ${file.name}...`);
+            try {
+                const loadedConfig = await loadJsConfigurationFile(file, 'editorConfig');
+                setEditorConfig(loadedConfig);
+                editorConfigLocal = getEditorConfig();
+                initDataGridReferences(csvDataMain, editorConfigLocal, getViewerConfig()); // Use getViewerConfig()
+                updateEditorStatus(`Editor Config "${file.name}" loaded manually (OVERRIDE).`);
+                if (editorConfigFileInput) editorConfigFileInput.parentElement.style.display = 'none';
+                await attemptPreloadsFromEditorConfig(editorConfigLocal);
+                finalizeConfigAndDataLoad();
+            } catch (error) {
+                handleConfigLoadError('Editor Config (manual override)', error);
+                if (editorConfigFileInput) {
+                    editorConfigFileInput.parentElement.style.display = '';
+                    editorConfigFileInput.disabled = false;
+                    editorConfigFileInput.previousElementSibling.textContent = "Load Editor Config (editor_config.js):";
+                }
+            }
+            checkAndEnableActions();
+        });
+    }
+
+    if (csvDataFileInput) {
+        csvDataFileInput.addEventListener('change', async (event) => {
+            console.log("EDITOR_APP: csvDataFileInput - Manual 'change' event.");
+            const file = event.target.files[0];
+            if (!file) return;
+            const currentEdConfig = getEditorConfig();
+            if (!currentEdConfig) {
+                updateEditorStatus("Load Editor Config before CSV data.", true);
+                event.target.value = ''; return;
+            }
+            if (csvDataMain.length > 0 && !confirm("Loading a new CSV file will replace current data. Proceed?")) {
+                event.target.value = ''; return;
+            }
+            updateEditorStatus(`Loading CSV Data from file: ${file.name}...`);
+            try {
+                const csvText = await readFileContent(file);
+                clearCsvData();
+                if (processCsvTextOnly(csvText, `"${file.name}" (manual)`)) {
+                    finalizeConfigAndDataLoad();
+                } else { renderGridData(); }
+            } catch (error) {
+                updateEditorStatus(`Error loading CSV Data from file: ${error.message}`, true);
+                clearCsvData(); renderGridData();
+            }
+            checkAndEnableActions();
+        });
+    }
+    
+    // --- Action Button Handlers ---
     if (addRowBtn) {
         addRowBtn.addEventListener('click', () => {
-            const currentEdConfig = getEditorConfig(); // Use getter
+            const currentEdConfig = getEditorConfig();
             if (!currentEdConfig) {
                 updateEditorStatus("Cannot add row: Editor config not loaded.", true); return;
             }
-            if (addNewRow()) { // In editor_data_grid.js
+            if (addNewRow()) {
                 updateEditorStatus("Row added. Scroll to bottom if not visible.");
             } else { updateEditorStatus("Failed to add row.", true); }
+            // checkAndEnableActions(); // Called by 'editorDataChanged' event from addNewRow
         });
     }
+
     if (sortDataBtn) {
         sortDataBtn.addEventListener('click', () => {
-            const viewerCfg = getViewerConfig(); // Use getter
-            const editorCfg = getEditorConfig(); // Use getter
-            if (!csvDataMain || csvDataMain.length === 0) { /* ... */ return; }
-            if (!viewerCfg?.generalSettings?.defaultItemSortBy?.length) { /* ... */ return; }
-            if (!editorCfg?.columns?.length) { /* ... */ return; }
+            const viewerCfg = getViewerConfig();
+            const editorCfg = getEditorConfig();
+            if (!csvDataMain || csvDataMain.length === 0) { updateEditorStatus("No data to sort.", true); return; }
+            if (!viewerCfg?.generalSettings?.defaultItemSortBy?.length) { updateEditorStatus("No default sort criteria in Viewer Config.", true); return; }
+            if (!editorCfg?.columns?.length) { updateEditorStatus("Editor Config not loaded.", true); return; }
             updateEditorStatus("Sorting data manually...");
             try {
                 const effectiveHeaders = editorCfg.columns.map(c => c.name);
@@ -341,14 +464,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             } catch (error) { updateEditorStatus(`Error sorting: ${error.message}`, true); }
         });
     }
+
     if (exportCsvBtn) {
         exportCsvBtn.addEventListener('click', () => {
-            const currentEdConfig = getEditorConfig(); // Use getter
-            if (!currentEdConfig || (!csvDataMain.length && !(currentEdConfig.columns?.length > 0))) { /* ... */ return; }
+            const currentEdConfig = getEditorConfig();
+            if (!currentEdConfig || (!csvDataMain.length && !(currentEdConfig.columns?.length > 0))) { updateEditorStatus("Cannot export: Config or data not loaded.", true); return; }
             const outputOptions = currentEdConfig.csvOutputOptions || {};
             const csvString = generateCsvForExport(csvDataMain, currentEdConfig.columns, outputOptions);
             if (csvString !== null || (csvString === '' && csvDataMain.length === 0)) {
-                const filename = `edited_data_${new Date().toISOString().slice(0,10).replace(/-/g,'')}.csv`;
+                const filename = `edited_data_${new Date().toISOString().slice(0, 10).replace(/-/g, '')}.csv`;
                 triggerDownload(csvString, filename);
                 updateEditorStatus(`Data exported to ${filename}.`);
             } else { updateEditorStatus("No data to export or error during CSV generation.", true); }
@@ -359,7 +483,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // --- Global Utilities ---
-// triggerDownload function (no change)
 function triggerDownload(content, filename, mimeType = 'text/csv;charset=utf-8;') {
     if (content === null || content === undefined) {
         console.warn("triggerDownload: No content provided.");
