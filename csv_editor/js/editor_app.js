@@ -421,7 +421,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // Check for PK change specifically
                 if (pkColumnName && String(originalActualPK) !== String(currentActualPK)) {
-                    rowChanges.push(`  - Identifier (${pkColumnName}) changed from "${formatValueForDigest(originalActualPK)}" to ${formatValueForDigest(currentActualPK)}.\n`);
+                    rowChanges.push(`  - Identifier (${pkColumnName}) changed from "${formatValueForDigest(originalActualPK)}" to "${formatValueForDigest(currentActualPK)}".\n`);
                 }
 
                 columnDefs.forEach(colDef => {
@@ -670,19 +670,75 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    if (exportCsvBtn) {
-        exportCsvBtn.addEventListener('click', () => {
+    if (editorDomElements.exportCsvBtn) {
+        editorDomElements.exportCsvBtn.addEventListener('click', () => {
             const currentEdConfig = getEditorConfig();
-            if (!currentEdConfig || (!csvDataMain.length && !(currentEdConfig.columns?.length > 0))) { updateEditorStatus("Cannot export: Config or data not loaded.", true); return; }
+            if (!currentEdConfig || (!csvDataMain.length && !(currentEdConfig.columns?.length > 0))) {
+                updateEditorStatus("Cannot export: Config or data not loaded.", true);
+                return;
+            }
+
+            updateEditorStatus("Generating export files...");
+
+            // 1. Generate CSV Content
             const outputOptions = currentEdConfig.csvOutputOptions || {};
             const csvString = generateCsvForExport(csvDataMain, currentEdConfig.columns, outputOptions);
+
+            if (csvString === null && (csvDataMain.length > 0 || (currentEdConfig.columns?.length > 0))) {
+                updateEditorStatus("Error during CSV generation for export.", true);
+                return;
+            }
+
+            // 2. Generate Change Digest Content
+            let digestString = "No changes detected or initial data not available for comparison.";
+            let digestFilenameSuffix = "_NO_CHANGES";
+
+            if (initialCsvData.length > 0) { // Only generate digest if there's a baseline
+                digestString = generateChangeDigestOnDemand(); // Get the current delta
+                if (digestString.startsWith("No changes detected")) {
+                    // Keep digestFilenameSuffix as "_NO_CHANGES"
+                } else {
+                    digestFilenameSuffix = "_CHANGES";
+                }
+            }
+
+            // Add timestamp to the digest content itself
+            const now = new Date();
+            const timestamp = now.toISOString(); // YYYY-MM-DDTHH:mm:ss.sssZ
+            const userFriendlyTimestamp = now.toLocaleString();
+
+            const digestHeader = `Change Digest Exported: ${userFriendlyTimestamp}\n` +
+                `===================================================\n\n`;
+            digestString = digestHeader + digestString;
+
+
+            // 3. Prepare filenames
+            const baseFilename = `edited_data_${now.toISOString().slice(0, 10).replace(/-/g, '')}_${now.toTimeString().slice(0, 8).replace(/:/g, '')}`;
+            const csvFilename = `${baseFilename}.csv`;
+            const digestFilename = `${baseFilename}${digestFilenameSuffix}.txt`;
+
+            // 4. Trigger Downloads
+            // Download CSV
             if (csvString !== null || (csvString === '' && csvDataMain.length === 0)) {
-                const filename = `edited_data_${new Date().toISOString().slice(0, 10).replace(/-/g, '')}.csv`;
-                triggerDownload(csvString, filename);
-                updateEditorStatus(`Data exported to ${filename}.`);
-            } else { updateEditorStatus("No data to export or error during CSV generation.", true); }
+                triggerDownload(csvString, csvFilename, 'text/csv;charset=utf-8;');
+                updateEditorStatus(`Data exported to ${csvFilename}.`);
+            } else {
+                // This case should ideally be caught earlier by csvString === null check
+                updateEditorStatus("CSV content is null, cannot export CSV.", true);
+            }
+
+            // Download Digest (if changes were possible to detect or explicitly no changes)
+            if (initialCsvData.length > 0) { // Only download digest if comparison was possible
+                triggerDownload(digestString, digestFilename, 'text/plain;charset=utf-8;');
+                updateEditorStatus(`Change digest exported to ${digestFilename}. Export complete.`);
+            } else {
+                updateEditorStatus(`CSV exported. Change digest not generated as initial data was not available.`);
+            }
+
         });
     }
+
+
 
     // --- Listener for the new "    // --- Listener for the new "View Changes" button ---
     if (editorDomElements.viewChangesBtn && editorDomElements.changesModal && editorDomElements.changeDigestOutput) {

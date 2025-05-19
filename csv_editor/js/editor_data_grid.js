@@ -169,7 +169,7 @@ function getStyledCellDisplay(cellValue, colDef) {
         const urlValueStr = String(cellValue ?? '');
         if (urlValueStr.trim() !== '') {
             // For editor, show icon AND text to make it clear it's a link and what the value is
-            return `<span class="editor-cell-icon" title="Link: ${urlValueStr}">ðŸ”—</span><span class="cell-url-display-span" title="${urlValueStr}">${urlValueStr}</span>`;
+            return `<span class="cell-url-display-span" title="${urlValueStr}">🔗${urlValueStr}</span>`;
         } else { return ''; }
     }
 
