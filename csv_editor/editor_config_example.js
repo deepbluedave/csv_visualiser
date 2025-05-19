@@ -10,6 +10,8 @@ window.editorConfig = {
         // Note: editor_config.js itself is always loaded manually first.
     },
 
+     "changeTrackingPrimaryKeyColumn": "Entry Name", // Or "TaskID", "ExceptionID", etc.
+
     "csvOutputOptions": {
         "delimiter": ",",
         "booleanTrueValue": "TRUE",

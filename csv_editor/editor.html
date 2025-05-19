@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Config-Driven CSV Editor</title>
     <link rel="stylesheet" href="css/editor_styles.css">
 </head>
+
 <body>
     <div id="csv-editor-wrapper">
         <h1>Config-Driven CSV Editor</h1>
@@ -32,6 +34,7 @@
                 <button id="addRowBtn" disabled>+ Add Row</button>
                 <button id="sortDataBtn" disabled>Sort Data (Default)</button>
                 <button id="exportCsvBtn" disabled>Export to CSV</button>
+                <button id="viewChangesBtn" disabled>View Changes</button> <!-- << NEW BUTTON -->
             </div>
             <div id="statusMessages">Status: Initializing...</div>
         </div>
@@ -44,6 +47,17 @@
         </div>
     </div>
 
+    <!-- << NEW MODAL STRUCTURE >> -->
+    <div id="changesModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span class="close-button" id="closeChangesModalBtn">×</span>
+            <h2>Change Digest</h2>
+            <div id="changeDigestOutputContainer">
+                <pre id="changeDigestOutput"></pre> <!-- Use <pre> for simple text formatting -->
+            </div>
+        </div>
+    </div>
+
     <!-- Configuration Files - Editor config loaded first -->
     <!-- IMPORTANT: For deployment, change 'editor_config_example.js' to the actual path 
          of your editor config file (e.g., the Confluence attachment path) -->
@@ -52,10 +66,12 @@
     <!-- Utility and App Scripts -->
     <script src="js/shared_utils.js"></script>
     <script src="js/editor_dom_elements.js"></script>
-    <script src="js/editor_config_handler.js"></script> <!-- loadJsConfigurationFile still used for viewer config via URL -->
+    <script src="js/editor_config_handler.js"></script>
+    <!-- loadJsConfigurationFile still used for viewer config via URL -->
     <script src="js/editor_csv_parser.js"></script>
     <script src="js/editor_csv_generator.js"></script>
     <script src="js/editor_data_grid.js"></script>
     <script src="js/editor_app.js"></script>
 </body>
+
 </html>

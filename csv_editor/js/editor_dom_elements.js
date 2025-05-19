@@ -1,17 +1,23 @@
-// editor_dom_elements.js
+// csv_editor/js/editor_dom_elements.js
 
 const editorDomElements = {
     viewerConfigFileInput: document.getElementById('viewerConfigFileInput'),
     editorConfigFileInput: document.getElementById('editorConfigFileInput'),
     csvDataFileInput: document.getElementById('csvDataFileInput'),
     addRowBtn: document.getElementById('addRowBtn'),
+    sortDataBtn: document.getElementById('sortDataBtn'),
     exportCsvBtn: document.getElementById('exportCsvBtn'),
     statusMessages: document.getElementById('statusMessages'),
     editorGridContainer: document.getElementById('editorGridContainer'),
     editorGridTable: document.querySelector('#editorGridContainer table'),
     editorGridThead: document.querySelector('#editorGridContainer table thead'),
     editorGridTbody: document.querySelector('#editorGridContainer table tbody'),
-    sortDataBtn: document.getElementById('sortDataBtn')
+    
+    // --- NEW ELEMENTS ---
+    viewChangesBtn: document.getElementById('viewChangesBtn'),
+    changesModal: document.getElementById('changesModal'),
+    changeDigestOutput: document.getElementById('changeDigestOutput'),
+    closeChangesModalBtn: document.getElementById('closeChangesModalBtn') // For the modal's close button
 };
 
 if (!editorDomElements.editorGridTable) {
@@ -21,3 +27,10 @@ if (!editorDomElements.editorGridTable) {
         editorDomElements.statusMessages.style.color = "red";
     }
 }
+// Check new elements
+if (!editorDomElements.viewChangesBtn) console.warn("DOM Element 'viewChangesBtn' not found.");
+if (!editorDomElements.changesModal) console.warn("DOM Element 'changesModal' not found.");
+if (!editorDomElements.changeDigestOutput) console.warn("DOM Element 'changeDigestOutput' not found.");
+if (!editorDomElements.closeChangesModalBtn) console.warn("DOM Element 'closeChangesModalBtn' not found.");
+
+// --- End of file editor_dom_elements.js ---

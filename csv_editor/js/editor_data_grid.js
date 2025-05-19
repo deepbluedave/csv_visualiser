@@ -1,4 +1,4 @@
-// editor_data_grid.js
+// csv_editor/js/editor_data_grid.js
 
 let _csvDataInstance = [];
 let _editorConfigInstance = null;
@@ -25,7 +25,7 @@ function renderGridStructure(columnDefinitions) {
         const tr = document.createElement('tr');
         const th = document.createElement('th');
         th.textContent = "Load Editor Config to define columns.";
-        th.colSpan = 10; // Arbitrary large number
+        th.colSpan = 10; 
         tr.appendChild(th);
         editorGridThead.appendChild(tr);
         return;
@@ -48,7 +48,7 @@ function renderGridStructure(columnDefinitions) {
         } else {
             th.style.width = (orientation === 'vertical') ? '50px' : '150px';
         }
-        if (index === 0) {
+        if (index === 0) { // Apply sticky to the first column header
             th.classList.add('sticky-col', 'first-col');
         }
 
@@ -92,12 +92,9 @@ function validateCell(td, value, colDef) {
         if (colDef.type === 'multi-select') {
             isEmpty = !Array.isArray(value) || value.length === 0;
         } else {
-            // For single select, an empty string value ('') is considered "empty" for required check
-            // unless it's the explicit "No Selection" option.
-            // The (No Selection) option has value = ""
             isEmpty = value === null || value === undefined || String(value).trim() === '';
-            if (colDef.type === 'select' && value === '') { // If it's a select and value is empty string (our "no selection")
-                isEmpty = true; // It is indeed empty for validation purposes if required
+            if (colDef.type === 'select' && value === '') { 
+                isEmpty = true; 
             }
         }
         if (isEmpty) {
@@ -123,7 +120,7 @@ function validateCell(td, value, colDef) {
     } else {
         if (td.title.startsWith(colDef.label) && (td.title.includes("is required") || td.title.includes("does not match pattern"))) {
             td.title = originalTitle;
-        } else if (!td.title && colDef.name) { // Ensure title is set if it was cleared
+        } else if (!td.title && colDef.name) { 
             td.title = originalTitle;
         }
     }
@@ -154,7 +151,7 @@ function getStyledCellDisplay(cellValue, colDef) {
                 if (mapping && mapping.value !== undefined) { iconToShow = mapping.value; }
             }
             if (colDef.type === 'checkbox' && iconToShow === String(cellValue) && (String(cellValue).toUpperCase() === "TRUE" || String(cellValue).toUpperCase() === "FALSE")) {
-                return '';
+                 return '';
             }
             return iconToShow ? `<span class="editor-cell-icon" title="${String(cellValue ?? '')}">${iconToShow}</span>` : (colDef.type === 'checkbox' ? '' : String(cellValue ?? ''));
         } else if (indicatorStyleConf.type === 'tag' && typeof formatTag === 'function') {
@@ -163,7 +160,6 @@ function getStyledCellDisplay(cellValue, colDef) {
                 return cellValue.map(val => formatTag(val, viewerCfg, viewerStyleColName, indicatorStyleConf.titlePrefix) || `<span class="editor-cell-mini-tag">${val}</span>`).join(' ');
             } else {
                 let formatted = formatTag(cellValue, viewerCfg, viewerStyleColName, indicatorStyleConf.titlePrefix);
-                // If formatTag returns empty (e.g. value maps to empty text/icon), show blank, not raw value for tags.
                 return formatted || (cellValue === '' ? '' : String(cellValue ?? ''));
             }
         }
@@ -172,7 +168,8 @@ function getStyledCellDisplay(cellValue, colDef) {
     if (isLinkColInViewer && colDef.type !== 'checkbox') {
         const urlValueStr = String(cellValue ?? '');
         if (urlValueStr.trim() !== '') {
-            return `<span class="cell-url-display-span" title="${urlValueStr}">🔗${urlValueStr}</span>`;
+            // For editor, show icon AND text to make it clear it's a link and what the value is
+            return `<span class="editor-cell-icon" title="Link: ${urlValueStr}">ðŸ”—</span><span class="cell-url-display-span" title="${urlValueStr}">${urlValueStr}</span>`;
         } else { return ''; }
     }
 
@@ -180,8 +177,8 @@ function getStyledCellDisplay(cellValue, colDef) {
         if (cellValue.length === 0) return '';
         return cellValue.map(v => `<span class="editor-cell-mini-tag">${String(v ?? '')}</span>`).join(' ');
     }
-    if (colDef.type === 'checkbox') { return ''; } // Default for checkbox is blank if no icon
-    if (colDef.type === 'select' && cellValue === '') { return '(No Selection)'; } // Display for blank select
+    if (colDef.type === 'checkbox') { return ''; } 
+    if (colDef.type === 'select' && cellValue === '') { return '(No Selection)'; } 
 
     return String(cellValue ?? '');
 }
@@ -226,13 +223,14 @@ function renderGridData() {
             ) {
                 td.classList.add('cell-align-center');
             }
-
-            if (index === 0) {
+            
+            if (index === 0) { // Apply sticky to the first data cell in each row
                 td.classList.add('sticky-col', 'first-col');
             }
             if (colDef.type === 'multi-select') {
                 td.classList.add('cell-type-multi-select');
             }
+
 
             td.innerHTML = getStyledCellDisplay(cellValue, colDef);
             if (!colDef.readOnly) {
@@ -281,6 +279,7 @@ function handleCellClickToEdit(event) {
         const trueVal = _editorConfigInstance.csvOutputOptions?.booleanTrueValue || "TRUE";
         const falseVal = _editorConfigInstance.csvOutputOptions?.booleanFalseValue || "FALSE";
         _csvDataInstance[rowIndex][columnName] = isCurrentlyTrue ? falseVal : trueVal;
+        // No logging change here as per revised plan
         td.innerHTML = getStyledCellDisplay(_csvDataInstance[rowIndex][columnName], colDef);
         validateCell(td, _csvDataInstance[rowIndex][columnName], colDef);
         console.log(`Checkbox Toggled: Row ${rowIndex}, Col "${columnName}" = "${_csvDataInstance[rowIndex][columnName]}"`);
@@ -317,7 +316,7 @@ function handleCellClickToEdit(event) {
     inputElement.dataset.rowIndex = rowIndex; inputElement.dataset.columnName = columnName;
     const finishEdit = (saveChange = true) => {
         if (saveChange) {
-            handleCellChange({ target: inputElement });
+            handleCellChange({target: inputElement}); // Updates _csvDataInstance
         }
         const currentValInModel = _csvDataInstance[rowIndex][columnName];
         td.innerHTML = getStyledCellDisplay(currentValInModel, colDef);
@@ -327,7 +326,7 @@ function handleCellClickToEdit(event) {
     inputElement.addEventListener('blur', () => finishEdit(true));
     inputElement.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') { e.preventDefault(); inputElement.blur(); }
-        else if (e.key === 'Escape') { finishEdit(false); } // Revert to original model value
+        else if (e.key === 'Escape') { finishEdit(false); } 
     });
 
     td.appendChild(inputElement);
@@ -337,7 +336,7 @@ function handleCellClickToEdit(event) {
     }
 }
 
-function handleCellChange(event) {
+function handleCellChange(event) { // This function now ONLY updates _csvDataInstance
     const inputElement = event.target;
     const rowIndex = parseInt(inputElement.dataset.rowIndex, 10);
     const columnName = inputElement.dataset.columnName;
@@ -352,8 +351,8 @@ function handleCellChange(event) {
 
     if (_csvDataInstance && _csvDataInstance[rowIndex] !== undefined && columnName !== undefined) {
         if (_csvDataInstance[rowIndex][columnName] !== newValue) {
-            _csvDataInstance[rowIndex][columnName] = newValue;
-            console.log(`Data updated: Row ${rowIndex}, Col "${columnName}" =`, newValue);
+            _csvDataInstance[rowIndex][columnName] = newValue; // Update the live data model
+            console.log(`Data updated in _csvDataInstance: Row ${rowIndex}, Col "${columnName}" =`, newValue);
         }
     } else {
         console.error("Error updating cell: Invalid rowIndex, columnName, or data reference.");
@@ -365,7 +364,7 @@ function getOptionsForColumn(colDef) {
     const addOption = (value, label) => {
         const valStr = String(value ?? '');
         if (valStr.trim() === '' && value !== '') return;
-        const mapLabel = (label === '' && valStr !== '') ? `(Value: ${valStr})` : (label || valStr); // Use value if label empty
+        const mapLabel = (label === '' && valStr !== '') ? `(Value: ${valStr})` : (label || valStr); 
         if (!optionsMap.has(valStr)) {
             optionsMap.set(valStr, mapLabel);
         } else if (label && label !== mapLabel && optionsMap.get(valStr) === valStr) {
@@ -394,8 +393,8 @@ function getOptionsForColumn(colDef) {
                 if (Array.isArray(cellData)) {
                     cellData.forEach(item => addOption(String(item), String(item)));
                 } else {
-                    const valStr = String(cellData);
-                    if (valStr.trim() !== '' || valStr === '') addOption(valStr, valStr);
+                     const valStr = String(cellData);
+                     if (valStr.trim() !== '' || valStr === '') addOption(valStr, valStr);
                 }
             }
         });
@@ -423,7 +422,7 @@ function getOptionsForColumn(colDef) {
 function createSelectPopup(td, currentValueForPopup, colDef, rowIndex, columnName) {
     if (_activePopup) _activePopup.remove();
     const popup = document.createElement('div');
-    _activePopup = popup; _activePopup.td = td; // Store reference to cell
+    _activePopup = popup; _activePopup.td = td; 
     popup.className = 'custom-select-popup';
     const rect = td.getBoundingClientRect();
     popup.style.top = `${rect.bottom + window.scrollY}px`;
@@ -434,11 +433,10 @@ function createSelectPopup(td, currentValueForPopup, colDef, rowIndex, columnNam
     let allOptions = getOptionsForColumn(colDef);
     const useSearch = allOptions.length >= 15 || (colDef.type === 'multi-select' && colDef.allowNewTags);
 
-    // Initialize currentSelectionsArray as a *copy* for manipulation within the popup
     let currentSelectionsArray = [];
     if (colDef.type === 'multi-select') {
         currentSelectionsArray = Array.isArray(currentValueForPopup) ? [...currentValueForPopup.map(String)] : [];
-    } else { // single select
+    } else { 
         currentSelectionsArray = currentValueForPopup !== undefined && currentValueForPopup !== null ? [String(currentValueForPopup)] : [''];
     }
 
@@ -454,9 +452,8 @@ function createSelectPopup(td, currentValueForPopup, colDef, rowIndex, columnNam
     optionsList.className = 'popup-options-list';
     popup.appendChild(optionsList);
 
-    // This function is called by 'select' type options OR by the 'Apply' button for 'multi-select'
     window._editorUpdateAndCloseFromPopup = (valueToSet) => {
-        _csvDataInstance[rowIndex][columnName] = valueToSet; // Update the main data model
+        _csvDataInstance[rowIndex][columnName] = valueToSet; 
         td.innerHTML = getStyledCellDisplay(valueToSet, colDef);
         validateCell(td, valueToSet, colDef);
         if (_activePopup === popup) { popup.remove(); _activePopup = null; }
@@ -465,7 +462,6 @@ function createSelectPopup(td, currentValueForPopup, colDef, rowIndex, columnNam
 
     const rerenderOptionsList = () => {
         const searchTerm = useSearch ? searchInput.value : '';
-        // Pass currentSelectionsArray so renderPopupOptions knows what should be checked
         filterPopupOptions(optionsList, searchTerm, allOptions, currentSelectionsArray, colDef);
     };
 
@@ -476,39 +472,35 @@ function createSelectPopup(td, currentValueForPopup, colDef, rowIndex, columnNam
                 e.preventDefault();
                 if (colDef.type === 'multi-select' && colDef.allowNewTags && searchInput.value.trim() !== '') {
                     const newTag = searchInput.value.trim();
-                    // Add to currentSelectionsArray (the popup's working list)
                     if (!currentSelectionsArray.includes(newTag)) {
                         currentSelectionsArray.push(newTag);
                     }
-                    // Add to allOptions (the source list for the popup) if new
                     if (!allOptions.some(opt => opt.value === newTag)) {
                         allOptions.push({ value: newTag, label: newTag });
                         allOptions.sort((a, b) => a.label.toLowerCase().localeCompare(b.label.toLowerCase()));
                     }
-                    searchInput.value = ''; // Clear input
-                    rerenderOptionsList(); // Re-render, new tag will be checked
+                    searchInput.value = ''; 
+                    rerenderOptionsList(); 
                 } else if (colDef.type === 'select') {
                     const firstVisibleOption = optionsList.querySelector('li:not([data-filtered-out="true"])');
-                    if (firstVisibleOption) firstVisibleOption.click(); // This will call _editorUpdateAndCloseFromPopup
+                    if (firstVisibleOption) firstVisibleOption.click(); 
                 }
             } else if (e.key === 'Escape') {
                 if (_activePopup === popup) { popup.remove(); _activePopup = null; }
-                td.innerHTML = getStyledCellDisplay(_csvDataInstance[rowIndex][columnName], colDef); // Revert to original model value
+                td.innerHTML = getStyledCellDisplay(_csvDataInstance[rowIndex][columnName], colDef); 
                 validateCell(td, _csvDataInstance[rowIndex][columnName], colDef);
             }
         });
     }
 
-    rerenderOptionsList(); // Initial render
+    rerenderOptionsList(); 
 
     if (colDef.type === 'multi-select') {
         const applyBtn = document.createElement('button');
         applyBtn.textContent = 'Apply Selections';
         applyBtn.className = 'popup-apply-btn';
         applyBtn.addEventListener('click', () => {
-            // On Apply, currentSelectionsArray has all chosen tags (pre-existing + newly added + checked from list)
-            // Update the main data model with this complete list.
-            window._editorUpdateAndCloseFromPopup([...currentSelectionsArray]); // Pass a copy
+            window._editorUpdateAndCloseFromPopup([...currentSelectionsArray]); 
         });
         popup.appendChild(applyBtn);
     }
@@ -520,13 +512,12 @@ function createSelectPopup(td, currentValueForPopup, colDef, rowIndex, columnNam
     setTimeout(() => { document.addEventListener('click', handleClickOutsidePopup, { once: true, capture: true }); }, 0);
 }
 
-function renderPopupOptions(listElement, optionsToDisplay, currentSelectedValuesArrayArg, colDef) { // Renamed arg for clarity
+function renderPopupOptions(listElement, optionsToDisplay, currentSelectedValuesArrayArg, colDef) { 
     listElement.innerHTML = '';
     const isMulti = colDef.type === 'multi-select';
-    // Use the passed argument directly for managing the set of selected values for this render pass
     const currentValuesSet = new Set(currentSelectedValuesArrayArg.map(String));
 
-    if (optionsToDisplay.length === 0) {
+    if (optionsToDisplay.length === 0 ) {
         const li = document.createElement('li');
         li.textContent = (isMulti && colDef.allowNewTags) ? "Type to add new or filter existing." : "No options match search.";
         li.style.fontStyle = "italic"; li.style.color = "#777";
@@ -542,13 +533,10 @@ function renderPopupOptions(listElement, optionsToDisplay, currentSelectedValues
             cb.id = uniqueId;
             if (currentValuesSet.has(String(opt.value))) cb.checked = true;
 
-            // --- THIS IS THE CORRECTED EVENT LISTENER ---
             cb.addEventListener('change', () => {
                 const valStr = String(opt.value);
-                // IMPORTANT: Modify currentSelectedValuesArrayArg (the one passed in)
-                // This array is the one managed by createSelectPopup's scope
                 if (cb.checked) {
-                    if (!currentSelectedValuesArrayArg.includes(valStr)) { // Check against the array itself
+                    if (!currentSelectedValuesArrayArg.includes(valStr)) { 
                         currentSelectedValuesArrayArg.push(valStr);
                     }
                 } else {
@@ -557,25 +545,22 @@ function renderPopupOptions(listElement, optionsToDisplay, currentSelectedValues
                         currentSelectedValuesArrayArg.splice(index, 1);
                     }
                 }
-                // No need to update currentValuesSet here as it's rebuilt on next renderPopupOptions if filtering occurs
-                // The main thing is currentSelectedValuesArrayArg is correct for the "Apply" button
                 console.log("Popup selections changed:", currentSelectedValuesArrayArg);
             });
-            // --- END CORRECTION ---
 
             const label = document.createElement('label'); label.htmlFor = cb.id;
             label.appendChild(cb); label.appendChild(document.createTextNode(opt.label));
             li.appendChild(label);
             li.addEventListener('click', (e) => { if (e.target !== cb && e.target !== label) cb.click(); });
-            li.addEventListener('keydown', (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); cb.click(); } });
-        } else { // 'select'
+            li.addEventListener('keydown', (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); cb.click(); }});
+        } else { 
             li.textContent = opt.label; li.dataset.value = opt.value;
             if (currentValuesSet.has(String(opt.value))) li.classList.add('selected');
             const selectAndClose = () => {
-                window._editorUpdateAndCloseFromPopup(opt.value, parseInt(_activePopup.td.dataset.rowIndex), _activePopup.td.dataset.columnName, colDef);
+                window._editorUpdateAndCloseFromPopup(opt.value); // Removed extra args, they are in popup's scope
             };
             li.addEventListener('click', selectAndClose);
-            li.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectAndClose(); } });
+            li.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectAndClose(); }});
         }
         listElement.appendChild(li);
     });
@@ -596,10 +581,7 @@ function handleClickOutsidePopup(event) {
             const rowIndex = parseInt(td.dataset.rowIndex);
             const columnName = td.dataset.columnName;
             const colDef = _editorConfigInstance.columns.find(c => c.name === columnName);
-
-            // For multi-select, if "Apply" wasn't clicked, changes made within the popup
-            // (to currentSelectionsArray) are discarded, revert to original model value.
-            // For single-select, any click on an option closes it, so this only catches clicks truly outside.
+            
             td.innerHTML = getStyledCellDisplay(_csvDataInstance[rowIndex][columnName], colDef);
             validateCell(td, _csvDataInstance[rowIndex][columnName], colDef);
 
@@ -607,10 +589,10 @@ function handleClickOutsidePopup(event) {
             _activePopup = null;
             document.removeEventListener('click', handleClickOutsidePopup, { capture: true });
         } else {
-            if (_activePopup) {
+             if (_activePopup) {
                 document.removeEventListener('click', handleClickOutsidePopup, { capture: true });
                 setTimeout(() => { document.addEventListener('click', handleClickOutsidePopup, { once: true, capture: true }); }, 0);
-            }
+             }
         }
     } else if (_activePopup) {
         document.removeEventListener('click', handleClickOutsidePopup, { capture: true });
@@ -631,6 +613,16 @@ function addNewRow() {
         else if (colDef.type === 'multi-select') newRow[colDef.name] = [];
         else newRow[colDef.name] = '';
     });
+    // --- MODIFIED: Add _originalIndex and _originalPkValue for new rows ---
+    newRow._originalIndex = -1; // Mark as a new row, not present in initialCsvData
+    const pkColName = _editorConfigInstance?.changeTrackingPrimaryKeyColumn;
+    if (pkColName && newRow.hasOwnProperty(pkColName)) {
+        newRow._originalPkValue = newRow[pkColName]; // Initially, original PK is same as current for new row
+    } else {
+        newRow._originalPkValue = undefined;
+    }
+    // --- END MODIFICATION ---
+
     _csvDataInstance.push(newRow);
     renderGridData();
     const { editorGridTbody } = editorDomElements;
@@ -650,10 +642,12 @@ function handleDeleteRowClick(event) {
     const rowIndex = parseInt(buttonElement.dataset.rowIndex, 10);
     if (confirm(`Are you sure you want to delete row ${rowIndex + 1}?`)) {
         if (_csvDataInstance && rowIndex >= 0 && rowIndex < _csvDataInstance.length) {
-            _csvDataInstance.splice(rowIndex, 1);
-            console.log(`Row ${rowIndex} deleted.`);
+            // No logging change here as per revised plan
+            _csvDataInstance.splice(rowIndex, 1); // Just remove from live data
+            console.log(`Row ${rowIndex} deleted from _csvDataInstance.`);
             renderGridData();
             window.dispatchEvent(new CustomEvent('editorDataChanged'));
         }
     }
 }
+// --- End of file editor_data_grid.js ---
