@@ -32,7 +32,7 @@ function renderGridStructure(columnDefinitions) {
     }
 
     const tr = document.createElement('tr');
-    columnDefinitions.forEach((colDef) => {
+    columnDefinitions.forEach((colDef, index) => {
         const th = document.createElement('th');
         const headerTextSpan = document.createElement('span');
         headerTextSpan.className = 'header-text-content';
@@ -48,6 +48,10 @@ function renderGridStructure(columnDefinitions) {
         } else {
             th.style.width = (orientation === 'vertical') ? '50px' : '150px';
         }
+        if (index === 0) {
+            th.classList.add('sticky-col', 'first-col');
+        }
+
         tr.appendChild(th);
     });
 
@@ -150,7 +154,7 @@ function getStyledCellDisplay(cellValue, colDef) {
                 if (mapping && mapping.value !== undefined) { iconToShow = mapping.value; }
             }
             if (colDef.type === 'checkbox' && iconToShow === String(cellValue) && (String(cellValue).toUpperCase() === "TRUE" || String(cellValue).toUpperCase() === "FALSE")) {
-                 return '';
+                return '';
             }
             return iconToShow ? `<span class="editor-cell-icon" title="${String(cellValue ?? '')}">${iconToShow}</span>` : (colDef.type === 'checkbox' ? '' : String(cellValue ?? ''));
         } else if (indicatorStyleConf.type === 'tag' && typeof formatTag === 'function') {
@@ -168,7 +172,7 @@ function getStyledCellDisplay(cellValue, colDef) {
     if (isLinkColInViewer && colDef.type !== 'checkbox') {
         const urlValueStr = String(cellValue ?? '');
         if (urlValueStr.trim() !== '') {
-            return `<span class="editor-cell-icon" title="Link: ${urlValueStr}">🔗</span> <span class="cell-url-display-span" title="${urlValueStr}">${urlValueStr}</span>`;
+            return `<span class="cell-url-display-span" title="${urlValueStr}">🔗${urlValueStr}</span>`;
         } else { return ''; }
     }
 
@@ -204,7 +208,7 @@ function renderGridData() {
         const tr = editorGridTbody.insertRow();
         tr.dataset.rowIndex = rowIndex;
 
-        columnDefinitions.forEach(colDef => {
+        columnDefinitions.forEach((colDef, index) => {
             const td = tr.insertCell();
             td.dataset.columnName = colDef.name;
             td.dataset.rowIndex = rowIndex;
@@ -221,6 +225,10 @@ function renderGridData() {
                 (_viewerConfigInstance?.generalSettings?.linkColumns?.includes(colDef.name) && !(styleConfForCol && (styleConfForCol.type === 'tag')))
             ) {
                 td.classList.add('cell-align-center');
+            }
+
+            if (index === 0) {
+                td.classList.add('sticky-col', 'first-col');
             }
             if (colDef.type === 'multi-select') {
                 td.classList.add('cell-type-multi-select');
@@ -309,7 +317,7 @@ function handleCellClickToEdit(event) {
     inputElement.dataset.rowIndex = rowIndex; inputElement.dataset.columnName = columnName;
     const finishEdit = (saveChange = true) => {
         if (saveChange) {
-            handleCellChange({target: inputElement});
+            handleCellChange({ target: inputElement });
         }
         const currentValInModel = _csvDataInstance[rowIndex][columnName];
         td.innerHTML = getStyledCellDisplay(currentValInModel, colDef);
@@ -386,8 +394,8 @@ function getOptionsForColumn(colDef) {
                 if (Array.isArray(cellData)) {
                     cellData.forEach(item => addOption(String(item), String(item)));
                 } else {
-                     const valStr = String(cellData);
-                     if (valStr.trim() !== '' || valStr === '') addOption(valStr, valStr);
+                    const valStr = String(cellData);
+                    if (valStr.trim() !== '' || valStr === '') addOption(valStr, valStr);
                 }
             }
         });
@@ -518,7 +526,7 @@ function renderPopupOptions(listElement, optionsToDisplay, currentSelectedValues
     // Use the passed argument directly for managing the set of selected values for this render pass
     const currentValuesSet = new Set(currentSelectedValuesArrayArg.map(String));
 
-    if (optionsToDisplay.length === 0 ) {
+    if (optionsToDisplay.length === 0) {
         const li = document.createElement('li');
         li.textContent = (isMulti && colDef.allowNewTags) ? "Type to add new or filter existing." : "No options match search.";
         li.style.fontStyle = "italic"; li.style.color = "#777";
@@ -559,7 +567,7 @@ function renderPopupOptions(listElement, optionsToDisplay, currentSelectedValues
             label.appendChild(cb); label.appendChild(document.createTextNode(opt.label));
             li.appendChild(label);
             li.addEventListener('click', (e) => { if (e.target !== cb && e.target !== label) cb.click(); });
-            li.addEventListener('keydown', (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); cb.click(); }});
+            li.addEventListener('keydown', (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); cb.click(); } });
         } else { // 'select'
             li.textContent = opt.label; li.dataset.value = opt.value;
             if (currentValuesSet.has(String(opt.value))) li.classList.add('selected');
@@ -567,7 +575,7 @@ function renderPopupOptions(listElement, optionsToDisplay, currentSelectedValues
                 window._editorUpdateAndCloseFromPopup(opt.value, parseInt(_activePopup.td.dataset.rowIndex), _activePopup.td.dataset.columnName, colDef);
             };
             li.addEventListener('click', selectAndClose);
-            li.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectAndClose(); }});
+            li.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectAndClose(); } });
         }
         listElement.appendChild(li);
     });
@@ -588,7 +596,7 @@ function handleClickOutsidePopup(event) {
             const rowIndex = parseInt(td.dataset.rowIndex);
             const columnName = td.dataset.columnName;
             const colDef = _editorConfigInstance.columns.find(c => c.name === columnName);
-            
+
             // For multi-select, if "Apply" wasn't clicked, changes made within the popup
             // (to currentSelectionsArray) are discarded, revert to original model value.
             // For single-select, any click on an option closes it, so this only catches clicks truly outside.
@@ -599,10 +607,10 @@ function handleClickOutsidePopup(event) {
             _activePopup = null;
             document.removeEventListener('click', handleClickOutsidePopup, { capture: true });
         } else {
-             if (_activePopup) {
+            if (_activePopup) {
                 document.removeEventListener('click', handleClickOutsidePopup, { capture: true });
                 setTimeout(() => { document.addEventListener('click', handleClickOutsidePopup, { once: true, capture: true }); }, 0);
-             }
+            }
         }
     } else if (_activePopup) {
         document.removeEventListener('click', handleClickOutsidePopup, { capture: true });

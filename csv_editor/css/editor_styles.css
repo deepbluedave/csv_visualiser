@@ -122,7 +122,7 @@ h1 {
     border: 1px solid #ddd;
     padding: 3px 5px;
     text-align: left;
-    font-size: 0.92em;
+    font-size: 0.85em;
     vertical-align: middle; /* Default to middle */
 }
 
@@ -179,7 +179,47 @@ h1 {
     background-color: #e8f0fe;
 }
 
+#editorGridContainer tbody tr:nth-child(even) td.sticky-col.first-col { /* Override for sticky cell in even row */
+    background-color: #f5f5f5; /* Slightly different shade for sticky even row */
+}
+#editorGridContainer tbody tr:nth-child(odd) td.sticky-col.first-col { /* Override for sticky cell in odd row */
+    background-color: #ffffff; /* Match odd row (default) or specific color */
+}
+
+#editorGridContainer tbody tr:hover td { /* General hover */
+    background-color: #e8f0fe;
+}
+#editorGridContainer tbody tr:hover td.sticky-col.first-col { /* Hover for sticky cell */
+    background-color: #dde8fa; /* Slightly different hover for sticky */
+}
+
 /* Cell Input Styling */
+
+#editorGridContainer .sticky-col.first-col {
+    position: -webkit-sticky; /* For Safari */
+    position: sticky;
+    left: 0;
+    z-index: 5; /* Must be lower than header's top sticky z-index if they overlap,
+                   but higher than regular cells to appear on top of them when scrolling. */
+    /* background-color is inherited from th/td, or can be set explicitly: */
+    /* For TH in first col */
+}
+
+#editorGridContainer th.sticky-col.first-col {
+    z-index: 11; /* Higher than general header cells and body's sticky first col */
+    background-color: #e8e8e8; /* Slightly different bg for sticky header cell */
+}
+/* For TD in first col */
+#editorGridContainer td.sticky-col.first-col {
+    background-color: #fdfdfd; /* Ensure it has a background to cover scrolling content */
+    /* If you have alternating row colors, this might override.
+       You might need to handle that with more specific selectors if desired, e.g.:
+       #editorGridContainer tbody tr:nth-child(even) td.sticky-col.first-col { background-color: #f0f0f0; }
+    */
+}
+
+#editorGridContainer tbody tr:nth-child(even) td.sticky-col.first-col { background-color: #f0f0f0; }
+
 #editorGridContainer td input[type="text"],
 #editorGridContainer td input[type="url"],
 #editorGridContainer td input[type="date"],
@@ -224,7 +264,7 @@ h1 {
     vertical-align: middle !important;
 }
 .action-cell button {
-    background-color: #dc3545;
+    background-color: #f09da5;
     padding: 3px 6px;
     font-size: 0.8em;
 }
@@ -249,14 +289,14 @@ h1 {
     color: #495057;
     padding: 1px 4px;
     border-radius: 3px;
-    font-size: 0.88em;
+    font-size: 0.85em;
     margin: 1px;
     border: 1px solid #ced4da;
     line-height: 1.2; /* Reduced slightly */
-    max-width: 100%;
+    max-width: 99%;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
+    white-space: normal;
     vertical-align: middle;
 }
 .editor-cell-icon { /* For icons in display mode */
@@ -321,7 +361,7 @@ h1 {
 .popup-options-list li {
     padding: 6px 10px; /* Slightly reduced */
     cursor: pointer;
-    font-size: 0.9em;
+    font-size: 0.75em;
     border-bottom: 1px solid #f0f0f0;
 }
 .popup-options-list li:last-child {

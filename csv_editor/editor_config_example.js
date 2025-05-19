@@ -70,7 +70,7 @@ window.editorConfig = {
             ],
             "allowNewTags": true,
             "viewerStyleColumnName": "Tags/Keywords", // To use viewer's default tag style
-            "columnWidth": "220px"
+            "columnWidth": "80px"
         },
         {
             "name": "Related Entries",
