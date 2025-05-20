@@ -25,7 +25,7 @@ function renderGridStructure(columnDefinitions) {
         const tr = document.createElement('tr');
         const th = document.createElement('th');
         th.textContent = "Load Editor Config to define columns.";
-        th.colSpan = 10; 
+        th.colSpan = 10;
         tr.appendChild(th);
         editorGridThead.appendChild(tr);
         return;
@@ -93,8 +93,8 @@ function validateCell(td, value, colDef) {
             isEmpty = !Array.isArray(value) || value.length === 0;
         } else {
             isEmpty = value === null || value === undefined || String(value).trim() === '';
-            if (colDef.type === 'select' && value === '') { 
-                isEmpty = true; 
+            if (colDef.type === 'select' && value === '') {
+                isEmpty = true;
             }
         }
         if (isEmpty) {
@@ -120,7 +120,7 @@ function validateCell(td, value, colDef) {
     } else {
         if (td.title.startsWith(colDef.label) && (td.title.includes("is required") || td.title.includes("does not match pattern"))) {
             td.title = originalTitle;
-        } else if (!td.title && colDef.name) { 
+        } else if (!td.title && colDef.name) {
             td.title = originalTitle;
         }
     }
@@ -151,7 +151,7 @@ function getStyledCellDisplay(cellValue, colDef) {
                 if (mapping && mapping.value !== undefined) { iconToShow = mapping.value; }
             }
             if (colDef.type === 'checkbox' && iconToShow === String(cellValue) && (String(cellValue).toUpperCase() === "TRUE" || String(cellValue).toUpperCase() === "FALSE")) {
-                 return '';
+                return '';
             }
             return iconToShow ? `<span class="editor-cell-icon" title="${String(cellValue ?? '')}">${iconToShow}</span>` : (colDef.type === 'checkbox' ? '' : String(cellValue ?? ''));
         } else if (indicatorStyleConf.type === 'tag' && typeof formatTag === 'function') {
@@ -177,8 +177,8 @@ function getStyledCellDisplay(cellValue, colDef) {
         if (cellValue.length === 0) return '';
         return cellValue.map(v => `<span class="editor-cell-mini-tag">${String(v ?? '')}</span>`).join(' ');
     }
-    if (colDef.type === 'checkbox') { return ''; } 
-    if (colDef.type === 'select' && cellValue === '') { return '(No Selection)'; } 
+    if (colDef.type === 'checkbox') { return ''; }
+    if (colDef.type === 'select' && cellValue === '') { return '(No Selection)'; }
 
     return String(cellValue ?? '');
 }
@@ -223,7 +223,7 @@ function renderGridData() {
             ) {
                 td.classList.add('cell-align-center');
             }
-            
+
             if (index === 0) { // Apply sticky to the first data cell in each row
                 td.classList.add('sticky-col', 'first-col');
             }
@@ -316,7 +316,7 @@ function handleCellClickToEdit(event) {
     inputElement.dataset.rowIndex = rowIndex; inputElement.dataset.columnName = columnName;
     const finishEdit = (saveChange = true) => {
         if (saveChange) {
-            handleCellChange({target: inputElement}); // Updates _csvDataInstance
+            handleCellChange({ target: inputElement }); // Updates _csvDataInstance
         }
         const currentValInModel = _csvDataInstance[rowIndex][columnName];
         td.innerHTML = getStyledCellDisplay(currentValInModel, colDef);
@@ -326,7 +326,7 @@ function handleCellClickToEdit(event) {
     inputElement.addEventListener('blur', () => finishEdit(true));
     inputElement.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') { e.preventDefault(); inputElement.blur(); }
-        else if (e.key === 'Escape') { finishEdit(false); } 
+        else if (e.key === 'Escape') { finishEdit(false); }
     });
 
     td.appendChild(inputElement);
@@ -360,56 +360,69 @@ function handleCellChange(event) { // This function now ONLY updates _csvDataIns
 }
 
 function getOptionsForColumn(colDef) {
+    // This function remains largely the same, its primary role is to gather ALL possible options.
+    // The sorting of selected items to the top will happen just before rendering the popup list.
     const optionsMap = new Map();
     const addOption = (value, label) => {
         const valStr = String(value ?? '');
-        if (valStr.trim() === '' && value !== '') return;
-        const mapLabel = (label === '' && valStr !== '') ? `(Value: ${valStr})` : (label || valStr); 
+        if (valStr.trim() === '' && value !== '') return; // Don't add if value is effectively empty but not literally ''
+        const mapLabel = (label === '' && valStr !== '') ? `(Value: ${valStr})` : (label || valStr);
         if (!optionsMap.has(valStr)) {
             optionsMap.set(valStr, mapLabel);
         } else if (label && label !== mapLabel && optionsMap.get(valStr) === valStr) {
+            // Prefer a more descriptive label if one becomes available
             optionsMap.set(valStr, label);
         }
     };
+
+    // 1. Explicit options from editorConfig
     if (Array.isArray(colDef.options) && colDef.options.length > 0) {
         colDef.options.forEach(opt => {
             if (typeof opt === 'string') addOption(opt, opt);
             else if (opt && typeof opt.value !== 'undefined') addOption(opt.value, opt.label || opt.value);
         });
     }
+
+    // 2. Options from viewerConfigValueMap
     if (colDef.optionsSource === 'viewerConfigValueMap' && _viewerConfigInstance?.indicatorStyles) {
         const styleColName = colDef.viewerStyleColumnName || colDef.name;
         const styleConf = _viewerConfigInstance.indicatorStyles[styleColName];
         const valueMap = styleConf?.valueMap;
         if (valueMap) {
-            Object.keys(valueMap).filter(key => key !== 'default')
+            Object.keys(valueMap).filter(key => key !== 'default') // Exclude 'default' key
                 .forEach(key => addOption(key, valueMap[key].text || key));
         }
     }
+
+    // 3. Options from existing CSV data for this column
     if (_csvDataInstance && Array.isArray(_csvDataInstance)) {
         _csvDataInstance.forEach(row => {
             const cellData = row[colDef.name];
             if (cellData !== undefined && cellData !== null) {
-                if (Array.isArray(cellData)) {
+                if (Array.isArray(cellData)) { // If it's already an array (multi-select data)
                     cellData.forEach(item => addOption(String(item), String(item)));
-                } else {
-                     const valStr = String(cellData);
-                     if (valStr.trim() !== '' || valStr === '') addOption(valStr, valStr);
+                } else { // If it's a single value (can happen for select, or unparsed multi-select string)
+                    const valStr = String(cellData);
+                    if (valStr.trim() !== '' || valStr === '') addOption(valStr, valStr); // Add if not effectively empty or literally ''
                 }
             }
         });
     }
+
     const finalOptions = [];
     optionsMap.forEach((label, value) => {
         const displayLabel = label.startsWith('(Value:') ? value : label;
         finalOptions.push({ value, label: displayLabel });
     });
+
+    // Initial alpha sort of ALL gathered options. Specific selected-first sort happens later.
     finalOptions.sort((a, b) => a.label.toLowerCase().localeCompare(b.label.toLowerCase()));
+
     if (colDef.type === 'select' && !colDef.required) {
         const hasExplicitBlank = finalOptions.some(opt => opt.value === '');
         if (!hasExplicitBlank) {
             finalOptions.unshift({ value: '', label: '(No Selection)' });
-        } else {
+        } else { // Ensure the blank option has the correct label
             const blankOption = finalOptions.find(opt => opt.value === '');
             if (blankOption && (blankOption.label === '' || blankOption.label.startsWith('(Value:'))) {
                 blankOption.label = '(No Selection)';
@@ -422,7 +435,7 @@ function getOptionsForColumn(colDef) {
 function createSelectPopup(td, currentValueForPopup, colDef, rowIndex, columnName) {
     if (_activePopup) _activePopup.remove();
     const popup = document.createElement('div');
-    _activePopup = popup; _activePopup.td = td; 
+    _activePopup = popup; _activePopup.td = td;
     popup.className = 'custom-select-popup';
     const rect = td.getBoundingClientRect();
     popup.style.top = `${rect.bottom + window.scrollY}px`;
@@ -436,7 +449,7 @@ function createSelectPopup(td, currentValueForPopup, colDef, rowIndex, columnNam
     let currentSelectionsArray = [];
     if (colDef.type === 'multi-select') {
         currentSelectionsArray = Array.isArray(currentValueForPopup) ? [...currentValueForPopup.map(String)] : [];
-    } else { 
+    } else {
         currentSelectionsArray = currentValueForPopup !== undefined && currentValueForPopup !== null ? [String(currentValueForPopup)] : [''];
     }
 
@@ -453,7 +466,7 @@ function createSelectPopup(td, currentValueForPopup, colDef, rowIndex, columnNam
     popup.appendChild(optionsList);
 
     window._editorUpdateAndCloseFromPopup = (valueToSet) => {
-        _csvDataInstance[rowIndex][columnName] = valueToSet; 
+        _csvDataInstance[rowIndex][columnName] = valueToSet;
         td.innerHTML = getStyledCellDisplay(valueToSet, colDef);
         validateCell(td, valueToSet, colDef);
         if (_activePopup === popup) { popup.remove(); _activePopup = null; }
@@ -461,8 +474,9 @@ function createSelectPopup(td, currentValueForPopup, colDef, rowIndex, columnNam
     };
 
     const rerenderOptionsList = () => {
-        const searchTerm = useSearch ? searchInput.value : '';
-        filterPopupOptions(optionsList, searchTerm, allOptions, currentSelectionsArray, colDef);
+        const searchTerm = useSearch ? searchInput.value.toLowerCase() : '';
+        // Pass allOptions, the current selections (for highlighting), and the column definition
+        filterAndSortPopupOptions(optionsList, searchTerm, allOptions, currentSelectionsArray, colDef);
     };
 
     if (useSearch) {
@@ -479,28 +493,28 @@ function createSelectPopup(td, currentValueForPopup, colDef, rowIndex, columnNam
                         allOptions.push({ value: newTag, label: newTag });
                         allOptions.sort((a, b) => a.label.toLowerCase().localeCompare(b.label.toLowerCase()));
                     }
-                    searchInput.value = ''; 
-                    rerenderOptionsList(); 
+                    searchInput.value = '';
+                    rerenderOptionsList();
                 } else if (colDef.type === 'select') {
                     const firstVisibleOption = optionsList.querySelector('li:not([data-filtered-out="true"])');
-                    if (firstVisibleOption) firstVisibleOption.click(); 
+                    if (firstVisibleOption) firstVisibleOption.click();
                 }
             } else if (e.key === 'Escape') {
                 if (_activePopup === popup) { popup.remove(); _activePopup = null; }
-                td.innerHTML = getStyledCellDisplay(_csvDataInstance[rowIndex][columnName], colDef); 
+                td.innerHTML = getStyledCellDisplay(_csvDataInstance[rowIndex][columnName], colDef);
                 validateCell(td, _csvDataInstance[rowIndex][columnName], colDef);
             }
         });
     }
 
-    rerenderOptionsList(); 
+    rerenderOptionsList();
 
     if (colDef.type === 'multi-select') {
         const applyBtn = document.createElement('button');
         applyBtn.textContent = 'Apply Selections';
         applyBtn.className = 'popup-apply-btn';
         applyBtn.addEventListener('click', () => {
-            window._editorUpdateAndCloseFromPopup([...currentSelectionsArray]); 
+            window._editorUpdateAndCloseFromPopup([...currentSelectionsArray]);
         });
         popup.appendChild(applyBtn);
     }
@@ -512,55 +526,123 @@ function createSelectPopup(td, currentValueForPopup, colDef, rowIndex, columnNam
     setTimeout(() => { document.addEventListener('click', handleClickOutsidePopup, { once: true, capture: true }); }, 0);
 }
 
-function renderPopupOptions(listElement, optionsToDisplay, currentSelectedValuesArrayArg, colDef) { 
+/**
+ * Filters options based on search term and then sorts them with selected items at the top.
+ * Calls renderPopupOptions to update the UI.
+ * @param {HTMLUListElement} listElement The <ul> element to populate.
+ * @param {string} searchTerm The search term (already lowercased).
+ * @param {Array<object>} allAvailableOptions The complete list of options for the column.
+ * @param {Array<string>} currentSelectedValuesArray The array of currently selected string values.
+ * @param {object} colDef The column definition object.
+ */
+function filterAndSortPopupOptions(listElement, searchTerm, allAvailableOptions, currentSelectedValuesArray, colDef) {
+    // 1. Filter by search term (if any)
+    const filteredBySearch = searchTerm
+        ? allAvailableOptions.filter(opt => opt.label.toLowerCase().includes(searchTerm))
+        : [...allAvailableOptions]; // Use a copy if no search term
+
+    let optionsToRender;
+
+    if (colDef.type === 'multi-select') {
+        // 2. For multi-select, partition into selected and unselected
+        const selectedOptions = [];
+        const unselectedOptions = [];
+        const currentSelectionsSet = new Set(currentSelectedValuesArray.map(String));
+
+        filteredBySearch.forEach(opt => {
+            if (currentSelectionsSet.has(String(opt.value))) {
+                selectedOptions.push(opt);
+            } else {
+                unselectedOptions.push(opt);
+            }
+        });
+
+        // 3. Sort each partition alphabetically (allAvailableOptions was already alpha sorted)
+        // The filtering might change order, so re-sort is good.
+        selectedOptions.sort((a, b) => a.label.toLowerCase().localeCompare(b.label.toLowerCase()));
+        unselectedOptions.sort((a, b) => a.label.toLowerCase().localeCompare(b.label.toLowerCase()));
+
+        // 4. Combine: selected on top
+        optionsToRender = [...selectedOptions, ...unselectedOptions];
+    } else {
+        // For single 'select', just use the search-filtered (and pre-alpha-sorted) list
+        optionsToRender = filteredBySearch; 
+        // The "(No Selection)" option for non-required single-selects should already be at the top due to getOptionsForColumn.
+    }
+
+    // 5. Render the final list
+    renderPopupOptions(listElement, optionsToRender, currentSelectedValuesArray, colDef);
+}
+
+// renderPopupOptions needs to be aware that currentSelectedValuesArray IS THE SOURCE OF TRUTH for "checked"
+// for multi-select, and "selected" class for single-select.
+function renderPopupOptions(listElement, optionsToDisplay, currentSelectedValuesArrayFromCaller, colDef) { // Renamed arg for clarity
     listElement.innerHTML = '';
     const isMulti = colDef.type === 'multi-select';
-    const currentValuesSet = new Set(currentSelectedValuesArrayArg.map(String));
+    // Use the passed currentSelectedValuesArrayFromCaller for checking initial state
+    const currentSelectionsSet = new Set(currentSelectedValuesArrayFromCaller.map(String));
 
-    if (optionsToDisplay.length === 0 ) {
+    if (optionsToDisplay.length === 0) {
         const li = document.createElement('li');
         li.textContent = (isMulti && colDef.allowNewTags) ? "Type to add new or filter existing." : "No options match search.";
         li.style.fontStyle = "italic"; li.style.color = "#777";
-        listElement.appendChild(li); return;
+        listElement.appendChild(li);
+        return;
     }
 
     optionsToDisplay.forEach(opt => {
-        const li = document.createElement('li'); li.tabIndex = 0;
+        const li = document.createElement('li');
+        li.tabIndex = 0; // Make it focusable
+        const valStr = String(opt.value);
+
         if (isMulti) {
-            const cb = document.createElement('input'); cb.type = 'checkbox';
-            cb.value = opt.value;
-            const uniqueId = `popup-opt-${colDef.name.replace(/\W/g, '_')}-${opt.value.replace(/\W/g, '_')}-${Math.random().toString(16).slice(2)}`;
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.value = valStr;
+            const uniqueId = `popup-opt-${colDef.name.replace(/\W/g, '_')}-${valStr.replace(/\W/g, '_')}-${Math.random().toString(16).slice(2)}`;
             cb.id = uniqueId;
-            if (currentValuesSet.has(String(opt.value))) cb.checked = true;
+
+            if (currentSelectionsSet.has(valStr)) {
+                cb.checked = true;
+            }
 
             cb.addEventListener('change', () => {
-                const valStr = String(opt.value);
+                // --- CORRECTED ACCESS ---
+                // currentSelectedValuesArrayFromCaller IS the array from createSelectPopup's scope
+                // that we need to modify.
                 if (cb.checked) {
-                    if (!currentSelectedValuesArrayArg.includes(valStr)) { 
-                        currentSelectedValuesArrayArg.push(valStr);
+                    if (!currentSelectedValuesArrayFromCaller.includes(valStr)) {
+                        currentSelectedValuesArrayFromCaller.push(valStr);
                     }
                 } else {
-                    const index = currentSelectedValuesArrayArg.indexOf(valStr);
+                    const index = currentSelectedValuesArrayFromCaller.indexOf(valStr);
                     if (index > -1) {
-                        currentSelectedValuesArrayArg.splice(index, 1);
+                        currentSelectedValuesArrayFromCaller.splice(index, 1);
                     }
                 }
-                console.log("Popup selections changed:", currentSelectedValuesArrayArg);
+                console.log("Multi-select popup selections changed (direct array mod):", currentSelectedValuesArrayFromCaller);
+                // --- END CORRECTION ---
             });
 
-            const label = document.createElement('label'); label.htmlFor = cb.id;
-            label.appendChild(cb); label.appendChild(document.createTextNode(opt.label));
+            const label = document.createElement('label');
+            label.htmlFor = cb.id;
+            label.appendChild(cb);
+            label.appendChild(document.createTextNode(opt.label));
             li.appendChild(label);
-            li.addEventListener('click', (e) => { if (e.target !== cb && e.target !== label) cb.click(); });
-            li.addEventListener('keydown', (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); cb.click(); }});
-        } else { 
-            li.textContent = opt.label; li.dataset.value = opt.value;
-            if (currentValuesSet.has(String(opt.value))) li.classList.add('selected');
+            li.addEventListener('click', (e) => { if (e.target !== cb && e.target !== label) { cb.click(); } });
+            li.addEventListener('keydown', (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); cb.click(); } });
+
+        } else { // Single 'select'
+            li.textContent = opt.label;
+            li.dataset.value = valStr;
+            if (currentSelectionsSet.has(valStr)) {
+                li.classList.add('selected');
+            }
             const selectAndClose = () => {
-                window._editorUpdateAndCloseFromPopup(opt.value); // Removed extra args, they are in popup's scope
+                window._editorUpdateAndCloseFromPopup(opt.value);
             };
             li.addEventListener('click', selectAndClose);
-            li.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectAndClose(); }});
+            li.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectAndClose(); } });
         }
         listElement.appendChild(li);
     });
@@ -581,7 +663,7 @@ function handleClickOutsidePopup(event) {
             const rowIndex = parseInt(td.dataset.rowIndex);
             const columnName = td.dataset.columnName;
             const colDef = _editorConfigInstance.columns.find(c => c.name === columnName);
-            
+
             td.innerHTML = getStyledCellDisplay(_csvDataInstance[rowIndex][columnName], colDef);
             validateCell(td, _csvDataInstance[rowIndex][columnName], colDef);
 
@@ -589,10 +671,10 @@ function handleClickOutsidePopup(event) {
             _activePopup = null;
             document.removeEventListener('click', handleClickOutsidePopup, { capture: true });
         } else {
-             if (_activePopup) {
+            if (_activePopup) {
                 document.removeEventListener('click', handleClickOutsidePopup, { capture: true });
                 setTimeout(() => { document.addEventListener('click', handleClickOutsidePopup, { once: true, capture: true }); }, 0);
-             }
+            }
         }
     } else if (_activePopup) {
         document.removeEventListener('click', handleClickOutsidePopup, { capture: true });
