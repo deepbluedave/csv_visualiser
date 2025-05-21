@@ -13,7 +13,7 @@ let _activePopup = null;          // Holds the currently active custom select po
  * @param {Object} viewerConfigRef - Reference to the viewer configuration.
  */
 function initDataGridReferences(csvDataArrayRef, editorConfigRef, viewerConfigRef) {
-     console.log(`EDITOR_GRID: initDataGridReferences - Assigning _csvDataInstance. Passed array length: ${csvDataArrayRef ? csvDataArrayRef.length : 'undefined'}`);
+    console.log(`EDITOR_GRID: initDataGridReferences - Assigning _csvDataInstance. Passed array length: ${csvDataArrayRef ? csvDataArrayRef.length : 'undefined'}`);
     _csvDataInstance = csvDataArrayRef;
     _editorConfigInstance = editorConfigRef;
     _viewerConfigInstance = viewerConfigRef;
@@ -227,6 +227,13 @@ function getStyledCellDisplay(cellValue, colDef) {
     if (colDef.type === 'checkbox') { return ''; }
     // Special text for empty single-select
     if (colDef.type === 'select' && cellValue === '') { return '(No Selection)'; }
+
+    // Handle textarea as single line display when not editing ---
+    if (colDef.type === 'textarea' && colDef.displayAsSingleLine) {
+        // Wrap the text in a span that will be styled for single-line display
+        // The span itself will truncate the text with ellipsis via CSS
+        return `<span class="editor-single-line-text">${String(cellValue ?? '')}</span>`;
+    }
 
     return String(cellValue ?? ''); // Default: string representation of the value
 }

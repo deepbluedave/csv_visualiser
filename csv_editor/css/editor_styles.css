@@ -235,9 +235,22 @@ h1 {
     font-family: inherit;
     vertical-align: middle; /* Align input with other cell content if mixed */
 }
+
+/* Style for single-line textarea display when not in edit mode */
+#editorGridContainer td .editor-single-line-text {
+    display: block; /* Important for overflow to work */
+    white-space: nowrap; /* Prevents text from wrapping */
+    overflow: hidden;    /* Hides content that overflows */
+    text-overflow: ellipsis; /* Shows "..." for overflowed content */
+    line-height: inherit; /* Inherit line height from parent TD */
+    max-width: 100%; /* Ensure it respects parent width */
+}
+
 #editorGridContainer td textarea {
-    min-height: 30px; /* For a couple of lines */
+    min-height: 90px; /* For a couple of lines */
     resize: vertical;
+    white-space: normal; /* Allow wrapping */
+    overflow: auto;
 }
 #editorGridContainer td input[type="checkbox"] { /* Actual checkbox input */
     margin: 0; /* Remove browser default margin */

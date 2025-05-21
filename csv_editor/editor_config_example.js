@@ -44,6 +44,15 @@ window.editorConfig = {
             "columnWidth": "350px"
         },
         {
+            "name": "Description",
+            "label": "Description",
+            "type": "textarea",
+            "displayAsSingleLine": true,
+            "required": true,
+            "columnWidth": "150px"
+        },
+
+        {
             "name": "Region",
             "label": "Region",
             "type": "select", // Single select dropdown/popup
