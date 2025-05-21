@@ -7,7 +7,7 @@ let defaultConfig = {
   "generalSettings": {
     "dashboardTitle": "Aethelgard's Arcane Archives",
     "csvUrl": null, // Use null for upload initially, fallback works if URL specified & fails
-    // "csvUrl": "./sample_data/aethelgard_archive.csv", // Example if hosting locally
+    "csvUrl": "./sample_data/aethelgard_archive.csv", // Example if hosting locally
     "trueValues": ["TRUE", "true", "Yes", "1", "Cursed", "Dangerous"], // Flexible true values
     "csvDelimiter": ",",
     "multiValueColumns": ["Keywords", "RelatedItems"], // Columns with comma-separated values

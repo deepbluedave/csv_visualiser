@@ -192,5 +192,115 @@ function sortData(dataArray, sortByConfig, sortHelperConfig) {
     return dataArray;
 }
 
+/**
+ * Checks if a single row matches a specific filter condition.
+ * Handles multi-value columns based on filter type.
+ * @param {object} row The data row object.
+ * @param {object} condition The filter condition object {column, filterType, filterValue}.
+ * @param {object} appConfig The global application configuration (can be viewerConfig or a similar structure).
+ *                         It needs appConfig.csvHeaders and appConfig.generalSettings.trueValues.
+ * @returns {boolean} True if the row matches the condition.
+ */
+function checkCondition(row, condition, appConfig) {
+    console.log("SHARED_UTILS: checkCondition - Entry. appConfig received:", JSON.stringify(appConfig).substring(0, 300)); 
 
-console.log("shared_utils.js loaded with sortData function.");
+    const { column, filterType, filterValue } = condition;
+    
+    // --- MODIFIED: Rely solely on appConfig for headers ---
+    const headers = appConfig?.csvHeaders || []; 
+    // --- END MODIFICATION ---
+    
+    // The console.error block for debugging the failing IF can be removed or commented out now
+    // if (requiresColumn && (!column || !headers.includes(column))) {
+    //    console.error(">>> CHECK_CONDITION_FAIL: Column check failed.", /* ... */);
+    //    return false;
+    // }
+
+
+    const requiresColumn = ![
+        'catchAll',
+    ].includes(filterType);
+
+    if (requiresColumn && (!column || !headers.includes(column))) {
+        console.warn(`checkCondition: Column "${column}" for filtering not found in provided headers or column is null/undefined. Filter condition will fail. Headers used: [${headers.join(', ')}]`);
+        return false; // Fail the condition if column is invalid or not in headers
+    }
+
+    // ... (rest of the checkCondition logic with valuesToCheck, switch statement etc. remains the same as our last version with detailed logging for valueEquals) ...
+    // Make sure isTruthy calls within the switch statement also use appConfig: isTruthy(v, appConfig)
+    const rowValueOriginal = requiresColumn ? row[column] : null;
+    const valuesToCheck = Array.isArray(rowValueOriginal)
+        ? rowValueOriginal.map(v => String(v ?? '').trim())
+        : [(rowValueOriginal === null || typeof rowValueOriginal === 'undefined') ? '' : String(rowValueOriginal).trim()];
+
+    let result = false;
+    try {
+        switch (filterType) {
+            case 'valueEquals': {
+                const targetValueLower = String(filterValue ?? '').toLowerCase();
+                // Temporarily keep this detailed log if you still need it for "Status" == "Finalized"
+                if (column === "Status" && filterValue === "Finalized") {
+                    console.log(`  DEBUG valueEquals for Status="Finalized":`);
+                    console.log(`    - Filter Target (lower): '${targetValueLower}'`);
+                    valuesToCheck.forEach((valTCC, index) => {
+                        const valTCCLower = valTCC.toLowerCase();
+                        console.log(`    - Row Value To Check [${index}] (original from row obj: '${rowValueOriginal}', processed for check: '${valTCC}', processed lower: '${valTCCLower}'), Matches Target: ${valTCCLower === targetValueLower}`);
+                    });
+                }
+                result = valuesToCheck.some(v => v.toLowerCase() === targetValueLower);
+                break;
+            }
+            case 'valueIsNot': {
+                const targetValueLower = String(filterValue ?? '').toLowerCase();
+                result = valuesToCheck.every(v => v.toLowerCase() !== targetValueLower);
+                break;
+            }
+            case 'valueInList': {
+                const filterListLower = Array.isArray(filterValue) ? filterValue.map(fv => String(fv ?? '').toLowerCase()) : [];
+                if (filterListLower.length === 0) result = false;
+                else result = valuesToCheck.some(v => filterListLower.includes(v.toLowerCase()));
+                break;
+            }
+            case 'valueNotInList': {
+                const filterListLower = Array.isArray(filterValue) ? filterValue.map(fv => String(fv ?? '').toLowerCase()) : [];
+                if (filterListLower.length === 0) result = true;
+                else result = valuesToCheck.every(v => !filterListLower.includes(v.toLowerCase()));
+                break;
+            }
+            case 'valueNotEmpty':
+                result = valuesToCheck.some(v => v !== ''); 
+                break;
+            case 'valueIsEmpty':
+                result = valuesToCheck.every(v => v === ''); 
+                break;
+            case 'booleanTrue':
+                result = valuesToCheck.some(v => isTruthy(v, appConfig)); // Pass appConfig
+                break;
+            case 'booleanFalse':
+                result = valuesToCheck.every(v => !isTruthy(v, appConfig)); // Pass appConfig
+                break;
+            case 'contains': {
+                const searchTermLower = String(filterValue ?? '').toLowerCase();
+                if (!searchTermLower) result = false; 
+                else result = valuesToCheck.some(v => v.toLowerCase().includes(searchTermLower));
+                break;
+            }
+            case 'doesNotContain': {
+                const searchTermLower = String(filterValue ?? '').toLowerCase();
+                if (!searchTermLower) result = true; 
+                else result = valuesToCheck.every(v => !v.toLowerCase().includes(searchTermLower));
+                break;
+            }
+            default:
+                console.warn(`Unsupported filterType: "${filterType}". Condition fails.`);
+                result = false;
+                break;
+        }
+    } catch (e) {
+        console.error(`Error checking filter condition for column "${column}", type "${filterType}":`, e);
+        result = false;
+    }
+    return result;
+}
+
+console.log("shared_utils.js loaded with sortData and checkCondition functions."); // Update log

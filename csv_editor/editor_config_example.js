@@ -10,13 +10,31 @@ window.editorConfig = {
         // Note: editor_config.js itself is always loaded manually first.
     },
 
-     "changeTrackingPrimaryKeyColumn": "Entry Name", // Or "TaskID", "ExceptionID", etc.
+    "changeTrackingPrimaryKeyColumn": "Entry Name", // Or "TaskID", "ExceptionID", etc.
 
     "csvOutputOptions": {
         "delimiter": ",",
         "booleanTrueValue": "TRUE",
         "booleanFalseValue": "FALSE" // Editor will show blank for this, but export "FALSE"
     },
+
+    // --- NEW SECTION for Editor Display Settings ---
+    "editorDisplaySettings": {
+        "partitionBy": {
+            "enabled": true, // Set to true to activate this feature
+            "filter": {
+                "logic": "OR", // Example: items are partitioned if Status is Finalized OR Art Needed is false
+                "conditions": [
+                    { "column": "Status", "filterType": "valueEquals", "filterValue": "Finalized" },
+                    // Example of another condition for partitioning:
+                    // { "column": "Art Needed", "filterType": "booleanFalse" } 
+                ]
+            },
+            "separatorStyle": "heavyLine" // Options: "heavyLine", "none" (more can be added later)
+        }
+    },
+    // --- END NEW SECTION ---
+
     "columns": [
         {
             "name": "Entry Name",

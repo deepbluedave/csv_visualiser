@@ -465,3 +465,8 @@ h1 {
     font-size: 0.9em;
     line-height: 1.4;
 }
+
+/* Partition Separator Style */
+#editorGridContainer tbody tr.editor-grid-partition-separator-top td {
+    border-top: 3px solid #555 !important; /* Heavy dark line */
+}
