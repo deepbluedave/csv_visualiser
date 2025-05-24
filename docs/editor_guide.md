@@ -112,7 +112,8 @@ window.editorConfig = {
       "readOnly": false, // Optional: true if field cannot be edited. Default: false
       "validationRegex": "^[A-Z]{2}-\\d{4}$", // Optional: JS Regex string for 'text'/'textarea'
       "columnWidth": "150px", // Optional: Suggested CSS width for this column in editor grid
-
+      "orientation": "vertical", // Optional: "horizontal" (default) or "vertical" for header text
+      
       // For type: "select" or "multi-select"
       "optionsSource": "viewerConfigValueMap", // Optional: "viewerConfigValueMap" or "editorConfig" (default)
       "options": ["Option A", { "value": "opt_b", "label": "Option B" }], // Optional: Explicit list of options
