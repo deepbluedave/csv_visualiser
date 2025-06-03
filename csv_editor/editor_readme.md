@@ -2,234 +2,190 @@
 
 ## 1. Introduction
 
-The Config-Driven CSV Editor is a client-side web application designed to provide a structured and user-friendly way to create, view, and modify CSV data. Its primary purpose is to prepare data for use with the "Configurable CSV Dashboard Generator" (the viewer). The editor's behavior, data schema, input types, and validation rules are primarily driven by a dedicated `editor_config.js` file. It can also leverage styling hints (like icon definitions and tag colors) from an existing `viewer_config.js` to provide a live preview of how data might appear in the dashboard.
+The Config-Driven CSV Editor is a client-side web application designed to provide a structured and user-friendly way to create, view, and modify CSV data. Its primary purpose is to prepare data for use with the "Configurable CSV Dashboard Generator" (the viewer). The editor's behavior, data schema, input types, validation rules, and display filtering are primarily driven by a dedicated `editor_config.js` file. It can also leverage styling hints (like icon definitions and tag colors) from an existing `viewer_config.js` to provide a live preview of how data might appear in the dashboard.
 
 This editor runs entirely in the browser and does not require any third-party JavaScript libraries for its core functionality.
 
 ## 2. Core Features
 
-*   **Schema-Driven Editing:** The structure of the data grid (columns, labels, data types) is defined by `editor_config.js`.
-*   **Rich Input Types:** Supports various input types per column:
-    *   Single-line text (`text`)
-    *   Multi-line text (`textarea`)
-    *   Boolean checkboxes (`checkbox`)
-    *   Date pickers (`date`)
-    *   Number inputs (`number`)
-    *   Single-select picklists (`select`)
-    *   Multi-select tag inputs (`multi-select`)
-*   **Live Cell Preview:** Cells can display styled content (icons, tags) based on `viewer_config.js` when not in edit mode, providing a preview of the dashboard appearance.
+This section details the key capabilities of the CSV Editor.
+
+*   **Schema-Driven Editing:**
+    *   The entire structure of the editable grid—which columns appear, their order, their display labels, and how their data is treated—is dictated by the `columns` array within the `editor_config.js` file. This means you define your data's "shape" once in the configuration, and the editor adapts accordingly.
+
+*   **Rich Input Types:**
+    *   For each column defined in the schema, you can specify a data `type`, which determines the kind of input control presented to the user when editing a cell:
+        *   `text`: A standard single-line text field for general string input.
+        *   `textarea`: A multi-line text area suitable for longer descriptions or notes. Can be configured with `displayAsSingleLine: true` to show as a truncated single line in the grid view until clicked for editing.
+        *   `checkbox`: A boolean (true/false) input, typically rendered as a clickable checkbox or a toggleable icon in the grid.
+        *   `date`: A date input field, usually leveraging the browser's native date picker for easy date selection. Stores dates in YYYY-MM-DD format.
+        *   `number`: An input field restricted to numerical values, often with built-in browser spinners for incrementing/decrementing.
+        *   `select`: A single-choice picklist. When a cell of this type is clicked, a popup appears allowing the user to select one option from a predefined or dynamically generated list.
+        *   `multi-select`: Allows selecting multiple values for a single cell, typically displayed as "tags". A popup interface allows users to check/uncheck multiple options or, if configured, add new custom tags.
+
+*   **Live Cell Preview (Viewer Integration):**
+    *   When an optional `viewer_config.js` (the configuration file for the CSV Dashboard Generator) is loaded, the editor can use its `indicatorStyles` definitions.
+    *   This means that when cells are not in edit mode, their content can be displayed with the same icons or colored tags that would appear in the viewer dashboard, providing an immediate visual preview of how the data will be interpreted stylistically.
+
 *   **Data Validation:**
-    *   Required fields.
-    *   Regex pattern validation for text fields.
-    *   Visual feedback (red borders) for invalid cells.
-*   **Dynamic Picklist Options:** For `select` and `multi-select` fields, options are consolidated from:
-    1.  Explicitly defined options in `editor_config.js`.
-    2.  Options derived from `valueMap` in `viewer_config.js` (if configured).
-    3.  All unique existing values for that column in the currently loaded CSV data.
-*   **Adaptive Popup UI:** For `select` and `multi-select` fields:
-    *   Small lists of options use a simple dropdown/checkbox list.
-    *   Large lists include a search filter within the popup.
-    *   `multi-select` allows adding new tags via the popup search bar if `allowNewTags: true`.
+    *   The editor supports basic data validation rules defined per column in `editor_config.js`:
+        *   `required: true`: Ensures a cell cannot be left empty.
+        *   `validationRegex: "pattern"`: For `text` or `textarea` types, allows specifying a JavaScript regular expression pattern that the cell's content must match.
+    *   Cells that fail validation (e.g., an empty required field, or text not matching a regex) are visually highlighted, typically with a red border, to alert the user. Tooltips may provide more specific error information.
+
+*   **Dynamic Picklist Options (for `select` and `multi-select`):**
+    *   The list of choices available in `select` and `multi-select` popups is highly dynamic and aggregated from several sources to provide comprehensive and relevant options:
+        1.  **Explicit Options:** Defined directly in the `columns[n].options` array within `editor_config.js`.
+        2.  **Viewer Config Derivation:** If `columns[n].optionsSource: "viewerConfigValueMap"` is set, options are derived from the `valueMap` keys in the corresponding `indicatorStyles` section of the loaded `viewer_config.js`.
+        3.  **Cross-Column Derivation (New):** If `columns[n].deriveOptionsFromColumn: "SourceColumnName"` is set, options are populated from the unique values found in the specified `SourceColumnName` within the current dataset. This allows for creating lookup-style fields (e.g., selecting a "Parent Entry" from a list of all "Entry Names"). Self-references are automatically excluded (e.g., an entry cannot be its own parent if derived this way).
+        4.  **Existing Data Values:** All unique values currently present in the column being edited (or the derived source column) across all rows of the loaded CSV are automatically included as selectable options.
+
+*   **Adaptive Popup UI for Selects:**
+    *   The popup interface for `select` and `multi-select` fields adapts to the number of available options:
+        *   For shorter lists, a simple list of radio buttons (for `select`) or checkboxes (for `multi-select`) is shown.
+        *   For longer lists (typically 15 or more options), a search/filter input field appears at the top of the popup, allowing users to quickly narrow down the options.
+    *   For `multi-select` columns, if `columns[n].allowNewTags: true` is configured, users can type a new value into the popup's search bar and hit Enter to add it as a new custom tag, even if it wasn't in the original list of options.
+
 *   **Data Operations:**
-    *   Add new rows.
-    *   Delete existing rows (with confirmation).
-    *   Sort data based on `defaultItemSortBy` criteria from `viewer_config.js`.
+    *   **Add New Row:** A button allows users to append new, empty (or default-valued) rows to the dataset. If display filters are active, new rows (which typically default to "master" status if a parent-child relationship is defined) will appear if they match the current filter.
+    *   **Delete Existing Row:** Each row has a delete button. A confirmation prompt is shown before a row is permanently removed from the dataset.
+    *   **Sort Data (Default):** A button allows users to re-apply the default sorting rules (defined in `viewer_config.js`'s `generalSettings.defaultItemSortBy`) and any visual partitioning rules (from `editor_config.js`'s `editorDisplaySettings.partitionBy`) to the entire dataset.
+
 *   **CSV Import/Export:**
-    *   Load existing CSV data.
-    *   Export the edited data grid back to a CSV file.
+    *   **Import:** Users can load existing CSV data into the editor using a file input. This data populates the grid according to the loaded `editor_config.js` schema.
+    *   **Export:** The current state of the data grid (all rows and columns, regardless of any active display filters) can be exported back to a CSV file. The output format (delimiter, boolean representation) is configurable via `csvOutputOptions` in `editor_config.js`.
+
+*   **Change Tracking & Cumulative Changelog:**
+    *   The editor tracks changes (additions, deletions, modifications) made to the data relative to when the current CSV file was initially loaded.
+    *   **Primary Key for Tracking:** Configuring `changeTrackingPrimaryKeyColumn` in `editor_config.js` with the name of a column containing unique row identifiers greatly improves the accuracy of identifying modified rows versus new/deleted ones, especially if data is sorted.
+    *   **View Changes Modal:** A "View Changes" button opens a modal displaying a textual digest of all detected changes for the current session.
+    *   **Cumulative Historical Log:**
+        *   An optional `cumulativeLogUrl` can be specified in `editor_config.js` pointing to a plain text file containing previously recorded changelogs.
+        *   If this URL is provided and the log is successfully fetched, any new changes detected in the current session are **prepended** to the content of this historical log when viewed in the modal or exported. This creates a running, single-file history.
+        *   The demarcation includes a timestamp for when the new changes were recorded.
+    *   **Changelog Export:** When the main CSV data is exported, the (potentially cumulative) changelog is also automatically generated and downloaded as a separate `.txt` file. The user is then responsible for managing this file and updating the `cumulativeLogUrl` for future sessions if they wish to maintain the single historical log.
+
+*   **Visual Data Partitioning:**
+    *   The `editorDisplaySettings.partitionBy` option in `editor_config.js` allows for visually separating the grid.
+    *   Rows matching a defined filter criteria are grouped together and moved to the bottom of the displayed grid, often separated by a distinct visual line (e.g., "heavyLine").
+    *   This reorders the actual `_csvDataInstance` for display purposes but does not hide any data from export.
+
+*   **CSS-Based Display Filtering (New):**
+    *   The `editorDisplaySettings.displayFilters` array in `editor_config.js` allows defining a set of named filters (e.g., "Show All," "Show Masters Only," "Show Active Items").
+    *   These filters appear in a dropdown menu above the grid.
+    *   When a filter is selected, rows that do *not* match its criteria are hidden using CSS (`display: none`).
+    *   **Importantly, the data itself is not removed from the underlying `_csvDataInstance`.** All rows are preserved for editing (if unhidden), sorting, partitioning, and are always included in CSV exports. This feature purely controls the visual presentation in the grid.
+
 *   **Configuration Preloading:**
-    *   The primary `editor_config.js` is loaded via a `<script>` tag in `editor.html`.
-    *   This `editor_config.js` can specify URLs in a `preloadUrls` section to automatically fetch the `viewer_config.js` and an initial `csvDataUrl` on page load.
-    *   Manual file inputs are available as fallbacks or for overriding preloaded files.
-*   **Client-Side Operation:** Runs entirely in the browser.
-*   **Embeddable:** Designed to be bundled into an HTML fragment for use in systems like Confluence (future `deploy_editor.ps1` script).
+    *   To streamline setup, the main `editor_config.js` (which must be included via a `<script>` tag in `editor.html`) can define a `preloadUrls` object.
+    *   This object can contain URLs to automatically fetch:
+        *   `viewerConfigUrl`: The `viewer_config.js` for styling and sort defaults.
+        *   `csvDataUrl`: An initial CSV data file to populate the grid.
+        *   `cumulativeLogUrl`: The historical changelog text file.
+    *   If preloading is successful for a given file type, the corresponding manual file input in the UI can be hidden. Manual file inputs remain available as fallbacks or for overriding preloaded files.
+
+*   **Client-Side Operation:**
+    *   The entire editor application runs within the user's web browser. No server-side processing or database is required for its core functionality, making it portable and easy to deploy.
 
 ## 3. Getting Started / Usage Flow
 
 1.  **Prepare Configuration Files:**
-    *   **`editor_config.js` (Required):** Create this file based on the schema described in Section 4. This defines your data structure for editing.
-    *   **`viewer_config.js` (Optional but Recommended):** The configuration file used by your CSV Dashboard Generator. The editor uses this for:
-        *   Styling previews (icons, tag colors).
-        *   Deriving picklist options (if `optionsSource: "viewerConfigValueMap"` is used in `editor_config.js`).
-        *   Default sorting criteria.
-        *   `trueValues` for interpreting booleans on CSV import.
+    *   **`editor_config.js` (Required):** Create this file based on the schema described in Section 4. This defines your data structure for editing, picklist sources, and display filters.
+    *   **`viewer_config.js` (Optional but Recommended):** The configuration file used by your CSV Dashboard Generator. The editor uses this for styling previews, deriving some picklist options, and default sorting.
     *   **CSV Data File (Optional for initial load):** Your existing CSV data.
+    *   **Historical Changelog File (Optional):** A plain text file containing previous changelogs if using the `cumulativeLogUrl` feature.
 2.  **Embed `editor_config.js` in `editor.html`:**
     Modify `editor.html` to include your primary editor configuration file via a script tag:
     ```html
     <!-- In editor.html, before editor_app.js -->
-    <script src="path/to/your/editor_config.js"></script> 
+    <script src="path/to/your/editor_config.js"></script>
     ```
-    *   The `editor_config.js` file must define a global variable `window.editorConfig`.
-    *   Inside this `editor_config.js`, you can specify `preloadUrls` for the `viewer_config.js` and an initial `csvDataUrl`.
-3.  **Host Files:** Place `editor.html`, its CSS/JS subdirectories, your config files, and any data files to be preloaded on a web server or use a local server for development (e.g., VS Code Live Server, Python's `http.server`).
+    The `editor_config.js` file must define a global variable `window.editorConfig`.
+3.  **Host Files:** Place `editor.html`, its CSS/JS subdirectories, your config files, and any data files to be preloaded on a web server or use a local server for development.
 4.  **Open `editor.html` in your Browser.**
-    *   The editor will attempt to load `window.editorConfig` (from the script tag).
-    *   It will then attempt to load `viewerConfigUrl` and `csvDataUrl` if specified in the loaded `editorConfig`.
-    *   Manual file inputs will be hidden for successfully preloaded files.
+    *   The editor attempts to load `window.editorConfig`.
+    *   It then attempts to load `viewerConfigUrl`, `csvDataUrl`, and `cumulativeLogUrl` if specified.
+    *   The display filter dropdown will populate based on `editor_config.js`.
 5.  **Manual File Loading (if preloads fail or are not specified):**
-    *   Use the "Choose File" buttons to load:
-        *   **Viewer Config (config.js):** If not preloaded or to override. This provides styling and sorting defaults.
-        *   **Editor Config (editor_config.js):** The input for this will be hidden if the initial embedded script loaded successfully. It's primarily for development or if the embedded script fails. Manually loading a new editor config will reset the entire editor.
-        *   **CSV Data File:** To load or replace the data in the grid.
-6.  **Edit Data:**
-    *   Click a cell to edit its content. Input controls will vary based on the column's `type` defined in `editor_config.js`.
-    *   For `checkbox` types, click directly on the cell (or its icon) to toggle the boolean state.
-    *   For `select` and `multi-select`, a popup will appear.
-7.  **Use Actions:**
-    *   **+ Add Row:** Adds a new empty row to the grid.
-    *   **Sort Data (Default):** Sorts the grid by the `defaultItemSortBy` rules in the loaded `viewer_config.js`.
-    *   **Export to CSV:** Downloads the current grid data as a CSV file.
-8.  **Status Bar:** Provides feedback on loading processes and actions.
+    *   Use the "Choose File" buttons to load or override configurations and data.
+6.  **Select Display Filter (Optional):** Use the dropdown menu (if configured and populated) to filter the rows displayed in the grid (e.g., "Show Masters Only").
+7.  **Edit Data:** Click a cell to edit. Input controls vary by column type.
+8.  **Use Actions:**
+    *   **+ Add Row:** Adds a new row (typically as a "master" item). It will be visible if it matches the current display filter.
+    *   **Sort Data (Default):** Sorts/partitions the entire dataset. The current display filter is then re-applied.
+    *   **Export to CSV:** Downloads the *entire current grid data* as a CSV, plus the (cumulative) changelog.
+    *   **View Changes:** Opens a modal showing new changes prepended to any loaded historical changelog.
 
 ## 4. `editor_config.js` Schema Definition
 
-The `editor_config.js` file exports a single object, typically assigned to `window.editorConfig` if embedded directly in `editor.html`.
+The `editor_config.js` file exports a single object assigned to `window.editorConfig`.
 
 ```javascript
-// Example: editor_config_mydata.js
 window.editorConfig = {
-  "editorSchemaVersion": 1.0, // Version of this editor schema
+  "editorSchemaVersion": 1.0,
 
-  "preloadUrls": { // Optional: URLs for pre-loading files
-    "viewerConfigUrl": "./viewer_config_for_mydata.js", // Path to the viewer's config.js
-    "csvDataUrl": "./my_initial_data.csv"               // Path to an initial CSV to load
+  "preloadUrls": {
+    "viewerConfigUrl": "./viewer_config.js",       // Optional
+    "csvDataUrl": "./initial_data.csv",             // Optional
+    "cumulativeLogUrl": "./changelog_history.txt" // Optional, New
   },
 
-  "csvOutputOptions": { // How the editor should format the exported CSV
-    "delimiter": ",",                 // Default: ","
-    "booleanTrueValue": "TRUE",       // String for 'true' checkboxes in CSV. Default: "TRUE"
-    "booleanFalseValue": "FALSE"      // String for 'false' checkboxes in CSV. Default: "FALSE" (Use "" for blank)
+  "changeTrackingPrimaryKeyColumn": "UniqueIDColumn", // Optional, Recommended
+
+  "csvOutputOptions": {
+    "delimiter": ",",
+    "booleanTrueValue": "TRUE",
+    "booleanFalseValue": "FALSE"
+  },
+
+  "editorDisplaySettings": { // Optional
+    "partitionBy": { // Optional: For visual partitioning
+      "enabled": true,
+      "filter": { /* ... filter criteria ... */ },
+      "separatorStyle": "heavyLine"
+    },
+    "displayFilters": [ // Optional: For CSS-based display filtering (New)
+      {
+        "id": "show-all",
+        "label": "Show All Items",
+        "isDefault": true,
+        "criteria": null // null means show all
+      },
+      {
+        "id": "masters-only",
+        "label": "Show Master Items",
+        "criteria": {
+          "logic": "AND",
+          "conditions": [ { "column": "ParentItemColumn", "filterType": "valueIsEmpty" } ]
+        }
+      }
+      // ... more custom filters ...
+    ]
   },
 
   "columns": [
-    // Array of column definition objects. Order here dictates grid column order.
     {
-      "name": "CSV_Header_Name", // REQUIRED: Exact header name in the CSV file
-      "label": "Display Label for Editor", // REQUIRED: Header label shown in the editor grid
-      "type": "text", // REQUIRED: text, textarea, select, checkbox, date, number, multi-select
-      "required": false, // Optional: true if field cannot be empty. Default: false
-      "readOnly": false, // Optional: true if field cannot be edited. Default: false
-      "validationRegex": "^[A-Z]{2}-\\d{4}$", // Optional: JS Regex string for 'text'/'textarea'
-      "columnWidth": "150px", // Optional: Suggested CSS width for this column in editor grid
+      "name": "CSV_Header_Name",
+      "label": "Display Label",
+      "type": "text", // text, textarea, select, checkbox, date, number, multi-select
+      "required": false,
+      "readOnly": false,
+      "validationRegex": "^[A-Z]-\\d+$", // Optional JS regex string
+      "columnWidth": "150px",
+      "orientation": "vertical", // Optional: "horizontal" or "vertical" for header text
+
+      // For type: "textarea"
+      "displayAsSingleLine": true, // Optional: If true, show as single truncated line in grid view
 
       // For type: "select" or "multi-select"
-      "optionsSource": "viewerConfigValueMap", // Optional: "viewerConfigValueMap" or "editorConfig" (default)
-      "options": ["Option A", { "value": "opt_b", "label": "Option B" }], // Optional: Explicit list of options
-      "viewerStyleColumnName": "StatusColumnInViewerConfig", // Optional: If styling from a different viewer config column
-      
+      "optionsSource": "viewerConfigValueMap", // "viewerConfigValueMap" or "editorConfig" (default if `options` present)
+      "options": ["Option A", { "value": "opt_b", "label": "Option B" }], // Explicit options
+      "deriveOptionsFromColumn": "AnotherColumnName", // Optional, New: Derive options from values in this other column
+      "viewerStyleColumnName": "StatusColumnInViewerConfig", // For styling based on another column's viewer style
+
       // For type: "multi-select"
-      "allowNewTags": true, // Optional: Default false. If true, user can add new tags not in options.
-      
-      // For type: "checkbox" (trueValue/falseValue for CSV output are in csvOutputOptions)
-    },
+      "allowNewTags": true
+    }
     // ... more column definitions
   ]
 };
-```
-
-### 4.1. Root Properties of `editorConfig`
-
-*   **`editorSchemaVersion`** (Number, Required)
-    *   Version of the `editor_config.js` schema itself.
-    *   Example: `1.0`
-*   **`preloadUrls`** (Object, Optional)
-    *   Contains URLs for files to be automatically loaded when the editor starts (if this `editor_config.js` is loaded successfully).
-    *   `viewerConfigUrl`: (String, Optional) Path/URL to the `viewer_config.js` file.
-    *   `csvDataUrl`: (String, Optional) Path/URL to an initial CSV data file.
-    *   Example: `"preloadUrls": { "viewerConfigUrl": "./configs/main_viewer_config.js", "csvDataUrl": "./data/default_data.csv" }`
-*   **`csvOutputOptions`** (Object, Optional)
-    *   Defines how the editor should format the CSV when exporting.
-    *   `delimiter`: (String) Delimiter for exported CSV. Default: `","`.
-    *   `booleanTrueValue`: (String) String written to CSV for a checked (`true`) checkbox. Default: `"TRUE"`.
-    *   `booleanFalseValue`: (String) String written to CSV for an unchecked (`false`) checkbox. Default: `"FALSE"`. Use `""` for a blank representation of false.
-    *   Example: `"csvOutputOptions": { "booleanTrueValue": "Yes", "booleanFalseValue": "No" }`
-
-### 4.2. `columns` Array
-
-This is an array of objects, where each object defines a column in the editor grid and its corresponding data field. The order of objects in this array determines the column order in the editor.
-
-#### Column Definition Object Properties:
-
-*   **`name`** (String, Required)
-    *   The exact header name for this column as it exists (or will exist) in the CSV file. This is used for mapping data.
-    *   Example: `"TaskStatus"`, `"AssigneeEmail"`
-*   **`label`** (String, Required)
-    *   The user-friendly display label shown in the editor grid's header for this column.
-    *   Example: `"Task Status"`, `"Assigned To"`
-*   **`type`** (String, Required)
-    *   Determines the data type and the kind of input control used for editing.
-    *   Supported values:
-        *   `"text"`: A single-line text input. Default if type is invalid.
-        *   `"textarea"`: A multi-line text input area.
-        *   `"select"`: A single-choice picklist. Options are displayed in a popup.
-        *   `"checkbox"`: A boolean true/false input, displayed as a checkbox in edit mode, and potentially as an icon (from `viewer_config.js`) in display mode. Click cell to toggle.
-        *   `"date"`: A date input, using the browser's native date picker. Stores date as YYYY-MM-DD.
-        *   `"number"`: A number input, using the browser's native number input.
-        *   `"multi-select"`: Allows selecting multiple values, displayed as "tags" in the cell. Options are managed in a popup.
-    *   Example: `"type": "select"`
-*   **`required`** (Boolean, Optional)
-    *   If `true`, the cell cannot be empty. Basic validation will flag empty required cells with a red border.
-    *   Default: `false`.
-    *   Example: `"required": true`
-*   **`readOnly`** (Boolean, Optional)
-    *   If `true`, the cell's content cannot be edited by the user. It will be displayed as read-only text.
-    *   Default: `false`.
-    *   Example: `"readOnly": true`
-*   **`validationRegex`** (String, Optional)
-    *   Used for `text` and `textarea` types. A string representing a JavaScript regular expression pattern (without leading/trailing slashes or flags). If the cell content (and not empty, unless also required) doesn't match, it gets a red border.
-    *   Example: `"validationRegex": "^[A-Za-z]+$"` (for alpha characters only)
-*   **`columnWidth`** (String, Optional)
-    *   A CSS width value (e.g., `"150px"`, `"20%"`) for this column in the editor grid. If not specified, width is auto-adjusted or uses a default.
-    *   Example: `"columnWidth": "200px"`
-*   **`orientation`** (String, Optional)
-    *   Controls the orientation of the header label text.
-    *   Values: `"horizontal"` (default), `"vertical"`.
-    *   Useful for saving space with narrow columns (e.g., for boolean icons).
-    *   Example: `"orientation": "vertical"`
-
-#### Properties specific to `type: "select"` or `type: "multi-select"`:
-
-*   **`optionsSource`** (String, Optional)
-    *   Defines where to primarily source the list of selectable options.
-    *   `"editorConfig"` (Default if `options` array is present): Use the `options` array defined directly in this column definition.
-    *   `"viewerConfigValueMap"`: Derive options from the keys of `viewer_config.js::indicatorStyles[columnName].valueMap` (or `viewer_config.js::indicatorStyles[viewerStyleColumnName].valueMap` if `viewerStyleColumnName` is set).
-    *   If omitted, and `options` is defined, `editorConfig` is assumed.
-    *   Example: `"optionsSource": "viewerConfigValueMap"`
-*   **`options`** (Array of `String` or `Object`, Optional)
-    *   An explicit list of options for the select/multi-select.
-    *   If strings: `["Apple", "Banana"]`. The string is used as both the value and the label.
-    *   If objects: `[{value: "apl", label: "Apple"}, {value: "bnn", label: "Banana"}]`.
-    *   If `optionsSource` is also used, these options are *merged* with the derived options. Options from this `options` array generally take precedence for labels if values conflict.
-    *   All unique values from the current CSV data for this column are *also* added to the final list of available options in the popup.
-    *   Example: `"options": ["High", "Medium", "Low"]`
-*   **`viewerStyleColumnName`** (String, Optional)
-    *   If the styling (tag color, icon) for the values in this editor column should be taken from a *different* column's definition in `viewer_config.js::indicatorStyles`, specify that viewer config column name here.
-    *   Useful if data values are shared but styled under different keys in the viewer config, or if this column's `name` doesn't directly match an `indicatorStyles` key.
-    *   Default: The current column's `name`.
-    *   Example: `"viewerStyleColumnName": "GlobalStatusCategory"`
-
-#### Properties specific to `type: "multi-select"`:
-
-*   **`allowNewTags`** (Boolean, Optional)
-    *   If `true`, users can type new values into the multi-select popup's search bar and add them as new tags (even if not in the predefined `options`).
-    *   If `false` (default), users can only select from the available (predefined or data-derived) options.
-    *   Example: `"allowNewTags": true`
-
-#### Properties specific to `type: "checkbox"`:
-
-*   The actual string values written to the CSV for `true` and `false` states are controlled by `csvOutputOptions.booleanTrueValue` and `csvOutputOptions.booleanFalseValue` at the root of `editorConfig`.
-*   In display mode (not editing), the cell will attempt to show an icon based on the value and the `viewer_config.js::indicatorStyles` for this column (or `viewerStyleColumnName`). If no icon, it appears blank.
-*   Clicking the cell directly toggles the boolean state.
-
-## 5. Error Handling & Status Messages
-
-*   The status bar at the top provides feedback on file loading, actions (sort, export), and errors.
-*   Invalid cell entries (failing `required` or `validationRegex` checks) will have their borders highlighted in red. Tooltips on these cells may provide more specific error details.
-*   Console logs provide more detailed debugging information.
-
-## 6. Deployment (Future)
-
-A `deploy_editor.ps1` script will be provided to bundle the editor's HTML, CSS, and JavaScript into a single HTML fragment suitable for embedding in systems like Confluence. This fragment will expect `editor_config.js` to be included via a `<script>` tag (as described above) and that `editor_config.js` may then specify URLs for other dependencies.
-
----
