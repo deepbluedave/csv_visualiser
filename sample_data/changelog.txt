@@ -1,0 +1,13 @@
+﻿--- Changes recorded at: 6/3/2025, 9:22:11 AM ---
+--- Initiative: Merfolk Kingdom ---
+Modifications:
+  - Entry Type changed from "Faction" to "Flora/Fauna".
+
+--- Initiative: Ancient Dragon Accord ---
+Modifications:
+  - Status changed from "Needs Map Ref" to "Needs Detail".
+  - Complexity/Size changed from "XL" to "M".
+
+
+--- End of Changes from 6/3/2025, 9:22:11 AM ---
+

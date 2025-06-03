@@ -6,8 +6,9 @@ window.editorConfig = {
     // --- NEW: Optional URLs for pre-loading ---
     "preloadUrls": {
         "viewerConfigUrl": "../alt_config/fantasy_world_atlas.js", // Example: Relative path or full URL
-        "csvDataUrl": "../sample_data/edited_data_20250520_200219.csv"       // Example: Relative path or full URL
+        "csvDataUrl": "../sample_data/edited_data_20250520_200219.csv" ,      // Example: Relative path or full URL
         // Note: editor_config.js itself is always loaded manually first.
+        "cumulativeLogUrl": "../sample_data/changelog.txt" // Optional: URL to a plain text file containing historical changelog.
     },
 
     "changeTrackingPrimaryKeyColumn": "Entry Name", // Or "TaskID", "ExceptionID", etc.
