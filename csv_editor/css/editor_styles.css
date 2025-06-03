@@ -483,3 +483,18 @@ h1 {
 #editorGridContainer tbody tr.editor-grid-partition-separator-top td {
     border-top: 3px solid #555 !important; /* Heavy dark line */
 }
+
+#editorGridContainer tbody tr.editor-filter-hidden {
+    display: none !important;
+}
+
+/* Styling for the display filter dropdown */
+#editorDisplayFilterDropdown {
+    padding: 6px 8px; /* Consistent padding with other controls */
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #fff;
+    font-size: 0.9em;
+    margin-right: 10px; /* Space after the dropdown */
+    min-width: 150px; /* Ensure it's not too small */
+}

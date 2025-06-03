@@ -8,9 +8,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     let viewerConfigLocal = null;
     let editorConfigLocal = null;
     let csvDataMain = [];
-    let initialCsvData = []; // Stores a deep copy of CSV data as it was initially loaded
+    let initialCsvData = [];
     let csvHeadersFromUpload = [];
-    let cachedCumulativeLogContent = null; // <<< NEW: For storing fetched historical changelog
+    let cachedCumulativeLogContent = null;
+    let activeDisplayFilterId = null; // <<< NEW: To store the ID of the currently active display filter
 
     // --- DOM Element References ---
     const {
@@ -19,6 +20,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         viewChangesBtn, changesModal, changeDigestOutput, closeChangesModalBtn
     } = editorDomElements;
     const mainPageHeading = document.querySelector('#csv-editor-wrapper h1');
+    const displayFilterDropdown = document.createElement('select'); // <<< NEW: Create dropdown element
+    displayFilterDropdown.id = 'editorDisplayFilterDropdown';
+    displayFilterDropdown.style.marginLeft = '15px'; // Add some spacing
 
     // --- Helper Function Definitions ---
     function updateEditorTitles(viewerConfig) {
@@ -64,7 +68,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const canAddRow = !!(editorCfg && editorCfg.columns && editorCfg.columns.length > 0);
         const canExport = !!(editorCfg && editorCfg.columns && editorCfg.columns.length > 0);
         const canSort = !!(csvDataMain.length > 0 && viewerCfg?.generalSettings?.defaultItemSortBy?.length > 0 && editorCfg?.columns?.length > 0);
-        const canViewChanges = !!(editorCfg && (initialCsvData.length > 0 || cachedCumulativeLogContent !== null)); // <<< MODIFIED
+        const canViewChanges = !!(editorCfg && (initialCsvData.length > 0 || cachedCumulativeLogContent !== null));
 
         if (addRowBtn) addRowBtn.disabled = !canAddRow;
         if (sortDataBtn) sortDataBtn.disabled = !canSort;
@@ -84,7 +88,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             const response = await fetch(url);
             if (!response.ok) {
                 const errorMsg = `HTTP error ${response.status} fetching ${url}.`;
-                // <<< MODIFIED: No longer specify manual input availability in this generic function
                 updateEditorStatus(errorMsg, true);
                 return null;
             }
@@ -94,11 +97,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const pseudoFileName = url.substring(url.lastIndexOf('/') + 1) || `${type.toLowerCase()}_from_url.js`;
                 const pseudoFile = new File([content], pseudoFileName, { type: 'application/javascript' });
                 return await loadJsConfigurationFile(pseudoFile, expectedGlobalVarName);
-            } else if (type === 'CSVData' || type === 'CumulativeLog') { // <<< MODIFIED: Added CumulativeLog
+            } else if (type === 'CSVData' || type === 'CumulativeLog') {
                 return content;
             }
         } catch (error) {
-            updateEditorStatus(`Error loading ${type} from ${url}: ${error.message}.`, true); // <<< MODIFIED
+            updateEditorStatus(`Error loading ${type} from ${url}: ${error.message}.`, true);
             return null;
         }
         return null;
@@ -120,7 +123,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         csvDataMain.length = 0;
         initialCsvData.length = 0;
         csvHeadersFromUpload = [];
-        cachedCumulativeLogContent = null; // <<< NEW: Reset cached log
+        cachedCumulativeLogContent = null;
+        activeDisplayFilterId = null; // <<< NEW: Reset active filter
 
         clearAllConfigs();
         viewerConfigLocal = null;
@@ -138,6 +142,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             editorConfigFileInput.previousElementSibling.textContent = "Load Editor Config (editor_config.js):";
         }
         if (csvDataFileInput) csvDataFileInput.parentElement.style.display = '';
+        populateDisplayFilterDropdown(); // <<< NEW: Repopulate/clear dropdown
     }
 
     function handleConfigLoadError(configType, error) {
@@ -151,13 +156,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             setEditorConfig(null);
             editorConfigLocal = null;
             clearGridStructure();
-            cachedCumulativeLogContent = null; // <<< NEW: Clear if editor config fails, as URL might be in it
+            cachedCumulativeLogContent = null;
+            activeDisplayFilterId = null; // <<< NEW: Reset
+            populateDisplayFilterDropdown(); // <<< NEW: Repopulate/clear
         }
         initDataGridReferences(csvDataMain, getEditorConfig(), getViewerConfig());
     }
 
     function finalizeConfigAndDataLoad() {
-        console.log("EDITOR_APP: finalizeConfigAndDataLoad - Finalizing configuration and data setup. Current csvDataMain length:", csvDataMain.length);
+        console.log("EDITOR_APP: finalizeConfigAndDataLoad - Finalizing. csvDataMain length:", csvDataMain.length);
         const edCfg = getEditorConfig();
 
         if (getViewerConfig()) {
@@ -165,6 +172,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else {
             resetEditorTitles();
         }
+
+        // <<< NEW: Populate display filter dropdown based on new editorConfig >>>
+        populateDisplayFilterDropdown();
+        // <<< END NEW >>>
 
         if (edCfg) {
             console.log("EDITOR_APP: finalizeConfigAndDataLoad - Editor config present, rendering grid structure.");
@@ -182,12 +193,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.log("EDITOR_APP: finalizeConfigAndDataLoad - Aligning data to editor schema.");
             alignDataToEditorSchema();
             console.log("EDITOR_APP: finalizeConfigAndDataLoad - Applying sort and partition.");
-            applySortAndPartition();
+            applySortAndPartition(); // This sorts/partitions _csvDataInstance
             console.log("EDITOR_APP: finalizeConfigAndDataLoad - Rendering grid data.");
-            renderGridData();
+            renderGridData(); // This renders based on _csvDataInstance
+            console.log("EDITOR_APP: finalizeConfigAndDataLoad - Applying display filter.");
+            applyDisplayFilter(); // This hides/shows rows in the rendered grid
         } else if (edCfg) {
             console.log("EDITOR_APP: finalizeConfigAndDataLoad - Editor config present, but no data. Rendering empty grid/message.");
-            renderGridData();
+            renderGridData(); // Shows "no data" message or empty grid
+            applyDisplayFilter(); // Still apply filter in case "Show All" isn't default (though unlikely for no data)
         }
         checkAndEnableActions();
     }
@@ -199,16 +213,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             updateEditorStatus("Cannot process CSV: Editor config not loaded.", true);
             return false;
         }
-
         const delimiter = currentEdConfig?.csvOutputOptions?.delimiter || ',';
         const parsed = editorParseCSV(csvText, delimiter);
-
         csvDataMain.length = 0;
         initialCsvData.length = 0;
-
         parsed.data.forEach(row => csvDataMain.push(row));
         csvHeadersFromUpload = parsed.headers;
-
         if (csvDataMain.length > 0) {
             if (currentEdConfig.columns) {
                 csvDataMain.forEach(row => {
@@ -253,19 +263,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log("EDITOR_APP: applySortAndPartition - Applying sort and partition logic.");
         const viewerCfg = getViewerConfig();
         const editorCfg = getEditorConfig();
-
         if (!csvDataMain || csvDataMain.length === 0) {
             console.log("EDITOR_APP: applySortAndPartition - No data to sort or partition.");
             return;
         }
         if (!editorCfg || !editorCfg.columns || editorCfg.columns.length === 0) {
-            console.warn("EDITOR_APP: applySortAndPartition - Editor config not available, cannot determine sort/partition columns.");
+            console.warn("EDITOR_APP: applySortAndPartition - Editor config not available.");
             return;
         }
-
         const defaultSortConfig = viewerCfg?.generalSettings?.defaultItemSortBy;
         if (defaultSortConfig && defaultSortConfig.length > 0) {
-            console.log("EDITOR_APP: applySortAndPartition - Applying default sort criteria to", csvDataMain.length, "items.");
+            console.log("EDITOR_APP: applySortAndPartition - Applying default sort to", csvDataMain.length, "items.");
             try {
                 const effectiveHeadersForSorting = editorCfg.columns.map(c => c.name);
                 const sortGlobalConfigMock = {
@@ -278,14 +286,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 updateEditorStatus(`Error applying default sort: ${error.message}`, true);
             }
         } else {
-            console.log("EDITOR_APP: applySortAndPartition - No default sort criteria in viewer config or data is empty.");
+            console.log("EDITOR_APP: applySortAndPartition - No default sort criteria.");
         }
-
         const partitionConfigSettings = editorCfg?.editorDisplaySettings?.partitionBy;
         if (partitionConfigSettings?.enabled &&
             partitionConfigSettings?.filter?.conditions?.length > 0) {
             const filterGroup = partitionConfigSettings.filter;
-            console.log("EDITOR_APP: applySortAndPartition - Partitioning enabled. Filter Group:", JSON.stringify(filterGroup));
+            console.log("EDITOR_APP: applySortAndPartition - Partitioning enabled. Filter:", JSON.stringify(filterGroup));
             const mainItems = [];
             const partitionedItems = [];
             let itemsMeetingPartitionCriteria = 0;
@@ -311,7 +318,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             );
                         }
                     } catch (e) {
-                        console.error("EDITOR_APP: applySortAndPartition - Error in checkCondition for partitioning:", e, "Row:", row, "FilterGroup:", filterGroup);
+                        console.error("EDITOR_APP: applySortAndPartition - Error in checkCondition for partitioning:", e);
                     }
                 }
                 if (rowMatchesPartitionFilter) {
@@ -321,9 +328,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     mainItems.push(row);
                 }
             });
-            console.log(`EDITOR_APP: applySortAndPartition - Partitioning processed. Main items: ${mainItems.length}, Partitioned items: ${partitionedItems.length}.`);
+            console.log(`EDITOR_APP: applySortAndPartition - Partitioning processed. Main: ${mainItems.length}, Partitioned: ${partitionedItems.length}.`);
             if (itemsMeetingPartitionCriteria > 0) {
-                console.log("EDITOR_APP: applySortAndPartition - Reconstructing csvDataMain with partitioned order.");
                 csvDataMain.splice(0, csvDataMain.length, ...mainItems, ...partitionedItems);
                 console.log(`EDITOR_APP: applySortAndPartition - Partitioning applied. Data reordered.`);
             } else {
@@ -338,7 +344,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log("EDITOR_APP: alignDataToEditorSchema - Aligning CSV data rows to editor column schema.");
         const currentEdConfig = getEditorConfig();
         if (!currentEdConfig || !currentEdConfig.columns) {
-            console.warn("EDITOR_APP: alignDataToEditorSchema - Editor config or columns not available. Skipping alignment.");
+            console.warn("EDITOR_APP: alignDataToEditorSchema - Editor config or columns not available.");
             return;
         }
         const editorColumnDefinitions = currentEdConfig.columns;
@@ -370,7 +376,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function attemptPreloadsFromEditorConfig(loadedEditorConfig) {
         console.log("EDITOR_APP: attemptPreloadsFromEditorConfig - Checking for preload URLs.");
-        cachedCumulativeLogContent = null; // <<< NEW: Reset on new editor config load
+        cachedCumulativeLogContent = null;
 
         if (!loadedEditorConfig || !loadedEditorConfig.preloadUrls) {
             updateEditorStatus("No preloadUrls in editor config. Manual file inputs remain active.", false);
@@ -378,7 +384,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (csvDataFileInput) csvDataFileInput.parentElement.style.display = '';
             return;
         }
-        const { viewerConfigUrl, csvDataUrl, cumulativeLogUrl } = loadedEditorConfig.preloadUrls; // <<< MODIFIED
+        const { viewerConfigUrl, csvDataUrl, cumulativeLogUrl } = loadedEditorConfig.preloadUrls;
 
         if (viewerConfigUrl) {
             const config = await loadFileFromUrl(viewerConfigUrl, 'ViewerConfig', 'defaultConfig');
@@ -401,24 +407,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (viewerConfigFileInput) viewerConfigFileInput.parentElement.style.display = '';
         }
 
-        // <<< NEW: Preload Cumulative Changelog >>>
         if (cumulativeLogUrl) {
             const logContent = await loadFileFromUrl(cumulativeLogUrl, 'CumulativeLog');
-            if (logContent !== null) { // Check for null explicitly, empty string is a valid log
+            if (logContent !== null) {
                 cachedCumulativeLogContent = logContent;
                 const logFileName = cumulativeLogUrl.substring(cumulativeLogUrl.lastIndexOf('/') + 1);
                 updateEditorStatus(`Cumulative changelog preloaded from: ${logFileName}. Length: ${logContent.length}`);
             } else {
-                // Error status for fetch failure is set by loadFileFromUrl if URL was present
                 updateEditorStatus(`Failed to load cumulative changelog from URL. Proceeding with new changes only. (URL: ${cumulativeLogUrl.substring(cumulativeLogUrl.lastIndexOf('/') + 1)})`, true);
-                cachedCumulativeLogContent = null; // Ensure it's null on failure
+                cachedCumulativeLogContent = null;
             }
         } else {
-            // No cumulativeLogUrl provided, so no log to preload. This is not an error.
             console.log("EDITOR_APP: No cumulativeLogUrl provided in editor config.");
             cachedCumulativeLogContent = null;
         }
-        // <<< END NEW >>>
 
         initDataGridReferences(csvDataMain, getEditorConfig(), getViewerConfig());
 
@@ -464,19 +466,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.warn("EDITOR_APP: generateChangeDigestOnDemand - Editor config, columns, or initial data not available.");
             return "Cannot generate change digest: Configuration or initial data is missing.";
         }
-
         const pkColumnName = editorCfg.changeTrackingPrimaryKeyColumn;
         const columnDefs = editorCfg.columns;
         let digest = "";
         let changesFound = false;
-
         const currentDataMapByOriginalIndex = new Map();
         csvDataMain.forEach(row => {
             if (row._originalIndex !== -1 && row._originalIndex !== undefined) {
                 currentDataMapByOriginalIndex.set(row._originalIndex, row);
             }
         });
-
         initialCsvData.forEach(initialRow => {
             if (!currentDataMapByOriginalIndex.has(initialRow._originalIndex)) {
                 changesFound = true;
@@ -490,10 +489,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 digest += "\n";
             }
         });
-
         csvDataMain.forEach(currentRow => {
             const originalRowIndex = currentRow._originalIndex;
-
             if (originalRowIndex === -1 || originalRowIndex === undefined) {
                 changesFound = true;
                 const identifier = pkColumnName ? (currentRow[pkColumnName] || "New Item (PK Missing/Not Set)") : `New Item (Added at runtime)`;
@@ -510,19 +507,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                     console.warn(`EDITOR_APP: generateChangeDigestOnDemand - Consistency issue: Current row with _originalIndex ${originalRowIndex} not found in initialCsvData.`);
                     return;
                 }
-
                 let rowModifications = [];
                 const currentActualPK = pkColumnName ? currentRow[pkColumnName] : null;
                 const originalActualPK = pkColumnName ? initialRow._originalPkValue : null;
-
                 if (pkColumnName && String(originalActualPK ?? '') !== String(currentActualPK ?? '')) {
                     rowModifications.push(`  - Identifier (${pkColumnName}) changed from "${formatValueForDigest(originalActualPK)}" to "${formatValueForDigest(currentActualPK)}".\n`);
                 }
-
                 columnDefs.forEach(colDef => {
                     const columnName = colDef.name;
                     if (pkColumnName && columnName === pkColumnName) return;
-
                     const initialValue = initialRow[columnName];
                     const currentValue = currentRow[columnName];
                     let valueChanged = false;
@@ -541,7 +534,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                         rowModifications.push(`  - ${colDef.label || columnName} changed from "${formatValueForDigest(initialValue)}" to "${formatValueForDigest(currentValue)}".\n`);
                     }
                 });
-
                 if (rowModifications.length > 0) {
                     changesFound = true;
                     const displayIdentifier = pkColumnName ? (currentActualPK || originalActualPK || `Original Index: ${originalRowIndex}`) : `Original Index: ${originalRowIndex}`;
@@ -555,7 +547,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }
         });
-
         if (!changesFound) {
             digest = "No changes detected since the initial data load.";
         }
@@ -575,6 +566,123 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function formatSingleValueForDigest(stringValue) {
         return stringValue.replace(/"/g, '""');
+    }
+
+    // <<< NEW FUNCTION: Populate Display Filter Dropdown >>>
+      function populateDisplayFilterDropdown() {
+        const editorCfg = getEditorConfig();
+        const filters = editorCfg?.editorDisplaySettings?.displayFilters;
+        const filterContainer = document.getElementById('displayFilterContainer');
+
+        // Clear existing options from the global displayFilterDropdown element
+        displayFilterDropdown.innerHTML = '';
+
+        if (!filterContainer) {
+            console.warn("EDITOR_APP: Display filter container 'displayFilterContainer' not found in DOM. Dropdown cannot be placed.");
+            displayFilterDropdown.style.display = 'none'; // Ensure it's hidden if container is missing
+            return;
+        }
+
+        if (filters && Array.isArray(filters) && filters.length > 0) {
+            console.log("EDITOR_APP: Populating display filter dropdown with", filters.length, "filters.");
+            let defaultSelected = false;
+            activeDisplayFilterId = null; // Reset active filter before repopulating
+
+            filters.forEach(filter => {
+                const option = document.createElement('option');
+                option.value = filter.id;
+                option.textContent = filter.label;
+                if (filter.isDefault && !defaultSelected) {
+                    option.selected = true;
+                    activeDisplayFilterId = filter.id;
+                    defaultSelected = true;
+                }
+                displayFilterDropdown.appendChild(option);
+            });
+
+            if (!defaultSelected && displayFilterDropdown.options.length > 0) {
+                displayFilterDropdown.options[0].selected = true;
+                activeDisplayFilterId = displayFilterDropdown.options[0].value;
+            }
+            
+            // Ensure the dropdown is only added to the container once
+            // And only if it's not already there (e.g. if this function is called multiple times)
+            if (!filterContainer.contains(displayFilterDropdown)) {
+                filterContainer.appendChild(displayFilterDropdown);
+            }
+            displayFilterDropdown.style.display = ''; // Make it visible
+            console.log("EDITOR_APP: Display filter dropdown populated and visible. Active filter:", activeDisplayFilterId);
+
+        } else {
+            console.log("EDITOR_APP: No display filters defined in config or filters array is empty. Hiding dropdown.");
+            activeDisplayFilterId = null;
+            // If the dropdown was previously in the container, remove it or hide it
+            if (filterContainer.contains(displayFilterDropdown)) {
+                 filterContainer.removeChild(displayFilterDropdown); // Or displayFilterDropdown.style.display = 'none';
+            }
+            displayFilterDropdown.style.display = 'none';
+        }
+    }
+
+    // <<< NEW FUNCTION: Apply CSS-based Display Filter >>>
+    function applyDisplayFilter() {
+        console.log(`EDITOR_APP: applyDisplayFilter - Applying filter: ${activeDisplayFilterId || 'None (Show All)'}`);
+        const editorCfg = getEditorConfig();
+        const viewerCfg = getViewerConfig(); // Needed for checkCondition's trueValues
+        const tableBody = editorDomElements.editorGridTbody;
+
+        if (!tableBody || !editorCfg || !editorCfg.columns || !csvDataMain) {
+            console.warn("EDITOR_APP: applyDisplayFilter - Missing table body, config, or data. Cannot apply filter.");
+            return;
+        }
+
+        const filters = editorCfg.editorDisplaySettings?.displayFilters;
+        const selectedFilterConfig = filters?.find(f => f.id === activeDisplayFilterId);
+        const filterCriteria = selectedFilterConfig?.criteria; // This is the {logic, conditions} object or null
+
+        // Config for checkCondition (needs csvHeaders and trueValues)
+        const headersForCheck = editorCfg.columns.map(c => c.name); // Use editor-defined column names
+        const configForCheck = {
+            csvHeaders: headersForCheck,
+            generalSettings: {
+                trueValues: viewerCfg?.generalSettings?.trueValues || ["true", "yes", "1", "y", "x", "on", "âœ“"]
+            }
+        };
+
+        for (let i = 0; i < tableBody.rows.length; i++) {
+            const tr = tableBody.rows[i];
+            const rowIndex = parseInt(tr.dataset.rowIndex, 10); // Relies on renderGridData setting this
+
+            if (isNaN(rowIndex) || rowIndex < 0 || rowIndex >= csvDataMain.length) {
+                console.warn(`EDITOR_APP: applyDisplayFilter - Skipping row ${i} due to invalid or missing data-row-index or data mismatch.`);
+                tr.classList.remove('editor-filter-hidden'); // Show by default if error
+                continue;
+            }
+            const rowData = csvDataMain[rowIndex];
+            let matchesFilter = true; // Default to true (visible)
+
+            if (filterCriteria && filterCriteria.conditions && filterCriteria.conditions.length > 0) {
+                // Evaluate the row against the filterCriteria
+                const logicIsOr = filterCriteria.logic && filterCriteria.logic.toUpperCase() === 'OR';
+                try {
+                    if (logicIsOr) {
+                        matchesFilter = filterCriteria.conditions.some(condition =>
+                            checkCondition(rowData, condition, configForCheck)
+                        );
+                    } else { // Default to AND
+                        matchesFilter = filterCriteria.conditions.every(condition =>
+                            checkCondition(rowData, condition, configForCheck)
+                        );
+                    }
+                } catch (e) {
+                    console.error(`EDITOR_APP: applyDisplayFilter - Error checking condition for row ${rowIndex}:`, e, rowData, filterCriteria);
+                    matchesFilter = true; // Show on error to be safe
+                }
+            }
+            // If filterCriteria is null (e.g., "Show All"), matchesFilter remains true.
+            tr.classList.toggle('editor-filter-hidden', !matchesFilter);
+        }
+        console.log("EDITOR_APP: applyDisplayFilter - CSS filter application complete.");
     }
 
     async function initializeEditor() {
@@ -618,8 +726,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     await initializeEditor();
 
     window.addEventListener('editorDataChanged', () => {
-        console.log("EDITOR_APP: 'editorDataChanged' event received. Re-checking actions.");
+        console.log("EDITOR_APP: 'editorDataChanged' event received.");
         checkAndEnableActions();
+        // No need to re-apply display filter here, as data changes don't affect which filter is selected.
+        // The visual update for the changed row is handled by grid logic.
     });
 
     if (viewerConfigFileInput) {
@@ -665,7 +775,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 initDataGridReferences(csvDataMain, editorConfigLocal, getViewerConfig());
                 updateEditorStatus(`Editor Config "${file.name}" loaded manually (OVERRIDE).`);
                 if (editorConfigFileInput) editorConfigFileInput.parentElement.style.display = 'none';
-                await attemptPreloadsFromEditorConfig(editorConfigLocal);
+                await attemptPreloadsFromEditorConfig(editorConfigLocal); // This will also try to load cumulative log
                 finalizeConfigAndDataLoad();
             } catch (error) {
                 handleConfigLoadError('Editor Config (manual override)', error);
@@ -699,14 +809,24 @@ document.addEventListener('DOMContentLoaded', async () => {
                     finalizeConfigAndDataLoad();
                 } else {
                     renderGridData();
+                    applyDisplayFilter(); // Apply filter even if processing had issues (e.g. empty file)
                 }
             } catch (error) {
                 updateEditorStatus(`Error loading CSV Data from file: ${error.message}`, true);
-                clearCsvData(); renderGridData();
+                clearCsvData(); renderGridData(); applyDisplayFilter();
             }
             checkAndEnableActions();
         });
     }
+
+    // <<< NEW: Event Listener for Display Filter Dropdown >>>
+    displayFilterDropdown.addEventListener('change', (event) => {
+        activeDisplayFilterId = event.target.value;
+        console.log(`EDITOR_APP: Display filter changed to: ${activeDisplayFilterId}`);
+        updateEditorStatus(`Applying display filter: ${displayFilterDropdown.options[displayFilterDropdown.selectedIndex].text}`);
+        applyDisplayFilter();
+        // No need to call checkAndEnableActions as this doesn't change underlying data count
+    });
 
     if (addRowBtn) {
         addRowBtn.addEventListener('click', () => {
@@ -714,8 +834,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (!currentEdConfig) {
                 updateEditorStatus("Cannot add row: Editor config not loaded.", true); return;
             }
-            if (addNewRow()) {
-                updateEditorStatus("Row added. Scroll to bottom if not visible.");
+            if (addNewRow()) { // addNewRow already calls renderGridData
+                updateEditorStatus("Row added.");
+                applyDisplayFilter(); // Re-apply filter after new row is rendered
             } else {
                 updateEditorStatus("Failed to add new row (see console for details).", true);
             }
@@ -730,15 +851,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                 updateEditorStatus("No data to sort.", true); return;
             }
             if (!viewerCfg?.generalSettings?.defaultItemSortBy?.length && !editorCfg?.editorDisplaySettings?.partitionBy?.enabled) {
-                updateEditorStatus("No default sort criteria in Viewer Config and partitioning is not enabled. Nothing to sort/partition.", true); return;
+                updateEditorStatus("No default sort criteria in Viewer Config and partitioning is not enabled.", true); return;
             }
             if (!editorCfg?.columns?.length) {
-                updateEditorStatus("Editor Config not loaded, cannot determine sort/partition columns.", true); return;
+                updateEditorStatus("Editor Config not loaded.", true); return;
             }
             updateEditorStatus("Re-applying default sort and partitioning...");
             try {
-                applySortAndPartition();
-                renderGridData();
+                applySortAndPartition(); // This modifies _csvDataInstance
+                renderGridData();        // Re-renders the grid based on new order
+                applyDisplayFilter();    // Re-applies current display filter
                 updateEditorStatus("Data sorted and partitioned successfully.");
             } catch (error) {
                 updateEditorStatus(`Error during sort/partition: ${error.message}`, true);
@@ -751,13 +873,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         exportCsvBtn.addEventListener('click', () => {
             const currentEdConfig = getEditorConfig();
             if (!currentEdConfig || (!csvDataMain.length && !(currentEdConfig.columns?.length > 0))) {
-                updateEditorStatus("Cannot export: Editor configuration not loaded or no data/columns to export.", true);
-                return;
+                updateEditorStatus("Cannot export: Config or data not loaded.", true); return;
             }
-
             updateEditorStatus("Generating export files...");
             const now = new Date();
-            const timestampForFile = `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}${now.getSeconds().toString().padStart(2, '0')}`;
+            const year = now.getFullYear();
+            const month = (now.getMonth() + 1).toString().padStart(2, '0');
+            const day = now.getDate().toString().padStart(2, '0');
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const seconds = now.getSeconds().toString().padStart(2, '0');
+            const timestampForFile = `${year}${month}${day}_${hours}${minutes}${seconds}`;
             const baseFilename = `edited_data_${timestampForFile}`;
 
             const outputOptions = currentEdConfig.csvOutputOptions || {};
@@ -770,36 +896,22 @@ document.addEventListener('DOMContentLoaded', async () => {
                 updateEditorStatus(`Data exported to ${csvFilename}.`);
             }
 
-            // <<< NEW: Generate and export cumulative changelog >>>
-            let newChangesDigest = "No new changes detected since last CSV load."; // Default if no initial data
-            if (initialCsvData.length > 0) { // Only generate new changes if there was a baseline
+            let newChangesDigest = "No new changes detected since last CSV load.";
+            if (initialCsvData.length > 0) {
                 newChangesDigest = generateChangeDigestOnDemand();
             }
-
-            const nowForExport = new Date();
-            const year = nowForExport.getFullYear();
-            const month = (nowForExport.getMonth() + 1).toString().padStart(2, '0');
-            const day = nowForExport.getDate().toString().padStart(2, '0');
-            const hours = nowForExport.getHours().toString().padStart(2, '0');
-            const minutes = nowForExport.getMinutes().toString().padStart(2, '0');
-            const newChangesTimestamp = `${year}-${month}-${day} ${hours}:${minutes}`; // Note: using colon for time separator as is standard            combinedLogContent += newChangesDigest + "\n";
+            const newChangesTimestamp = `${year}-${month}-${day} ${hours}:${minutes}`;
+            let combinedLogContent = `--- Changes recorded at: ${newChangesTimestamp} ---\n`;
+            combinedLogContent += newChangesDigest + "\n";
             combinedLogContent += `--- End of Changes from ${newChangesTimestamp} ---\n\n`;
-
             if (cachedCumulativeLogContent !== null) {
                 combinedLogContent += cachedCumulativeLogContent;
-            } else if (currentEdConfig.cumulativeLogUrl) { // If URL was set but fetch failed
+            } else if (currentEdConfig.cumulativeLogUrl) {
                 combinedLogContent += `\n--- Note: Previous cumulative log from ${currentEdConfig.cumulativeLogUrl} could not be loaded. ---\n`;
             }
-            // If no cumulativeLogUrl, combinedLogContent will just be the new changes block.
-
-            // Filename: Always use a consistent name for the changelog export that implies history.
-            // The content will be cumulative if history was loaded, otherwise it's just the new changes.
-            // The current logic uses edited_data_[timestamp]_CHANGES.txt; we'll stick to that for consistency
-            // but its content is now potentially cumulative.
             const changelogFilename = `${baseFilename}_CHANGES.txt`;
             triggerDownload(combinedLogContent, changelogFilename, 'text/plain;charset=utf-8;');
-            updateEditorStatus(`Changelog (potentially cumulative) exported to ${changelogFilename}. Export process complete.`);
-            // <<< END NEW >>>
+            updateEditorStatus(`Changelog exported to ${changelogFilename}. Export process complete.`);
         });
     }
 
@@ -811,13 +923,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
             updateEditorStatus("Generating change digest for viewing...");
-
             let newChangesDigest = "No new changes detected since last CSV load.";
             if (initialCsvData.length > 0) {
                 newChangesDigest = generateChangeDigestOnDemand();
             }
-
-            // --- CORRECTED TIMESTAMP FORMAT AND VARIABLE SCOPE ---
             const nowForView = new Date();
             const year = nowForView.getFullYear();
             const month = (nowForView.getMonth() + 1).toString().padStart(2, '0');
@@ -825,27 +934,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             const hours = nowForView.getHours().toString().padStart(2, '0');
             const minutes = nowForView.getMinutes().toString().padStart(2, '0');
             const newChangesTimestamp = `${year}-${month}-${day} ${hours}:${minutes}`;
-            // --- END TIMESTAMP CORRECTION ---
-
-            // Initialize combinedDigestText here before potentially appending to it
             let combinedDigestText = `--- Changes recorded at: ${newChangesTimestamp} ---\n`;
             combinedDigestText += newChangesDigest + "\n";
             combinedDigestText += `--- End of Changes from ${newChangesTimestamp} ---\n\n`;
-
             if (cachedCumulativeLogContent !== null) {
                 combinedDigestText += cachedCumulativeLogContent;
             } else if (editorCfg.cumulativeLogUrl) {
-                // This part is for when cumulativeLogUrl was specified but failed to load
                 combinedDigestText += `\n--- Note: Previous cumulative log from ${editorCfg.cumulativeLogUrl} could not be loaded. ---\n`;
             }
-            // If neither cachedCumulativeLogContent nor editorCfg.cumulativeLogUrl exists,
-            // combinedDigestText will correctly only contain the new changes block.
-
             changeDigestOutput.textContent = combinedDigestText;
             changesModal.style.display = 'block';
             updateEditorStatus("Change digest displayed in modal.");
         });
-
         if (closeChangesModalBtn) {
             closeChangesModalBtn.onclick = function () {
                 changesModal.style.display = "none";

@@ -103,7 +103,7 @@ let defaultConfig = {
           "type": "tag", "titlePrefix": "Drafted: ",
           "valueMap": { "default": { "bgColor": "#f8f9fa", "textColor": "#6c757d" } }
       },
-      "Entry Name": { "type": "none" },
+      "Entry Name": { "type": "text" },
       "Wiki Link": { "type": "none" },
       "Inspiration Link": { "type": "none" }
   },
