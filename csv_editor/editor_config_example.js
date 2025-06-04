@@ -6,7 +6,7 @@ window.editorConfig = {
     // --- NEW: Optional URLs for pre-loading ---
     "preloadUrls": {
         "viewerConfigUrl": "../alt_config/fantasy_world_atlas.js", // Example: Relative path or full URL
-        "csvDataUrl": "../sample_data/edited_data_20250603_205554.csv",      // Example: Relative path or full URL
+        "csvDataUrl": "../sample_data/edited_data_20250604_102429.csv",      // Example: Relative path or full URL
         // Note: editor_config.js itself is always loaded manually first.
         "cumulativeLogUrl": "../sample_data/changelog.txt" // Optional: URL to a plain text file containing historical changelog.
     },
@@ -130,16 +130,44 @@ window.editorConfig = {
             "viewerStyleColumnName": "Entry Type",
             "columnWidth": "180px"
         },
+        // And here's the "Parent Entry" column configuration:
         {
             "name": "Parent Entry",
             "label": "Parent Entry",
-            "type": "select", // Allows selecting multiple parent entries
-            "deriveOptionsFromColumn": "Entry Name", // The key change
-            "required": false,
-            "options": [""], // Derives from viewer_config.indicatorStyles["Entry Type"].valueMap
-            "columnWidth": "180px"
-        },
-        {
+            "type": "multi-select", // Or "select" if you only allow one parent
+
+            // 1. Derive options from the "Entry Name" column:
+            "deriveOptionsFromColumn": "Entry Name",
+
+            // 2. Filter the derived "Entry Name" options:
+            //    Only include "Entry Name"s from rows where *their own* "Parent Entry" is empty.
+            //    This means only "master" items can be selected as parents.
+            "sourceColumnFilter": {
+                "logic": "AND", // Only one condition, so logic is simple
+                "conditions": [
+                    {
+                        // The 'column' here refers to a column in the rows providing the "Entry Name" options.
+                        // We are checking the "Parent Entry" status *of those potential parent items*.
+                        "column": "Parent Entry", // Check this column on the source row
+                        "filterType": "valueIsEmpty"  // Only include if its "Parent Entry" is empty
+                    }
+                ]
+            },
+
+            // Optional: Explicit options for "Parent Entry" itself (e.g., if you want a "None" option)
+            // These would be shown IN ADDITION to the filtered derived options.
+            // For this specific use case (only masters as parents), you might not need explicit options here.
+            "options": [],
+
+            "allowNewTags": false, // Usually false if you want to strictly link to existing (master) entries.
+            // Set to true if you want to allow typing a new parent name that might become a master later.
+
+            // Optional: Style the selected parent tags similar to how "Entry Name" tags are styled.
+            // This would require "Entry Name" to have a style defined in your viewer_config.js.
+            "viewerStyleColumnName": "Entry Name",
+
+            "columnWidth": "220px"
+        }, {
             "name": "Status",
             "label": "Status",
             "type": "select",

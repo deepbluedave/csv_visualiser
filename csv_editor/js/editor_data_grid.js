@@ -493,19 +493,23 @@ function handleCellChange(event) {
  * @param {number} [rowIndexBeingEdited=-1] - The index of the row being edited, for self-reference exclusion.
  * @returns {Array<Object>} An array of {value, label} option objects.
  */
-function getOptionsForColumn(colDef, rowIndexBeingEdited = -1) { // <<< MODIFIED: Added rowIndexBeingEdited
+function getOptionsForColumn(colDef, rowIndexBeingEdited = -1) {
     const optionsMap = new Map();
     const addOption = (value, label) => {
+        // ... (existing addOption logic - no changes here) ...
+        // It ensures unique values in optionsMap based on 'value'
+        // and tries to use the best 'label'.
         const valStr = String(value ?? '');
         if (valStr.trim() === '' && value !== '') return;
         const mapLabel = (label === '' && valStr !== '') ? `(Value: ${valStr})` : (label || valStr);
         if (!optionsMap.has(valStr)) {
             optionsMap.set(valStr, mapLabel);
         } else if (label && label !== mapLabel && optionsMap.get(valStr) === valStr) {
-            optionsMap.set(valStr, label);
+            optionsMap.set(valStr, mapLabel);
         }
     };
 
+    // 1. Add explicit options from colDef.options
     if (Array.isArray(colDef.options) && colDef.options.length > 0) {
         colDef.options.forEach(opt => {
             if (typeof opt === 'string') addOption(opt, opt);
@@ -513,6 +517,7 @@ function getOptionsForColumn(colDef, rowIndexBeingEdited = -1) { // <<< MODIFIED
         });
     }
 
+    // 2. Add options from viewerConfig.indicatorStyles.valueMap if configured
     if (colDef.optionsSource === 'viewerConfigValueMap' && _viewerConfigInstance?.indicatorStyles) {
         const styleColName = colDef.viewerStyleColumnName || colDef.name;
         const styleConf = _viewerConfigInstance.indicatorStyles[styleColName];
@@ -523,41 +528,85 @@ function getOptionsForColumn(colDef, rowIndexBeingEdited = -1) { // <<< MODIFIED
         }
     }
 
-    // <<< MODIFIED: Logic to derive options from another column or own column >>>
+    // 3. Derive options from data (either own column or a specified source column)
     let actualColumnNameToScanForDataValues = colDef.name; // Default to own column
+    let isDerivingFromAnotherColumn = false;
+
     if (colDef.deriveOptionsFromColumn &&
         _editorConfigInstance && _editorConfigInstance.columns.some(c => c.name === colDef.deriveOptionsFromColumn)) {
         actualColumnNameToScanForDataValues = colDef.deriveOptionsFromColumn;
+        isDerivingFromAnotherColumn = true;
         console.log(`EDITOR_GRID: getOptionsForColumn for "${colDef.name}" - Deriving options from column "${actualColumnNameToScanForDataValues}".`);
     } else if (colDef.deriveOptionsFromColumn) {
         console.warn(`EDITOR_GRID: getOptionsForColumn for "${colDef.name}" - Specified deriveOptionsFromColumn "${colDef.deriveOptionsFromColumn}" is invalid or not found. Defaulting to self.`);
     }
 
     if (_csvDataInstance && Array.isArray(_csvDataInstance)) {
-        _csvDataInstance.forEach((row, currentRowIndex) => {
-            const cellData = row[actualColumnNameToScanForDataValues];
+        // Prepare config for checkCondition if sourceColumnFilter is used
+        let configForFilterCheck = null;
+        if (isDerivingFromAnotherColumn && colDef.sourceColumnFilter?.conditions?.length > 0) {
+            const headersForCheck = _editorConfigInstance.columns.map(c => c.name);
+            configForFilterCheck = {
+                csvHeaders: headersForCheck,
+                generalSettings: {
+                    trueValues: _viewerConfigInstance?.generalSettings?.trueValues || ["true", "yes", "1", "y", "x", "on", "âœ“"]
+                }
+            };
+        }
 
-            // Self-reference exclusion logic
-            if (colDef.deriveOptionsFromColumn && // Only apply if deriving
-                rowIndexBeingEdited !== -1 &&    // And we know which row is being edited
-                currentRowIndex === rowIndexBeingEdited) { // And this is the row being edited
-                // Skip adding this row's source value to the options for itself
-                console.log(`EDITOR_GRID: getOptionsForColumn - Skipping self-reference: Row ${rowIndexBeingEdited}'s value from "${actualColumnNameToScanForDataValues}" for column "${colDef.name}".`);
-                return; // Go to next row in _csvDataInstance.forEach
+        _csvDataInstance.forEach((sourceRow, currentRowIndex) => {
+            const valueFromSourceColumn = sourceRow[actualColumnNameToScanForDataValues];
+
+            // --- SELF-REFERENCE EXCLUSION (only if deriving from another column for THIS column's options) ---
+            if (isDerivingFromAnotherColumn && // Are we deriving for the current colDef?
+                colDef.name !== actualColumnNameToScanForDataValues && // Ensure we are not just scanning self due to fallback
+                rowIndexBeingEdited !== -1 &&    // Do we know which row is being edited?
+                currentRowIndex === rowIndexBeingEdited) { // Is the sourceRow the same as the row being edited?
+                // Yes, this is the source value from the row currently being edited. Skip it.
+                console.log(`EDITOR_GRID: getOptionsForColumn - Skipping self-reference: Row ${rowIndexBeingEdited}'s value "${valueFromSourceColumn}" from "${actualColumnNameToScanForDataValues}" for options of column "${colDef.name}".`);
+                return; // Continue to next sourceRow
             }
 
-            if (cellData !== undefined && cellData !== null) {
-                if (Array.isArray(cellData)) {
-                    cellData.forEach(item => addOption(String(item), String(item)));
+            // --- SOURCE COLUMN FILTER (only if deriving and filter is defined) ---
+            if (isDerivingFromAnotherColumn && colDef.sourceColumnFilter?.conditions?.length > 0 && configForFilterCheck) {
+                let matchesSourceFilter = true; // Assume it matches unless a condition fails (for AND) or none match (for OR)
+                const filterCriteria = colDef.sourceColumnFilter;
+                const logicIsOr = filterCriteria.logic && filterCriteria.logic.toUpperCase() === 'OR';
+
+                try {
+                    if (logicIsOr) {
+                        matchesSourceFilter = filterCriteria.conditions.some(condition =>
+                            checkCondition(sourceRow, condition, configForFilterCheck)
+                        );
+                    } else { // Default to AND
+                        matchesSourceFilter = filterCriteria.conditions.every(condition =>
+                            checkCondition(sourceRow, condition, configForFilterCheck)
+                        );
+                    }
+                } catch (e) {
+                    console.error(`EDITOR_GRID: getOptionsForColumn - Error checking sourceColumnFilter for source row ${currentRowIndex}:`, e, sourceRow, filterCriteria);
+                    matchesSourceFilter = false; // Exclude on error to be safe
+                }
+
+                if (!matchesSourceFilter) {
+                    // console.log(`EDITOR_GRID: getOptionsForColumn - Row ${currentRowIndex} value "${valueFromSourceColumn}" from "${actualColumnNameToScanForDataValues}" excluded by sourceColumnFilter for options of "${colDef.name}".`);
+                    return; // Value from this sourceRow is filtered out, continue to next sourceRow
+                }
+            }
+
+            // If we pass all filters (self-ref, sourceColumnFilter), add the value(s)
+            if (valueFromSourceColumn !== undefined && valueFromSourceColumn !== null) {
+                if (Array.isArray(valueFromSourceColumn)) { // If the source column itself is multi-value
+                    valueFromSourceColumn.forEach(item => addOption(String(item), String(item)));
                 } else {
-                    const valStr = String(cellData);
+                    const valStr = String(valueFromSourceColumn);
                     if (valStr.trim() !== '' || valStr === '') addOption(valStr, valStr);
                 }
             }
         });
     }
-    // <<< END MODIFIED >>>
 
+    // 4. Final processing (sorting, adding '(No Selection)')
     const finalOptions = [];
     optionsMap.forEach((label, value) => {
         const displayLabel = label.startsWith('(Value:') ? value : label;

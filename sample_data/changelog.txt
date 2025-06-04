@@ -1,4 +1,20 @@
-﻿--- Changes recorded at: 6/3/2025, 9:22:11 AM ---
+﻿--- Changes recorded at: 2025-06-04 10:24 ---
+--- Initiative: Merfolk Kingdom ---
+Modifications:
+  - Parent Entry changed from "(empty list)" to "[City of Aeridor]".
+
+--- Initiative: Ancient Dragon Accord ---
+Modifications:
+  - Parent Entry changed from "(empty list)" to "[Adventurer's Guild (Aeridor)]".
+
+--- Initiative: Dragon Spine Mountains ---
+Modifications:
+  - Parent Entry changed from "(empty list)" to "[Gloomfang Spiders]".
+
+
+--- End of Changes from 2025-06-04 10:24 ---
+
+--- Changes recorded at: 6/3/2025, 9:22:11 AM ---
 --- Initiative: Merfolk Kingdom ---
 Modifications:
   - Entry Type changed from "Faction" to "Flora/Fauna".

@@ -884,11 +884,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             const minutes = now.getMinutes().toString().padStart(2, '0');
             const seconds = now.getSeconds().toString().padStart(2, '0');
             const timestampForFile = `${year}${month}${day}_${hours}${minutes}${seconds}`;
-            const baseFilename = `edited_data_${timestampForFile}`;
+            const baseFilename = `_${timestampForFile}`;
 
             const outputOptions = currentEdConfig.csvOutputOptions || {};
             const csvString = generateCsvForExport(csvDataMain, currentEdConfig.columns, outputOptions);
-            const csvFilename = `${baseFilename}.csv`;
+            const csvFilename = `${currentEdConfig.csvDataFileName}${baseFilename}.csv`;
             if (csvString === null && (csvDataMain.length > 0 || (currentEdConfig.columns?.length > 0))) {
                 updateEditorStatus("Error during CSV generation for export. CSV not exported.", true);
             } else {
@@ -909,7 +909,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else if (currentEdConfig.cumulativeLogUrl) {
                 combinedLogContent += `\n--- Note: Previous cumulative log from ${currentEdConfig.cumulativeLogUrl} could not be loaded. ---\n`;
             }
-            const changelogFilename = `${baseFilename}_CHANGES.txt`;
+            const changelogFilename = `${currentEdConfig.cumulativeLogName}${baseFilename}.txt`;
             triggerDownload(combinedLogContent, changelogFilename, 'text/plain;charset=utf-8;');
             updateEditorStatus(`Changelog exported to ${changelogFilename}. Export process complete.`);
         });

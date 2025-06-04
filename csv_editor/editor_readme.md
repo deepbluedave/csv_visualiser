@@ -37,14 +37,16 @@ This section details the key capabilities of the CSV Editor.
     *   The list of choices available in `select` and `multi-select` popups is highly dynamic and aggregated from several sources to provide comprehensive and relevant options:
         1.  **Explicit Options:** Defined directly in the `columns[n].options` array within `editor_config.js`.
         2.  **Viewer Config Derivation:** If `columns[n].optionsSource: "viewerConfigValueMap"` is set, options are derived from the `valueMap` keys in the corresponding `indicatorStyles` section of the loaded `viewer_config.js`.
-        3.  **Cross-Column Derivation (New):** If `columns[n].deriveOptionsFromColumn: "SourceColumnName"` is set, options are populated from the unique values found in the specified `SourceColumnName` within the current dataset. This allows for creating lookup-style fields (e.g., selecting a "Parent Entry" from a list of all "Entry Names"). Self-references are automatically excluded (e.g., an entry cannot be its own parent if derived this way).
-        4.  **Existing Data Values:** All unique values currently present in the column being edited (or the derived source column) across all rows of the loaded CSV are automatically included as selectable options.
+        3.  **Cross-Column Derivation with Filtering (New):** If `columns[n].deriveOptionsFromColumn: "SourceColumnName"` is set, options are populated from the unique values found in the specified `SourceColumnName` within the current dataset.
+            *   Additionally, an optional `columns[n].sourceColumnFilter` (using standard filter criteria `{logic, conditions:[]}`) can be applied to these source rows. Only values from source rows matching this filter will be included in the picklist. This allows, for example, populating a "Parent" field only with "Entry Names" from rows that are themselves master items (e.g., their own "Parent" field is empty).
+            *   Self-references are automatically excluded (e.g., an entry cannot be its own parent if derived this way).
+        4.  **Existing Data Values:** All unique values currently present in the column being edited (or the derived source column, after its own filtering) across all rows of the loaded CSV are automatically included as selectable options.
 
 *   **Adaptive Popup UI for Selects:**
     *   The popup interface for `select` and `multi-select` fields adapts to the number of available options:
         *   For shorter lists, a simple list of radio buttons (for `select`) or checkboxes (for `multi-select`) is shown.
         *   For longer lists (typically 15 or more options), a search/filter input field appears at the top of the popup, allowing users to quickly narrow down the options.
-    *   For `multi-select` columns, if `columns[n].allowNewTags: true` is configured, users can type a new value into the popup's search bar and hit Enter to add it as a new custom tag, even if it wasn't in the original list of options.
+    *   For `multi-select` columns, if `columns[n].allowNewTags: true` is configured, users can type a new value into the popup's search bar and hit Enter to add it as a new custom tag, even if it wasn't in the original list of options. This capability remains even if `sourceColumnFilter` is used for initially populating the list from derived sources.
 
 *   **Data Operations:**
     *   **Add New Row:** A button allows users to append new, empty (or default-valued) rows to the dataset. If display filters are active, new rows (which typically default to "master" status if a parent-child relationship is defined) will appear if they match the current filter.
@@ -53,7 +55,9 @@ This section details the key capabilities of the CSV Editor.
 
 *   **CSV Import/Export:**
     *   **Import:** Users can load existing CSV data into the editor using a file input. This data populates the grid according to the loaded `editor_config.js` schema.
-    *   **Export:** The current state of the data grid (all rows and columns, regardless of any active display filters) can be exported back to a CSV file. The output format (delimiter, boolean representation) is configurable via `csvOutputOptions` in `editor_config.js`.
+    *   **Export:** The current state of the data grid (all rows and columns, regardless of any active display filter) can be exported back to a CSV file.
+        *   The output format (delimiter, boolean representation) is configurable via `csvOutputOptions` in `editor_config.js`.
+        *   **Configurable Export Filenames (New):** The base names for the exported CSV data file and the changelog text file can now be specified in `editor_config.js` (e.g., `csvDataFileName: "myProjectData"` and `cumulativeLogName: "myProjectChangelog"`). A timestamp will be appended to these base names.
 
 *   **Change Tracking & Cumulative Changelog:**
     *   The editor tracks changes (additions, deletions, modifications) made to the data relative to when the current CSV file was initially loaded.
@@ -62,15 +66,15 @@ This section details the key capabilities of the CSV Editor.
     *   **Cumulative Historical Log:**
         *   An optional `cumulativeLogUrl` can be specified in `editor_config.js` pointing to a plain text file containing previously recorded changelogs.
         *   If this URL is provided and the log is successfully fetched, any new changes detected in the current session are **prepended** to the content of this historical log when viewed in the modal or exported. This creates a running, single-file history.
-        *   The demarcation includes a timestamp for when the new changes were recorded.
-    *   **Changelog Export:** When the main CSV data is exported, the (potentially cumulative) changelog is also automatically generated and downloaded as a separate `.txt` file. The user is then responsible for managing this file and updating the `cumulativeLogUrl` for future sessions if they wish to maintain the single historical log.
+        *   The demarcation includes a timestamp (YYYY-MM-DD HH:MM) for when the new changes were recorded.
+    *   **Changelog Export:** When the main CSV data is exported, the (potentially cumulative) changelog is also automatically generated and downloaded as a separate `.txt` file using the configured base name (e.g., `myProjectChangelog_[timestamp].txt`). The user is then responsible for managing this file and updating the `cumulativeLogUrl` for future sessions if they wish to maintain the single historical log.
 
 *   **Visual Data Partitioning:**
     *   The `editorDisplaySettings.partitionBy` option in `editor_config.js` allows for visually separating the grid.
     *   Rows matching a defined filter criteria are grouped together and moved to the bottom of the displayed grid, often separated by a distinct visual line (e.g., "heavyLine").
     *   This reorders the actual `_csvDataInstance` for display purposes but does not hide any data from export.
 
-*   **CSS-Based Display Filtering (New):**
+*   **CSS-Based Display Filtering:**
     *   The `editorDisplaySettings.displayFilters` array in `editor_config.js` allows defining a set of named filters (e.g., "Show All," "Show Masters Only," "Show Active Items").
     *   These filters appear in a dropdown menu above the grid.
     *   When a filter is selected, rows that do *not* match its criteria are hidden using CSS (`display: none`).
@@ -130,6 +134,10 @@ window.editorConfig = {
     "cumulativeLogUrl": "./changelog_history.txt" // Optional, New
   },
 
+   "csvDataFileName": "myProject_EditedData", // Base name for exported CSV data
+   "cumulativeLogName": "myProject_ChangeLog",  // Base name for exported changelog text file
+   // Timestamp will be appended to these, e.g., myProject_EditedData_YYYYMMDD_HHMMSS.csv
+
   "changeTrackingPrimaryKeyColumn": "UniqueIDColumn", // Optional, Recommended
 
   "csvOutputOptions": {
@@ -181,6 +189,13 @@ window.editorConfig = {
       "optionsSource": "viewerConfigValueMap", // "viewerConfigValueMap" or "editorConfig" (default if `options` present)
       "options": ["Option A", { "value": "opt_b", "label": "Option B" }], // Explicit options
       "deriveOptionsFromColumn": "AnotherColumnName", // Optional, New: Derive options from values in this other column
+      "sourceColumnFilter": { // Optional filter for options derived via deriveOptionsFromColumn
+        "logic": "AND",
+        "conditions": [
+          { "column": "ColumnInSourceRow", "filterType": "valueIsEmpty" }
+          // e.g., only use 'AnotherColumnName' values from rows where 'ColumnInSourceRow' is empty
+        ]
+      },      
       "viewerStyleColumnName": "StatusColumnInViewerConfig", // For styling based on another column's viewer style
 
       // For type: "multi-select"
