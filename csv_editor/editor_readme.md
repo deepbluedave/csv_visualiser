@@ -124,6 +124,44 @@ This section details the key capabilities of the CSV Editor.
 
 The `editor_config.js` file exports a single object assigned to `window.editorConfig`.
 
+## Filter Condition Types (`filterType`)
+
+When defining filter conditions within a `filter` object (for tabs in the viewer, or for `partitionBy` / `displayFilters` / `sourceColumnFilter` in the editor), the `filterType` property specifies the kind of comparison to perform. The `filterValue` property provides the value(s) to compare against.
+
+Here are the available `filterType` options:
+
+| `filterType`      | Description                                                                 | `filterValue` Type             | Notes                                                                                                                               |
+|-------------------|-----------------------------------------------------------------------------|--------------------------------|-------------------------------------------------------------------------------------------------------------------------------------|
+| `valueEquals`     | Row's column value **equals** `filterValue`.                                | String, Number, Boolean        | Case-insensitive for strings. For booleans, it checks against the string representation (e.g., "TRUE", "false").                      |
+| `valueIsNot`      | Row's column value **does not equal** `filterValue`.                        | String, Number, Boolean        | Case-insensitive for strings.                                                                                                       |
+| `valueInList`     | Row's column value is **one of the values** in the `filterValue` array.     | Array of (String, Number)      | `filterValue` must be an array. Case-insensitive for string comparisons within the list.                                            |
+| `valueNotInList`  | Row's column value is **not one of the values** in the `filterValue` array. | Array of (String, Number)      | `filterValue` must be an array. Case-insensitive for string comparisons within the list.                                            |
+| `valueNotEmpty`   | Row's column value is **not empty** (not null, undefined, or an empty string). | `null` (not used)              | `filterValue` is not applicable for this type.                                                                                      |
+| `valueIsEmpty`    | Row's column value is **empty** (null, undefined, or an empty string).        | `null` (not used)              | `filterValue` is not applicable for this type.                                                                                      |
+| `booleanTrue`     | Row's column value evaluates to **true** (based on `generalSettings.trueValues`). | `null` (not used)              | `filterValue` is not applicable. Uses `isTruthy()` logic.                                                                           |
+| `booleanFalse`    | Row's column value evaluates to **false** (not true based on `generalSettings.trueValues`). | `null` (not used)              | `filterValue` is not applicable. Uses `!isTruthy()` logic.                                                                          |
+| `contains`        | Row's column value (as a string) **contains** the `filterValue` string.      | String                         | Case-insensitive substring match.                                                                                                   |
+| `doesNotContain`  | Row's column value (as a string) **does not contain** the `filterValue` string. | String                         | Case-insensitive substring match.                                                                                                   |
+| `catchAll`        | **(Summary View Sections Only)** Matches any row not matched by preceding sections in the same summary view. | `null` (not used)              | `filterValue` and `filterColumn` are not applicable. Must be the last section if used.                                               |
+
+**How it Works with Multi-Value Columns:**
+
+When a filter condition is applied to a column that has been configured as a multi-value column (e.g., "Tags" containing "Alpha, Beta, Gamma"):
+
+*   For `valueEquals`, `valueInList`, `contains`: The condition is met if **any** of the individual values within the cell's array match the criteria.
+    *   Example: If "Tags" is `["Alpha", "Beta"]` and `filterType: 'valueEquals'`, `filterValue: 'Beta'`, the row matches.
+*   For `valueIsNot`, `valueNotInList`, `doesNotContain`: The condition is met if **all** of the individual values within the cell's array meet the criteria (i.e., none of them cause a mismatch).
+    *   Example: If "Tags" is `["Alpha", "Beta"]` and `filterType: 'valueIsNot'`, `filterValue: 'Charlie'`, the row matches. If `filterValue: 'Beta'`, the row does *not* match.
+*   For `valueNotEmpty`: The condition is met if the array of values is not empty (i.e., contains at least one non-empty string after splitting and trimming).
+*   For `valueIsEmpty`: The condition is met if the array of values is empty or all its contained values are empty strings.
+*   For `booleanTrue` / `booleanFalse`: The condition is met if any/all values in the array evaluate to true/false respectively, based on the `logic` of the filter group (AND/OR). Typically, you'd use `valueEquals` or `valueInList` with specific boolean string representations for multi-value boolean-like fields.
+
+**Filter Logic (`logic` property):**
+
+When multiple conditions are provided in a `conditions` array, the `logic` property (at the same level as `conditions`) determines how they are combined:
+*   `"AND"` (default): All conditions must be true for the row to match.
+*   `"OR"`: At least one condition must be true for the row to match.
+
 ```javascript
 window.editorConfig = {
   "editorSchemaVersion": 1.0,
