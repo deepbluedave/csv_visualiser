@@ -25,6 +25,76 @@ document.addEventListener('DOMContentLoaded', async () => {
     displayFilterDropdown.style.marginLeft = '15px'; // Add some spacing
 
     // --- Helper Function Definitions ---
+
+    /**
+        * Generates a formatted UTC timestamp string.
+        * @param {Date} dateObject - The Date object to format.
+        * @param {boolean} [forFilename=false] - If true, formats as YYYYMMDD_HHMM. Otherwise, YYYY-MM-DD HH:MM.
+        * @returns {string} The formatted UTC timestamp string.
+        */
+    function getFormattedUTCTimestamp(dateObject, forFilename = false) {
+        const year = dateObject.getUTCFullYear();
+        const month = (dateObject.getUTCMonth() + 1).toString().padStart(2, '0');
+        const day = dateObject.getUTCDate().toString().padStart(2, '0');
+        const hours = dateObject.getUTCHours().toString().padStart(2, '0');
+        const minutes = dateObject.getUTCMinutes().toString().padStart(2, '0');
+
+        if (forFilename) {
+            return `${year}${month}${day}_${hours}${minutes}`;
+        } else {
+            return `${year}-${month}-${day} ${hours}:${minutes}`; // The " UTC" will be added where this is used for content
+        }
+    }
+
+    function getFormattedTimestampsForLog(dateObject) {
+        // 1. UTC (as before)
+        const yearUTC = dateObject.getUTCFullYear();
+        const monthUTC = (dateObject.getUTCMonth() + 1).toString().padStart(2, '0');
+        const dayUTC = dateObject.getUTCDate().toString().padStart(2, '0');
+        const hoursUTC = dateObject.getUTCHours().toString().padStart(2, '0');
+        const minutesUTC = dateObject.getUTCMinutes().toString().padStart(2, '0');
+        const utcString = `${yearUTC}-${monthUTC}-${dayUTC} ${hoursUTC}:${minutesUTC} UTC`;
+
+        // Helper to format time for a specific IANA zone
+        const formatForIANAZone = (ianaZoneName) => {
+            try {
+                const formatter = new Intl.DateTimeFormat('en-US', { // Using 'en-US' for consistent formatting parts
+                    timeZone: ianaZoneName,
+                    year: 'numeric', month: '2-digit', day: '2-digit',
+                    hour: '2-digit', minute: '2-digit', hour12: true // Or false for 24-hour
+                });
+                const parts = formatter.formatToParts(dateObject);
+
+                const y = parts.find(p => p.type === 'year')?.value;
+                const m = parts.find(p => p.type === 'month')?.value;
+                const d = parts.find(p => p.type === 'day')?.value;
+                const h = parts.find(p => p.type === 'hour')?.value;
+                const min = parts.find(p => p.type === 'minute')?.value;
+                const ap = parts.find(p => p.type === 'dayPeriod')?.value; // AM/PM
+
+                if (y && m && d && h && min && ap) {
+                    // We'll include the IANA zone name itself instead of trying to get an abbreviation
+                    return `${y}-${m}-${d} ${h}:${min} ${ap} (${ianaZoneName})`;
+                } else {
+                    // Fallback if parts are not as expected (less likely with 'en-US' locale)
+                    const fallbackFormatted = dateObject.toLocaleString('en-US', { timeZone: ianaZoneName, hour12: true, timeZoneName: 'short' });
+                    return `(${fallbackFormatted} - ${ianaZoneName})`;
+                }
+            } catch (e) {
+                console.warn(`Error formatting time for IANA zone ${ianaZoneName}:`, e);
+                return `(${ianaZoneName} not available)`;
+            }
+        };
+
+        // 2. New York Time (using IANA name)
+        const newYorkString = formatForIANAZone('America/New_York');
+
+        // 3. Phoenix Time (using IANA name)
+        const phoenixString = formatForIANAZone('America/Phoenix');
+
+        return { utc: utcString, newYork: newYorkString, phoenix: phoenixString };
+    }
+
     function updateEditorTitles(viewerConfig) {
         const baseTitle = viewerConfig?.generalSettings?.dashboardTitle || "CSV Data";
         const editorPageTitle = `${baseTitle} - Editor`;
@@ -57,7 +127,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.log(`EDITOR_APP: STATUS - ${message}`);
         }
         if (statusMessages) {
-            statusMessages.textContent = `Status: ${message}`;
+            statusMessages.textContent = `Action: ${message}`;
             statusMessages.style.color = isError ? 'red' : '#495057';
         }
     }
@@ -459,66 +529,83 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log("EDITOR_APP: attemptPreloadsFromEditorConfig - Finished.");
     }
 
+    /**
+         * Generates a textual digest of changes made to the CSV data compared to its initial state,
+         * formatted in a Markdown-friendly way that's also readable in a <pre> tag.
+         * @returns {string} A string detailing additions, deletions, and modifications.
+         */
     function generateChangeDigestOnDemand() {
-        console.log("EDITOR_APP: generateChangeDigestOnDemand - Generating change digest...");
+        console.log("EDITOR_APP: generateChangeDigestOnDemand - Generating Markdown change digest...");
         const editorCfg = getEditorConfig();
         if (!editorCfg || !editorCfg.columns || !initialCsvData) {
             console.warn("EDITOR_APP: generateChangeDigestOnDemand - Editor config, columns, or initial data not available.");
-            return "Cannot generate change digest: Configuration or initial data is missing.";
+            return "*Cannot generate change digest: Configuration or initial data is missing.*\n";
         }
+
         const pkColumnName = editorCfg.changeTrackingPrimaryKeyColumn;
         const columnDefs = editorCfg.columns;
-        let digest = "";
+        let digestLines = []; // Use an array to build lines, then join
         let changesFound = false;
+
         const currentDataMapByOriginalIndex = new Map();
         csvDataMain.forEach(row => {
             if (row._originalIndex !== -1 && row._originalIndex !== undefined) {
                 currentDataMapByOriginalIndex.set(row._originalIndex, row);
             }
         });
+
+        // 1. Detect Deletions
         initialCsvData.forEach(initialRow => {
             if (!currentDataMapByOriginalIndex.has(initialRow._originalIndex)) {
                 changesFound = true;
                 const identifier = pkColumnName ? (initialRow[pkColumnName] || `Original PK missing, Index: ${initialRow._originalIndex}`) : `Original Index: ${initialRow._originalIndex}`;
-                digest += `--- Initiative: ${identifier} ---\n`;
-                digest += `Status: DELETED\n`;
-                digest += "Original Values:\n";
+                digestLines.push(`### Initiative: ${identifier}`);
+                digestLines.push(`Action: DELETED - `);
+                digestLines.push("Original Values:");
                 columnDefs.forEach(colDef => {
-                    digest += `  - ${colDef.label || colDef.name}: ${formatValueForDigest(initialRow[colDef.name])}\n`;
+                    digestLines.push(`  - ${colDef.label || colDef.name}: ${formatValueForDigest(initialRow[colDef.name])}`);
                 });
-                digest += "\n";
+                digestLines.push(""); // Blank line for spacing
             }
         });
+
+        // 2. Detect Additions and Modifications
         csvDataMain.forEach(currentRow => {
             const originalRowIndex = currentRow._originalIndex;
-            if (originalRowIndex === -1 || originalRowIndex === undefined) {
+
+            if (originalRowIndex === -1 || originalRowIndex === undefined) { // New row
                 changesFound = true;
                 const identifier = pkColumnName ? (currentRow[pkColumnName] || "New Item (PK Missing/Not Set)") : `New Item (Added at runtime)`;
-                digest += `--- Initiative: ${identifier} ---\n`;
-                digest += `Status: ADDED\n`;
-                digest += "Values:\n";
+                digestLines.push(`### Initiative: ${identifier}`);
+                digestLines.push(`Action: ADDED - `);
+                digestLines.push("Values:");
                 columnDefs.forEach(colDef => {
-                    digest += `  - ${colDef.label || colDef.name}: ${formatValueForDigest(currentRow[colDef.name])}\n`;
+                    digestLines.push(`  - ${colDef.label || colDef.name}: ${formatValueForDigest(currentRow[colDef.name])}`);
                 });
-                digest += "\n";
-            } else {
+                digestLines.push(""); // Blank line
+            } else { // Existing row, check for modifications
                 const initialRow = initialCsvData.find(r => r._originalIndex === originalRowIndex);
                 if (!initialRow) {
                     console.warn(`EDITOR_APP: generateChangeDigestOnDemand - Consistency issue: Current row with _originalIndex ${originalRowIndex} not found in initialCsvData.`);
-                    return;
+                    return; // Skip this row if initial counterpart is missing
                 }
-                let rowModifications = [];
+
+                let rowModificationsList = [];
                 const currentActualPK = pkColumnName ? currentRow[pkColumnName] : null;
                 const originalActualPK = pkColumnName ? initialRow._originalPkValue : null;
+
                 if (pkColumnName && String(originalActualPK ?? '') !== String(currentActualPK ?? '')) {
-                    rowModifications.push(`  - Identifier (${pkColumnName}) changed from "${formatValueForDigest(originalActualPK)}" to "${formatValueForDigest(currentActualPK)}".\n`);
+                    rowModificationsList.push(`  - Identifier (${pkColumnName}): ${formatValueForDigest(originalActualPK)} --> ${formatValueForDigest(currentActualPK)}`);
                 }
+
                 columnDefs.forEach(colDef => {
                     const columnName = colDef.name;
-                    if (pkColumnName && columnName === pkColumnName) return;
+                    if (pkColumnName && columnName === pkColumnName) return; // PK change already handled
+
                     const initialValue = initialRow[columnName];
                     const currentValue = currentRow[columnName];
                     let valueChanged = false;
+
                     if (colDef.type === 'multi-select') {
                         const initialArray = Array.isArray(initialValue) ? initialValue.map(String).sort() : (initialValue ? [String(initialValue)].sort() : []);
                         const currentArray = Array.isArray(currentValue) ? currentValue.map(String).sort() : (currentValue ? [String(currentValue)].sort() : []);
@@ -530,28 +617,50 @@ document.addEventListener('DOMContentLoaded', async () => {
                             valueChanged = true;
                         }
                     }
+
                     if (valueChanged) {
-                        rowModifications.push(`  - ${colDef.label || columnName} changed from "${formatValueForDigest(initialValue)}" to "${formatValueForDigest(currentValue)}".\n`);
+                        rowModificationsList.push(`  - ${colDef.label || columnName}: ${formatValueForDigest(initialValue)} --> ${formatValueForDigest(currentValue)}`);
                     }
                 });
-                if (rowModifications.length > 0) {
+
+                if (rowModificationsList.length > 0) {
                     changesFound = true;
                     const displayIdentifier = pkColumnName ? (currentActualPK || originalActualPK || `Original Index: ${originalRowIndex}`) : `Original Index: ${originalRowIndex}`;
-                    digest += `--- Initiative: ${displayIdentifier} ---\n`;
+                    digestLines.push(`### Initiative: ${displayIdentifier}`);
                     if (pkColumnName && String(originalActualPK ?? '') !== String(currentActualPK ?? '') && String(originalActualPK ?? '') !== displayIdentifier) {
-                        digest += `(Originally identified as: ${formatValueForDigest(originalActualPK)})\n`;
+                        digestLines.push(`(Originally identified as: ${formatValueForDigest(originalActualPK)})`);
                     }
-                    digest += "Modifications:\n";
-                    rowModifications.forEach(change => digest += change);
-                    digest += "\n";
+                    digestLines.push(`Action: MODIFIED - `);
+                    digestLines.push("Modifications:");
+                    rowModificationsList.forEach(change => digestLines.push(change));
+                    digestLines.push(""); // Blank line
                 }
             }
         });
+
         if (!changesFound) {
-            digest = "No changes detected since the initial data load.";
+            return "*No changes detected since the initial data load.*\n";
         }
-        console.log("EDITOR_APP: generateChangeDigestOnDemand - Change digest generated.");
-        return digest;
+        console.log("EDITOR_APP: generateChangeDigestOnDemand - Markdown change digest generated.");
+        return digestLines.join("\n");
+    }
+
+    // formatValueForDigest and formatSingleValueForDigest remain unchanged from your previous complete file.
+    // They are assumed to be here or accessible.
+    function formatValueForDigest(value) {
+        if (value === null || value === undefined) return "(not set)";
+        if (value === '') return "(empty string)";
+        if (Array.isArray(value)) {
+            if (value.length === 0) return "(empty list)";
+            return `[${value.map(v => formatSingleValueForDigest(String(v))).join(', ')}]`;
+        }
+        return formatSingleValueForDigest(String(value));
+    }
+
+    function formatSingleValueForDigest(stringValue) {
+        // For plain text readability in <pre> and basic Markdown, escaping backticks is good.
+        // More complex Markdown injection is less likely if values don't usually contain Markdown.
+        return stringValue.replace(/`/g, '\\`'); // Escape backticks for potential code span issues
     }
 
     function formatValueForDigest(value) {
@@ -569,7 +678,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // <<< NEW FUNCTION: Populate Display Filter Dropdown >>>
-      function populateDisplayFilterDropdown() {
+    function populateDisplayFilterDropdown() {
         const editorCfg = getEditorConfig();
         const filters = editorCfg?.editorDisplaySettings?.displayFilters;
         const filterContainer = document.getElementById('displayFilterContainer');
@@ -604,7 +713,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 displayFilterDropdown.options[0].selected = true;
                 activeDisplayFilterId = displayFilterDropdown.options[0].value;
             }
-            
+
             // Ensure the dropdown is only added to the container once
             // And only if it's not already there (e.g. if this function is called multiple times)
             if (!filterContainer.contains(displayFilterDropdown)) {
@@ -618,7 +727,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             activeDisplayFilterId = null;
             // If the dropdown was previously in the container, remove it or hide it
             if (filterContainer.contains(displayFilterDropdown)) {
-                 filterContainer.removeChild(displayFilterDropdown); // Or displayFilterDropdown.style.display = 'none';
+                filterContainer.removeChild(displayFilterDropdown); // Or displayFilterDropdown.style.display = 'none';
             }
             displayFilterDropdown.style.display = 'none';
         }
@@ -876,19 +985,23 @@ document.addEventListener('DOMContentLoaded', async () => {
                 updateEditorStatus("Cannot export: Config or data not loaded.", true); return;
             }
             updateEditorStatus("Generating export files...");
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = (now.getMonth() + 1).toString().padStart(2, '0');
-            const day = now.getDate().toString().padStart(2, '0');
-            const hours = now.getHours().toString().padStart(2, '0');
-            const minutes = now.getMinutes().toString().padStart(2, '0');
-            const seconds = now.getSeconds().toString().padStart(2, '0');
-            const timestampForFile = `${year}${month}${day}_${hours}${minutes}${seconds}`;
-            const baseFilename = `_${timestampForFile}`;
 
+            const now = new Date(); // Use a single 'now' for all timestamps
+            const timestampForFilename = getFormattedUTCTimestamp(now, true); // For YYYYMMDD_HHMM filename part
+
+            // <<< MODIFIED: Use new timestamp function for log content >>>
+            const contentTimestamps = getFormattedTimestampsForLog(now);
+            const newChangesTimestampForContent = `${contentTimestamps.utc} | ${contentTimestamps.newYork} | ${contentTimestamps.phoenix}`;
+            // <<< END MODIFIED >>>
+
+            const baseFilenameSuffix = `_${timestampForFilename}_UTC`; // Suffix for filenames
+
+            // CSV Export
             const outputOptions = currentEdConfig.csvOutputOptions || {};
             const csvString = generateCsvForExport(csvDataMain, currentEdConfig.columns, outputOptions);
-            const csvFilename = `${currentEdConfig.csvDataFileName}${baseFilename}.csv`;
+            const csvFileBase = currentEdConfig.csvDataFileName || "edited_data";
+            const csvFilename = `${csvFileBase}${baseFilenameSuffix}.csv`;
+
             if (csvString === null && (csvDataMain.length > 0 || (currentEdConfig.columns?.length > 0))) {
                 updateEditorStatus("Error during CSV generation for export. CSV not exported.", true);
             } else {
@@ -896,21 +1009,27 @@ document.addEventListener('DOMContentLoaded', async () => {
                 updateEditorStatus(`Data exported to ${csvFilename}.`);
             }
 
-            let newChangesDigest = "No new changes detected since last CSV load.";
+            // Changelog Export
+            let newChangesDigest = "*No new changes detected since last CSV load.*\n";
             if (initialCsvData.length > 0) {
                 newChangesDigest = generateChangeDigestOnDemand();
             }
-            const newChangesTimestamp = `${year}-${month}-${day} ${hours}:${minutes}`;
-            let combinedLogContent = `--- Changes recorded at: ${newChangesTimestamp} ---\n`;
-            combinedLogContent += newChangesDigest + "\n";
-            combinedLogContent += `--- End of Changes from ${newChangesTimestamp} ---\n\n`;
+
+            // Construct Markdown changelog content using the new timestamp format
+            let combinedLogContent = `## Changes Recorded: ${newChangesTimestampForContent}\n\n`;
+            combinedLogContent += newChangesDigest + "\n\n";
+            combinedLogContent += "---\n\n";
+
             if (cachedCumulativeLogContent !== null) {
                 combinedLogContent += cachedCumulativeLogContent;
             } else if (currentEdConfig.cumulativeLogUrl) {
-                combinedLogContent += `\n--- Note: Previous cumulative log from ${currentEdConfig.cumulativeLogUrl} could not be loaded. ---\n`;
+                combinedLogContent += `*Note: Previous cumulative log from ${currentEdConfig.cumulativeLogUrl} could not be loaded.*\n`;
             }
-            const changelogFilename = `${currentEdConfig.cumulativeLogName}${baseFilename}.txt`;
-            triggerDownload(combinedLogContent, changelogFilename, 'text/plain;charset=utf-8;');
+
+            const changelogFileBase = currentEdConfig.cumulativeLogName || `${csvFileBase}_CHANGES`;
+            const changelogFilename = `${changelogFileBase}${baseFilenameSuffix}.md`;
+
+            triggerDownload(combinedLogContent, changelogFilename, 'text/markdown;charset=utf-8;');
             updateEditorStatus(`Changelog exported to ${changelogFilename}. Export process complete.`);
         });
     }
@@ -923,29 +1042,34 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
             updateEditorStatus("Generating change digest for viewing...");
-            let newChangesDigest = "No new changes detected since last CSV load.";
+
+            let newChangesDigest = "*No new changes detected since last CSV load.*\n";
             if (initialCsvData.length > 0) {
                 newChangesDigest = generateChangeDigestOnDemand();
             }
+
+            // <<< MODIFIED: Use new timestamp function for log content >>>
             const nowForView = new Date();
-            const year = nowForView.getFullYear();
-            const month = (nowForView.getMonth() + 1).toString().padStart(2, '0');
-            const day = nowForView.getDate().toString().padStart(2, '0');
-            const hours = nowForView.getHours().toString().padStart(2, '0');
-            const minutes = nowForView.getMinutes().toString().padStart(2, '0');
-            const newChangesTimestamp = `${year}-${month}-${day} ${hours}:${minutes}`;
-            let combinedDigestText = `--- Changes recorded at: ${newChangesTimestamp} ---\n`;
-            combinedDigestText += newChangesDigest + "\n";
-            combinedDigestText += `--- End of Changes from ${newChangesTimestamp} ---\n\n`;
+            const contentTimestamps = getFormattedTimestampsForLog(nowForView);
+            const newChangesTimestampForContent = `${contentTimestamps.utc} | ${contentTimestamps.newYork} | ${contentTimestamps.phoenix}`;
+            // <<< END MODIFIED >>>
+
+            // Construct Markdown changelog content for modal
+            let combinedDigestText = `## Changes Recorded: ${newChangesTimestampForContent}\n\n`;
+            combinedDigestText += newChangesDigest + "\n\n";
+            combinedDigestText += "---\n\n";
+
             if (cachedCumulativeLogContent !== null) {
                 combinedDigestText += cachedCumulativeLogContent;
             } else if (editorCfg.cumulativeLogUrl) {
-                combinedDigestText += `\n--- Note: Previous cumulative log from ${editorCfg.cumulativeLogUrl} could not be loaded. ---\n`;
+                combinedDigestText += `*Note: Previous cumulative log from ${editorCfg.cumulativeLogUrl} could not be loaded.*\n`;
             }
+
             changeDigestOutput.textContent = combinedDigestText;
             changesModal.style.display = 'block';
             updateEditorStatus("Change digest displayed in modal.");
         });
+
         if (closeChangesModalBtn) {
             closeChangesModalBtn.onclick = function () {
                 changesModal.style.display = "none";
