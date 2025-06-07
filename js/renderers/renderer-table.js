@@ -110,7 +110,7 @@ function renderTable(filteredData, tabConfig, globalConfig, targetElement, showM
                             fullUrl = cellValue;
                         }
                         if (fullUrl) {
-                            linksHtmlArray.push(`<a href="${fullUrl}" target="_blank" rel="noopener noreferrer" title="Open Link: ${fullUrl}" class="table-link-icon">ðŸ”—</a>`);
+                            linksHtmlArray.push(`<a href="${fullUrl}" target="_blank" rel="noopener noreferrer" title="Open Link: ${fullUrl}" class="table-link-icon">🔗</a>`);
                             linksTitleArray.push(`Open Link: ${fullUrl}`);
                         } else if (cellValue) {
                             linksHtmlArray.push(`<span class="cell-text">${cellValue}</span>`);

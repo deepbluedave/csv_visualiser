@@ -72,7 +72,7 @@ This object contains global settings that apply to the entire dashboard.
 ### `trueValues`
 *   **Type:** `Array<String>`
 *   **Description:** A list of strings that should be interpreted as "true" when performing boolean checks (e.g., for `booleanTrue` / `booleanFalse` filters or for `isTruthy` checks in icon styling). Comparisons are case-insensitive.
-*   **Example:** `"trueValues": ["TRUE", "true", "Yes", "1", "Cursed", "Active", "Done", "âœ“"]`
+*   **Example:** `"trueValues": ["TRUE", "true", "Yes", "1", "Cursed", "Active", "Done", "✓"]`
 
 ### `csvDelimiter`
 *   **Type:** `String`
@@ -88,7 +88,7 @@ This object contains global settings that apply to the entire dashboard.
 
 ### `linkColumns`
 *   **Type:** `Array<String>`
-*   **Description:** A list of column header names whose values should be rendered as clickable links (typically with a ðŸ”— icon).
+*   **Description:** A list of column header names whose values should be rendered as clickable links (typically with a 🔗 icon).
     *   If the cell value is a full URL (starts with `http://` or `https://`), it will be used directly.
     *   If the cell value is an ID, and a corresponding prefix is defined in `linkPrefixes`, a full URL will be constructed.
 *   **Example:** `"linkColumns": ["WikiLink", "ItemID", "ReferenceDocument"]`
