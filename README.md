@@ -17,6 +17,7 @@ A flexible, client-side dashboard generator that visualizes data from a CSV file
     *   **Summary View:** Group data hierarchically (e.g., by Region) and display within customizable sections based on filter criteria (e.g., High Priority items). Configurable item sorting (`itemSortBy`), with fallback to defaults.
     *   **Counts View:** Display aggregated counts of items based on filter criteria, grouped by a chosen column. Supports predefined counters and dynamic counting of all unique values in a specified column (`filterType: 'countAllValues'`).
     *   **Graph View:** Visualize relationships using a hub-and-spoke model powered by Vis.js. Connect primary nodes (e.g., Regions) to category nodes (e.g., Entry Types, Statuses). Configurable node/edge appearance and layout.
+    *   **Table Hierarchy View:** Display parent/child relationships in an indented table. Requires `idColumn` and `parentColumn` and supports the same settings as Table (displayColumns, columnWidths, headerOrientations, columnLabels, sortBy).
 *   **Highly Configurable Styling:**
     *   Define custom styles (background color, text color, icons, text overrides) for specific values using `indicatorStyles`.
     *   Use simple icons or emoji for boolean flags or categorical data.
@@ -166,6 +167,7 @@ Array defining the dashboard views.
     *   `displayColumns`: (Array<String>) Headers to show, in order.
     *   `columnWidths`: (Optional Object) Maps header names (or `'default'`) to CSS widths (e.g., `'150px'`, `'10%'`).
     *   `headerOrientations`: (Optional Object) Maps header names (or `'default'`) to `'horizontal'` or `'vertical'` (default).
+    *   `columnLabels`: (Optional Object) Map header names to friendlier labels displayed in the header. *Example: `{ ItemID: 'ID', WorkItem: 'Title' }`*
     *   `sortBy`: (Optional Array<Object>) Defines initial sort order. **If omitted, falls back to `generalSettings.defaultItemSortBy`.**
         *   `column`: (String) Header name to sort by.
         *   `direction`: (String) `'asc'`, `'desc'`, or `'custom'`.
@@ -213,6 +215,26 @@ Array defining the dashboard views.
     *   `layoutEngine`: (Optional String) Layout algorithm (e.g., `'forceDirected'` (default), `'hierarchical'`).
     *   `physicsEnabled`: (Optional Boolean) Enable/disable physics simulation (default: `true`). Often set `false` for hierarchical layouts.
     *   `nodeShape`: (Optional String) Default shape for primary nodes (e.g., `'ellipse'`, `'dot'`, `'box'`).
+
+*   **`type: 'table-hierarchy'` Specific `config`:**
+    *   `idColumn`: (String) Column containing unique IDs.
+    *   `parentColumn`: (String) Column referencing the parent ID.
+    *   Supports same options as Table (`displayColumns`, `columnWidths`, `headerOrientations`, `columnLabels`, `sortBy`).
+    
+    Example:
+```javascript
+{
+  id: "work-breakdown-structure",
+  title: "🗂️ WBS View",
+  type: "table-hierarchy",
+  config: {
+    idColumn: "ItemID",
+    parentColumn: "ParentItemID",
+    displayColumns: ["WorkItem", "WorkItemType", "Status"],
+    columnLabels: { ItemID: "ID", ParentItemID: "Parent", WorkItem: "Title" }
+  }
+}
+```
 
 ## Interaction Features
 
