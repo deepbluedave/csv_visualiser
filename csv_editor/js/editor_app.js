@@ -1070,7 +1070,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // Construct Markdown changelog content using the new timestamp format
             let combinedLogContent = `## Changes Recorded: ${newChangesTimestampForContent}\n\n`;
-            const user = getConfluenceUser();
+            const user = (typeof getConfluenceUser === 'function') ? getConfluenceUser() : null;
             if (user) {
                 combinedLogContent += `Editor - User ID: ${user.id} | UserName: ${user.name}\n\n`;
             } else {
@@ -1112,7 +1112,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (initialCsvData.length > 0) changesDigest = generateChangeDigestOnDemand();
 
                 let combined = `## Changes Recorded: ${newChangesStamp}\n\n` + changesDigest + "\n\n";
-                const user = getConfluenceUser();
+                const user = (typeof getConfluenceUser === 'function') ? getConfluenceUser() : null;
                 if (user) {
                     combined += `Editor - User ID: ${user.id} | UserName: ${user.name}\n\n`;
                 } else {
@@ -1158,7 +1158,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // Construct Markdown changelog content for modal
             let combinedDigestText = `## Changes Recorded: ${newChangesTimestampForContent}\n\n`;
-            const user = getConfluenceUser();
+            const user = (typeof getConfluenceUser === 'function') ? getConfluenceUser() : null;
             if (user) {
                 combinedDigestText += `Editor - User ID: ${user.id} | UserName: ${user.name}\n\n`;
             } else {
