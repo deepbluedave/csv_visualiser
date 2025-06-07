@@ -1,51 +1,31 @@
-// ================================================================
-// File: csv_editor/js/editor_data_grid.js
-// ================================================================
+// --- START OF FILE csv_editor/js/editor_data_grid.js ---
 
-// Module-level state variables for the data grid
-let _csvDataInstance = [];        // Reference to the main CSV data array from editor_app.js
-let _editorConfigInstance = null; // Reference to the editor configuration
-let _viewerConfigInstance = null; // Reference to the viewer configuration
-let _activePopup = null;          // Holds the currently active custom select popup element, if any
+// Module-level state variables
+let _csvDataInstance = [];
+let _editorConfigInstance = null;
+let _viewerConfigInstance = null;
+let _activePopup = null;
 
-/**
- * Initializes or updates the local references to shared data and configurations.
- * Called from editor_app.js to synchronize state.
- * @param {Array<Object>} csvDataArrayRef - Reference to the main CSV data array.
- * @param {Object} editorConfigRef - Reference to the editor configuration.
- * @param {Object} viewerConfigRef - Reference to the viewer configuration.
- */
 function initDataGridReferences(csvDataArrayRef, editorConfigRef, viewerConfigRef) {
-    console.log(`EDITOR_GRID: initDataGridReferences - Assigning _csvDataInstance. Passed array length: ${csvDataArrayRef ? csvDataArrayRef.length : 'undefined'}`);
     _csvDataInstance = csvDataArrayRef;
     _editorConfigInstance = editorConfigRef;
     _viewerConfigInstance = viewerConfigRef;
     console.log("EDITOR_GRID: initDataGridReferences - DataGrid's local references updated.");
 }
 
-/**
- * Renders the header row (thead) of the grid based on column definitions.
- * @param {Array<Object>} columnDefinitions - Array of column definition objects from the editor config.
- */
 function renderGridStructure(columnDefinitions) {
-    const { editorGridThead } = editorDomElements; // Assumes editorDomElements is globally available
-    if (!editorGridThead) {
-        console.error("EDITOR_GRID: renderGridStructure - Table header (thead) element not found in DOM.");
-        return;
-    }
-    editorGridThead.innerHTML = ''; // Clear existing header
-
+    const { editorGridThead } = editorDomElements;
+    if (!editorGridThead) { console.error("EDITOR_GRID: renderGridStructure - thead not found."); return; }
+    editorGridThead.innerHTML = '';
     if (!columnDefinitions || columnDefinitions.length === 0) {
-        console.warn("EDITOR_GRID: renderGridStructure - No column definitions provided. Grid header cannot be fully rendered.");
         const tr = document.createElement('tr');
         const th = document.createElement('th');
         th.textContent = "Load Editor Config to define columns.";
-        th.colSpan = 10; // Arbitrary colspan
+        th.colSpan = 10;
         tr.appendChild(th);
         editorGridThead.appendChild(tr);
         return;
     }
-
     const tr = document.createElement('tr');
     columnDefinitions.forEach((colDef, index) => {
         const th = document.createElement('th');
@@ -53,22 +33,17 @@ function renderGridStructure(columnDefinitions) {
         headerTextSpan.className = 'header-text-content';
         headerTextSpan.textContent = colDef.label || colDef.name;
         th.appendChild(headerTextSpan);
-        th.title = `CSV Header: ${colDef.name}`; // Tooltip for original header name
-
-        const orientation = colDef.orientation || 'horizontal'; // Default to horizontal
+        th.title = `CSV Header: ${colDef.name}`;
+        const orientation = colDef.orientation || 'horizontal';
         th.classList.add(`header-${orientation}`);
-
         if (colDef.columnWidth) {
             th.style.width = colDef.columnWidth;
         } else {
             th.style.width = (orientation === 'vertical') ? '50px' : '150px';
         }
-        if (index === 0) {
-            th.classList.add('sticky-col', 'first-col');
-        }
+        if (index === 0) { th.classList.add('sticky-col', 'first-col'); }
         tr.appendChild(th);
     });
-
     const thActions = document.createElement('th');
     thActions.textContent = "Actions";
     thActions.style.width = "80px";
@@ -77,96 +52,104 @@ function renderGridStructure(columnDefinitions) {
     console.log("EDITOR_GRID: renderGridStructure - Grid structure (headers) rendered.");
 }
 
-/**
- * Clears the content (tbody) of the grid and removes any active popups.
- */
 function clearGridContent() {
     const { editorGridTbody } = editorDomElements;
-    if (editorGridTbody) {
-        editorGridTbody.innerHTML = '';
-    }
-    if (_activePopup) {
-        _activePopup.remove();
-        _activePopup = null;
-    }
+    if (editorGridTbody) { editorGridTbody.innerHTML = ''; }
+    if (_activePopup) { _activePopup.remove(); _activePopup = null; }
     console.log("EDITOR_GRID: clearGridContent - Grid content (tbody) and active popups cleared.");
 }
 
-/**
- * Clears the entire grid structure (thead and tbody).
- */
 function clearGridStructure() {
     const { editorGridThead } = editorDomElements;
-    if (editorGridThead) {
-        editorGridThead.innerHTML = '';
-    }
+    if (editorGridThead) { editorGridThead.innerHTML = ''; }
     clearGridContent();
-    console.log("EDITOR_GRID: clearGridStructure - Entire grid structure (thead and tbody) cleared.");
+    console.log("EDITOR_GRID: clearGridStructure - Entire grid structure cleared.");
 }
 
-/**
- * Validates a cell's value based on its column definition (required, regex).
- * Applies/removes 'cell-error' class and updates title accordingly.
- * @param {HTMLTableCellElement} td - The table cell element.
- * @param {*} value - The current value of the cell.
- * @param {Object} colDef - The column definition object.
- * @returns {boolean} True if the cell value is valid, false otherwise.
- */
 function validateCell(td, value, colDef) {
     let isValid = true;
     td.classList.remove('cell-error');
     const originalTitle = `CSV Header: ${colDef.name}`;
-
     if (colDef.required) {
         let isEmpty = false;
         if (colDef.type === 'multi-select') {
             isEmpty = !Array.isArray(value) || value.length === 0;
         } else {
             isEmpty = value === null || value === undefined || String(value).trim() === '';
-            if (colDef.type === 'select' && value === '') {
-                isEmpty = true;
-            }
+            if (colDef.type === 'select' && value === '') isEmpty = true;
         }
         if (isEmpty) {
             isValid = false;
             td.title = `${colDef.label || colDef.name} is required.`;
         }
     }
-
     if (isValid && colDef.validationRegex && String(value).trim() !== '' &&
         !['select', 'multi-select', 'checkbox', 'date', 'number'].includes(colDef.type)) {
         try {
-            const regex = new RegExp(colDef.validationRegex);
-            if (!regex.test(String(value))) {
+            if (!new RegExp(colDef.validationRegex).test(String(value))) {
                 isValid = false;
-                td.title = `${colDef.label || colDef.name} does not match pattern: ${colDef.validationRegex}. Current: "${value}"`;
+                td.title = `${colDef.label || colDef.name} does not match pattern.`;
             }
         } catch (e) {
-            console.warn(`EDITOR_GRID: validateCell - Invalid regex in editor_config for column "${colDef.name}": ${colDef.validationRegex}`, e);
+            console.warn(`Invalid regex for column "${colDef.name}": ${colDef.validationRegex}`, e);
         }
     }
-
-    if (!isValid) {
-        td.classList.add('cell-error');
-    } else {
-        if (td.title.startsWith(colDef.label || colDef.name) && (td.title.includes("is required") || td.title.includes("does not match pattern"))) {
-            td.title = originalTitle;
-        } else if (!td.title && colDef.name) {
-            td.title = originalTitle;
-        }
-    }
+    if (!isValid) { td.classList.add('cell-error'); }
+    else if (td.title !== originalTitle) { td.title = originalTitle; }
     return isValid;
 }
 
 /**
  * Gets the styled HTML display for a cell value based on viewer configuration and column definition.
+ * Handles lookups for relational columns, respecting the 'styleAs' property from viewer config.
  * @param {*} cellValue - The value of the cell.
  * @param {Object} colDef - The column definition object.
  * @returns {string} HTML string for the cell's content.
  */
 function getStyledCellDisplay(cellValue, colDef) {
-    const viewerStyleColName = colDef.viewerStyleColumnName || colDef.name;
     const viewerCfg = _viewerConfigInstance || { generalSettings: {}, indicatorStyles: {} };
+    const derivationConfig = colDef.deriveOptionsFrom;
+
+    // --- Logic for relational "lookup" display ---
+    if (derivationConfig && derivationConfig.column && derivationConfig.labelColumn) {
+        // This column's value is an ID (or array of IDs) that needs to be looked up.
+        const idsToLookup = Array.isArray(cellValue) ? cellValue : [cellValue];
+        const displayValues = [];
+
+        idsToLookup.forEach(id => {
+            if (id === null || typeof id === 'undefined' || String(id).trim() === '') return;
+            
+            const linkedItem = _csvDataInstance.find(row => String(row[derivationConfig.column]) === String(id));
+            
+            if (linkedItem) {
+                const displayLabel = linkedItem[derivationConfig.labelColumn] || `(Label missing for ${id})`;
+                
+                // --- CORRECTED LOGIC: Check viewer config for how to style the lookup ---
+                const viewerStyleColName = colDef.viewerStyleColumnName || colDef.name;
+                const styleConfig = viewerCfg.indicatorStyles?.[viewerStyleColName];
+
+                if (styleConfig && styleConfig.type === 'lookup' && styleConfig.styleAs === 'tag') {
+                    // If explicitly styled as a tag in the viewer config
+                    const tagStyle = styleConfig.defaultStyle || { bgColor: '#e9ecef', textColor: '#495057' };
+                    displayValues.push(`<span class="editor-cell-mini-tag" style="background-color:${tagStyle.bgColor}; color:${tagStyle.textColor}; border-color:${tagStyle.borderColor || tagStyle.bgColor};" title="ID: ${id}">${displayLabel}</span>`);
+                } else {
+                    // Default to plain text for lookups
+                    displayValues.push(`<span class="cell-text" title="ID: ${id}">${displayLabel}</span>`);
+                }
+                // --- END CORRECTION ---
+
+            } else {
+                // The stored ID doesn't exist in the data (dangling reference)
+                displayValues.push(`<span class="editor-cell-mini-tag cell-error" title="ID not found: ${id}">${id} (Not Found)</span>`);
+            }
+        });
+
+        // Join multiple parent tags/texts with a space or other separator
+        return displayValues.join(' ');
+    }
+
+    // --- Fallback to existing indicator/styling logic for all other non-relational columns ---
+    const viewerStyleColName = colDef.viewerStyleColumnName || colDef.name;
     const indicatorStyleConf = viewerCfg.indicatorStyles?.[viewerStyleColName];
     const isLinkColInViewer = viewerCfg.generalSettings?.linkColumns?.includes(colDef.name);
 
@@ -180,12 +163,12 @@ function getStyledCellDisplay(cellValue, colDef) {
                 const valStrLower = valStr.toLowerCase();
                 let mapping = indicatorStyleConf.valueMap[valStr] ?? indicatorStyleConf.valueMap[valStrLower];
                 if (mapping === undefined) {
-                    if (valStr === '' && indicatorStyleConf.valueMap.hasOwnProperty('')) { mapping = indicatorStyleConf.valueMap['']; }
-                    else if (isTruthy(cellValue, viewerCfg) && indicatorStyleConf.valueMap.hasOwnProperty('true')) { mapping = indicatorStyleConf.valueMap['true']; }
-                    else if (!isTruthy(cellValue, viewerCfg) && indicatorStyleConf.valueMap.hasOwnProperty('false')) { mapping = indicatorStyleConf.valueMap['false']; }
+                    if (valStr === '' && indicatorStyleConf.valueMap.hasOwnProperty('')) mapping = indicatorStyleConf.valueMap[''];
+                    else if (isTruthy(cellValue, viewerCfg) && indicatorStyleConf.valueMap.hasOwnProperty('true')) mapping = indicatorStyleConf.valueMap['true'];
+                    else if (!isTruthy(cellValue, viewerCfg) && indicatorStyleConf.valueMap.hasOwnProperty('false')) mapping = indicatorStyleConf.valueMap['false'];
                 }
-                if (mapping === undefined) { mapping = indicatorStyleConf.valueMap['default']; }
-                if (mapping && mapping.value !== undefined) { iconToShow = mapping.value; }
+                if (mapping === undefined) mapping = indicatorStyleConf.valueMap['default'];
+                if (mapping && mapping.value !== undefined) iconToShow = mapping.value;
             }
             if (colDef.type === 'checkbox' && iconToShow === String(cellValue) && (String(cellValue).toUpperCase() === "TRUE" || String(cellValue).toUpperCase() === "FALSE")) {
                  return '';
@@ -205,7 +188,7 @@ function getStyledCellDisplay(cellValue, colDef) {
     if (isLinkColInViewer && colDef.type !== 'checkbox') {
         const urlValueStr = String(cellValue ?? '');
         if (urlValueStr.trim() !== '') {
-            return `<span class="cell-url-display-span" title="${urlValueStr}"><a style="text-decoration:none" href="${urlValueStr}" target="_blank">🔗</a>${urlValueStr}</span>`;
+            return `<span class="cell-url-display-span" title="${urlValueStr}">ðŸ”—${urlValueStr}</span>`;
         } else { return ''; }
     }
 
@@ -213,6 +196,7 @@ function getStyledCellDisplay(cellValue, colDef) {
         if (cellValue.length === 0) return '';
         return cellValue.map(v => `<span class="editor-cell-mini-tag">${String(v ?? '')}</span>`).join(' ');
     }
+
     if (colDef.type === 'checkbox') { return ''; }
     if (colDef.type === 'select' && cellValue === '') { return '(No Selection)'; }
 
@@ -223,28 +207,14 @@ function getStyledCellDisplay(cellValue, colDef) {
     return String(cellValue ?? '');
 }
 
-/**
- * Renders the data rows (tbody) of the grid.
- */
 function renderGridData() {
     const { editorGridTbody } = editorDomElements;
-    if (!editorGridTbody) { console.error("EDITOR_GRID: renderGridData - Table body (tbody) element not found."); return; }
+    if (!editorGridTbody) { console.error("EDITOR_GRID: renderGridData - tbody not found."); return; }
     clearGridContent();
-
     if (!_editorConfigInstance || !_editorConfigInstance.columns || _editorConfigInstance.columns.length === 0) {
-        console.warn("EDITOR_GRID: renderGridData - No column definitions from editor config. Cannot render data rows.");
-        const { editorGridThead } = editorDomElements;
-        if (editorGridThead && editorGridThead.innerHTML === '') {
-            const tr = editorGridTbody.insertRow();
-            const td = tr.insertCell();
-            td.colSpan = 1;
-            td.textContent = "Editor configuration not loaded. Please load an editor_config.js file.";
-            td.style.textAlign = "center"; td.style.fontStyle = "italic"; td.style.padding = "20px";
-        }
         return;
     }
     const columnDefinitions = _editorConfigInstance.columns;
-
     if (!_csvDataInstance || _csvDataInstance.length === 0) {
         const tr = editorGridTbody.insertRow();
         const td = tr.insertCell();
@@ -253,24 +223,18 @@ function renderGridData() {
         td.style.textAlign = "center"; td.style.fontStyle = "italic"; td.style.padding = "20px";
         return;
     }
-
     const editorCfg = _editorConfigInstance;
     const viewerCfg = _viewerConfigInstance;
     const partitionConfigSettings = editorCfg?.editorDisplaySettings?.partitionBy;
-    const isPartitionActive = partitionConfigSettings?.enabled &&
-        partitionConfigSettings?.filter?.conditions?.length > 0;
+    const isPartitionActive = partitionConfigSettings?.enabled && partitionConfigSettings?.filter?.conditions?.length > 0;
     let previousItemMetPartitionCriteria = null;
-
     _csvDataInstance.forEach((row, rowIndex) => {
         const tr = editorGridTbody.insertRow();
         tr.dataset.rowIndex = rowIndex;
-
         if (isPartitionActive) {
             const effectiveHeadersForSeparatorCheck = editorCfg.columns.map(c => c.name);
             const configForSeparatorCheck = {
-                generalSettings: {
-                    trueValues: viewerCfg?.generalSettings?.trueValues || ["true", "yes", "1", "y", "x", "on", "âœ“"]
-                },
+                generalSettings: { trueValues: viewerCfg?.generalSettings?.trueValues || [] },
                 csvHeaders: effectiveHeadersForSeparatorCheck
             };
             let currentItemMeetsPartitionCriteria = false;
@@ -278,18 +242,12 @@ function renderGridData() {
                 const filterGroup = partitionConfigSettings.filter;
                 if (filterGroup.logic && filterGroup.conditions && filterGroup.conditions.length > 0) {
                     if (filterGroup.logic.toUpperCase() === 'OR') {
-                        currentItemMeetsPartitionCriteria = filterGroup.conditions.some(singleCondition =>
-                            checkCondition(row, singleCondition, configForSeparatorCheck)
-                        );
+                        currentItemMeetsPartitionCriteria = filterGroup.conditions.some(c => checkCondition(row, c, configForSeparatorCheck));
                     } else {
-                        currentItemMeetsPartitionCriteria = filterGroup.conditions.every(singleCondition =>
-                            checkCondition(row, singleCondition, configForSeparatorCheck)
-                        );
+                        currentItemMeetsPartitionCriteria = filterGroup.conditions.every(c => checkCondition(row, c, configForSeparatorCheck));
                     }
                 }
-            } catch (e) {
-                console.error("EDITOR_GRID: renderGridData - Error in checkCondition (for separator):", e, "Row:", row, "Filter:", partitionConfigSettings.filter);
-            }
+            } catch (e) { console.error("Error in checkCondition (for separator):", e); }
             if (previousItemMetPartitionCriteria === false && currentItemMeetsPartitionCriteria === true) {
                 if (partitionConfigSettings.separatorStyle === "heavyLine") {
                     tr.classList.add('editor-grid-partition-separator-top');
@@ -297,34 +255,19 @@ function renderGridData() {
             }
             previousItemMetPartitionCriteria = currentItemMeetsPartitionCriteria;
         }
-
         columnDefinitions.forEach((colDef, colIndex) => {
             const td = tr.insertCell();
             td.dataset.columnName = colDef.name;
             td.dataset.rowIndex = rowIndex;
             let cellValue = row[colDef.name];
-            if (cellValue === undefined) {
-                cellValue = (colDef.type === 'multi-select' ? [] : '');
-            }
-
+            if (cellValue === undefined) cellValue = (colDef.type === 'multi-select' ? [] : '');
             const styleConfForCol = viewerCfg?.indicatorStyles?.[colDef.viewerStyleColumnName || colDef.name];
-            if (colDef.type === 'checkbox' ||
-                colDef.type === 'multi-select' ||
-                (styleConfForCol && styleConfForCol.type === 'icon') ||
-                (colDef.type === 'select' && styleConfForCol && styleConfForCol.type === 'tag') ||
-                (viewerCfg?.generalSettings?.linkColumns?.includes(colDef.name) && !(styleConfForCol && (styleConfForCol.type === 'tag')))
-            ) {
+            if (colDef.type === 'checkbox' || colDef.type === 'multi-select' || (styleConfForCol && styleConfForCol.type === 'icon') || (colDef.type === 'select' && styleConfForCol && styleConfForCol.type === 'tag') || (viewerCfg?.generalSettings?.linkColumns?.includes(colDef.name) && !(styleConfForCol && (styleConfForCol.type === 'tag')))) {
                 td.classList.add('cell-align-center');
             }
-            if (colIndex === 0) {
-                td.classList.add('sticky-col', 'first-col');
-            }
-            if (colDef.type === 'multi-select') {
-                td.classList.add('cell-type-multi-select');
-            }
-
+            if (colIndex === 0) td.classList.add('sticky-col', 'first-col');
+            if (colDef.type === 'multi-select') td.classList.add('cell-type-multi-select');
             td.innerHTML = getStyledCellDisplay(cellValue, colDef);
-
             if (!colDef.readOnly) {
                 td.addEventListener('click', handleCellClickToEdit);
                 if (colDef.type === 'checkbox') td.classList.add('editor-cell-boolean-toggle');
@@ -333,7 +276,6 @@ function renderGridData() {
             }
             validateCell(td, cellValue, colDef);
         });
-
         const actionTd = tr.insertCell();
         actionTd.classList.add('action-cell');
         const deleteBtn = document.createElement('button');
@@ -345,48 +287,26 @@ function renderGridData() {
     console.log(`EDITOR_GRID: renderGridData - Grid data rendered: ${_csvDataInstance.length} rows.`);
 }
 
-/**
- * Handles clicks on table cells to initiate editing.
- * @param {Event} event - The click event.
- */
 function handleCellClickToEdit(event) {
     const td = event.target.closest('td');
-    if (!td || td.classList.contains('cell-readonly') || td.querySelector('input, select, textarea, .custom-select-popup')) {
-        return;
-    }
-
+    if (!td || td.classList.contains('cell-readonly') || td.querySelector('input, select, textarea, .custom-select-popup')) return;
     const columnName = td.dataset.columnName;
     const rowIndex = parseInt(td.dataset.rowIndex, 10);
     const colDef = _editorConfigInstance.columns.find(c => c.name === columnName);
-    if (!colDef) {
-        console.error("EDITOR_GRID: handleCellClickToEdit - Column definition not found for:", columnName);
-        return;
-    }
-
-    if (_activePopup && _activePopup.td !== td) {
-        _activePopup.remove();
-        _activePopup = null;
-    }
-
+    if (!colDef) return;
+    if (_activePopup && _activePopup.td !== td) { _activePopup.remove(); _activePopup = null; }
     let cellValue = _csvDataInstance[rowIndex][columnName];
     if (colDef.type === 'multi-select' && !Array.isArray(cellValue)) {
-        if (typeof cellValue === 'string' && cellValue.trim() !== '') {
-            cellValue = cellValue.split(',').map(s => s.trim()).filter(s => s);
-        } else {
-            cellValue = [];
-        }
+        cellValue = (typeof cellValue === 'string' && cellValue.trim() !== '') ? cellValue.split(',').map(s => s.trim()).filter(s => s) : [];
         _csvDataInstance[rowIndex][columnName] = cellValue;
     }
-
     td.innerHTML = '';
-
     let inputElement;
     if (colDef.type === 'checkbox') {
         const isCurrentlyTrue = isTruthy(cellValue, _viewerConfigInstance || { generalSettings: {} });
         const trueVal = _editorConfigInstance.csvOutputOptions?.booleanTrueValue || "TRUE";
         const falseVal = _editorConfigInstance.csvOutputOptions?.booleanFalseValue || "FALSE";
         _csvDataInstance[rowIndex][columnName] = isCurrentlyTrue ? falseVal : trueVal;
-        console.log(`EDITOR_GRID: handleCellClickToEdit - Checkbox Toggled: Row ${rowIndex}, Col "${columnName}" = "${_csvDataInstance[rowIndex][columnName]}"`);
         td.innerHTML = getStyledCellDisplay(_csvDataInstance[rowIndex][columnName], colDef);
         validateCell(td, _csvDataInstance[rowIndex][columnName], colDef);
         window.dispatchEvent(new CustomEvent('editorDataChanged'));
@@ -395,16 +315,14 @@ function handleCellClickToEdit(event) {
         createSelectPopup(td, cellValue, colDef, rowIndex, columnName);
         return;
     }
-
     switch (colDef.type) {
         case 'textarea':
             inputElement = document.createElement('textarea');
             inputElement.value = String(cellValue ?? '');
-            if (colDef.displayAsSingleLine) { // If configured, keep it single line during edit too
-                inputElement.rows = 1; // Force single line for editing textarea
-                inputElement.style.resize = 'none'; // Optionally disable resize
-                inputElement.style.overflow = 'hidden'; // Hide overflow
-                // May need JS to adjust width or prevent newlines in this specific case
+            if (colDef.displayAsSingleLine) {
+                inputElement.rows = 1;
+                inputElement.style.resize = 'none';
+                inputElement.style.overflow = 'hidden';
             }
             break;
         case 'date':
@@ -427,215 +345,131 @@ function handleCellClickToEdit(event) {
             inputElement.value = String(cellValue ?? '');
             break;
     }
-
     inputElement.dataset.rowIndex = rowIndex;
     inputElement.dataset.columnName = columnName;
-
     const finishEdit = (saveChange = true) => {
-        if (saveChange) {
-            handleCellChange({ target: inputElement });
-        }
+        if (saveChange) handleCellChange({ target: inputElement });
         const currentValInModel = _csvDataInstance[rowIndex][columnName];
         td.innerHTML = getStyledCellDisplay(currentValInModel, colDef);
         validateCell(td, currentValInModel, colDef);
         if (saveChange) window.dispatchEvent(new CustomEvent('editorDataChanged'));
     };
-
     inputElement.addEventListener('blur', () => finishEdit(true));
     inputElement.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && colDef.type !== 'textarea') { // Allow enter in textarea
-            e.preventDefault();
-            inputElement.blur();
-        } else if (e.key === 'Escape') {
-            finishEdit(false);
-        }
+        if (e.key === 'Enter' && colDef.type !== 'textarea') { e.preventDefault(); inputElement.blur(); }
+        else if (e.key === 'Escape') { finishEdit(false); }
     });
-
     td.appendChild(inputElement);
     if (typeof inputElement.focus === 'function') {
         inputElement.focus();
-        if (inputElement.select && colDef.type !== 'textarea') inputElement.select(); // Don't auto-select textarea
+        if (inputElement.select && colDef.type !== 'textarea') inputElement.select();
     }
 }
 
-/**
- * Handles the data model update when an input element's value changes.
- * @param {Event} event - The event (usually blur or keydown) from the input element.
- */
 function handleCellChange(event) {
     const inputElement = event.target;
     const rowIndex = parseInt(inputElement.dataset.rowIndex, 10);
     const columnName = inputElement.dataset.columnName;
     let newValue;
-
     if (inputElement.type === 'number') {
         newValue = inputElement.value === '' ? '' : parseFloat(inputElement.value);
-        if (isNaN(newValue) && inputElement.value !== '') {
-            newValue = inputElement.value;
-        }
+        if (isNaN(newValue) && inputElement.value !== '') newValue = inputElement.value;
     } else {
         newValue = inputElement.value;
     }
-
     if (_csvDataInstance && _csvDataInstance[rowIndex] !== undefined && columnName !== undefined) {
         if (_csvDataInstance[rowIndex][columnName] !== newValue) {
             _csvDataInstance[rowIndex][columnName] = newValue;
-            console.log(`EDITOR_GRID: handleCellChange - Data updated: Row ${rowIndex}, Col "${columnName}" =`, newValue);
         }
-    } else {
-        console.error("EDITOR_GRID: handleCellChange - Error updating cell: Invalid rowIndex, columnName, or _csvDataInstance reference.");
     }
 }
 
-/**
- * Gathers options for select/multi-select columns from various sources.
- * @param {Object} colDef - The column definition.
- * @param {number} [rowIndexBeingEdited=-1] - The index of the row being edited, for self-reference exclusion.
- * @returns {Array<Object>} An array of {value, label} option objects.
- */
 function getOptionsForColumn(colDef, rowIndexBeingEdited = -1) {
     const optionsMap = new Map();
     const addOption = (value, label) => {
-        // ... (existing addOption logic - no changes here) ...
-        // It ensures unique values in optionsMap based on 'value'
-        // and tries to use the best 'label'.
         const valStr = String(value ?? '');
         if (valStr.trim() === '' && value !== '') return;
         const mapLabel = (label === '' && valStr !== '') ? `(Value: ${valStr})` : (label || valStr);
         if (!optionsMap.has(valStr)) {
             optionsMap.set(valStr, mapLabel);
         } else if (label && label !== mapLabel && optionsMap.get(valStr) === valStr) {
-            optionsMap.set(valStr, mapLabel);
+            optionsMap.set(valStr, label);
         }
     };
 
-    // 1. Add explicit options from colDef.options
-    if (Array.isArray(colDef.options) && colDef.options.length > 0) {
+    if (Array.isArray(colDef.options)) {
         colDef.options.forEach(opt => {
             if (typeof opt === 'string') addOption(opt, opt);
             else if (opt && typeof opt.value !== 'undefined') addOption(opt.value, opt.label || opt.value);
         });
     }
 
-    // 2. Add options from viewerConfig.indicatorStyles.valueMap if configured
     if (colDef.optionsSource === 'viewerConfigValueMap' && _viewerConfigInstance?.indicatorStyles) {
         const styleColName = colDef.viewerStyleColumnName || colDef.name;
         const styleConf = _viewerConfigInstance.indicatorStyles[styleColName];
-        const valueMap = styleConf?.valueMap;
-        if (valueMap) {
-            Object.keys(valueMap).filter(key => key !== 'default')
-                .forEach(key => addOption(key, valueMap[key].text || key));
+        if (styleConf?.valueMap) {
+            Object.keys(styleConf.valueMap).filter(key => key !== 'default')
+                .forEach(key => addOption(key, styleConf.valueMap[key].text || key));
         }
     }
 
-    // 3. Derive options from data (either own column or a specified source column)
-    let actualColumnNameToScanForDataValues = colDef.name; // Default to own column
-    let isDerivingFromAnotherColumn = false;
-
-    if (colDef.deriveOptionsFromColumn &&
-        _editorConfigInstance && _editorConfigInstance.columns.some(c => c.name === colDef.deriveOptionsFromColumn)) {
-        actualColumnNameToScanForDataValues = colDef.deriveOptionsFromColumn;
-        isDerivingFromAnotherColumn = true;
-        console.log(`EDITOR_GRID: getOptionsForColumn for "${colDef.name}" - Deriving options from column "${actualColumnNameToScanForDataValues}".`);
-    } else if (colDef.deriveOptionsFromColumn) {
-        console.warn(`EDITOR_GRID: getOptionsForColumn for "${colDef.name}" - Specified deriveOptionsFromColumn "${colDef.deriveOptionsFromColumn}" is invalid or not found. Defaulting to self.`);
-    }
-
-    if (_csvDataInstance && Array.isArray(_csvDataInstance)) {
-        // Prepare config for checkCondition if sourceColumnFilter is used
+    const derivationConfig = colDef.deriveOptionsFrom;
+    if (derivationConfig && derivationConfig.column && derivationConfig.labelColumn) {
         let configForFilterCheck = null;
-        if (isDerivingFromAnotherColumn && colDef.sourceColumnFilter?.conditions?.length > 0) {
+        if (colDef.sourceColumnFilter?.conditions?.length > 0) {
             const headersForCheck = _editorConfigInstance.columns.map(c => c.name);
             configForFilterCheck = {
                 csvHeaders: headersForCheck,
-                generalSettings: {
-                    trueValues: _viewerConfigInstance?.generalSettings?.trueValues || ["true", "yes", "1", "y", "x", "on", "âœ“"]
-                }
+                generalSettings: { trueValues: _viewerConfigInstance?.generalSettings?.trueValues || ["true", "yes", "1"] }
             };
         }
-
         _csvDataInstance.forEach((sourceRow, currentRowIndex) => {
-            const valueFromSourceColumn = sourceRow[actualColumnNameToScanForDataValues];
+            const optionValue = sourceRow[derivationConfig.column];
+            const optionLabel = sourceRow[derivationConfig.labelColumn];
+            if (optionValue === undefined || optionValue === null || optionValue === '' || optionLabel === undefined) return;
+            if (rowIndexBeingEdited !== -1 && currentRowIndex === rowIndexBeingEdited) return;
 
-            // --- SELF-REFERENCE EXCLUSION (only if deriving from another column for THIS column's options) ---
-            if (isDerivingFromAnotherColumn && // Are we deriving for the current colDef?
-                colDef.name !== actualColumnNameToScanForDataValues && // Ensure we are not just scanning self due to fallback
-                rowIndexBeingEdited !== -1 &&    // Do we know which row is being edited?
-                currentRowIndex === rowIndexBeingEdited) { // Is the sourceRow the same as the row being edited?
-                // Yes, this is the source value from the row currently being edited. Skip it.
-                console.log(`EDITOR_GRID: getOptionsForColumn - Skipping self-reference: Row ${rowIndexBeingEdited}'s value "${valueFromSourceColumn}" from "${actualColumnNameToScanForDataValues}" for options of column "${colDef.name}".`);
-                return; // Continue to next sourceRow
-            }
-
-            // --- SOURCE COLUMN FILTER (only if deriving and filter is defined) ---
-            if (isDerivingFromAnotherColumn && colDef.sourceColumnFilter?.conditions?.length > 0 && configForFilterCheck) {
-                let matchesSourceFilter = true; // Assume it matches unless a condition fails (for AND) or none match (for OR)
-                const filterCriteria = colDef.sourceColumnFilter;
-                const logicIsOr = filterCriteria.logic && filterCriteria.logic.toUpperCase() === 'OR';
-
-                try {
-                    if (logicIsOr) {
-                        matchesSourceFilter = filterCriteria.conditions.some(condition =>
-                            checkCondition(sourceRow, condition, configForFilterCheck)
-                        );
-                    } else { // Default to AND
-                        matchesSourceFilter = filterCriteria.conditions.every(condition =>
-                            checkCondition(sourceRow, condition, configForFilterCheck)
-                        );
-                    }
-                } catch (e) {
-                    console.error(`EDITOR_GRID: getOptionsForColumn - Error checking sourceColumnFilter for source row ${currentRowIndex}:`, e, sourceRow, filterCriteria);
-                    matchesSourceFilter = false; // Exclude on error to be safe
-                }
-
-                if (!matchesSourceFilter) {
-                    // console.log(`EDITOR_GRID: getOptionsForColumn - Row ${currentRowIndex} value "${valueFromSourceColumn}" from "${actualColumnNameToScanForDataValues}" excluded by sourceColumnFilter for options of "${colDef.name}".`);
-                    return; // Value from this sourceRow is filtered out, continue to next sourceRow
+            // --- CORRECTED LOGIC: Use the new helper function ---
+            if (configForFilterCheck) {
+                // doesRowMatchFilterGroup is now in shared_utils.js
+                if (!doesRowMatchFilterGroup(sourceRow, colDef.sourceColumnFilter, configForFilterCheck)) {
+                    return; // Skip this row as it's filtered out
                 }
             }
+            // --- END CORRECTION ---
 
-            // If we pass all filters (self-ref, sourceColumnFilter), add the value(s)
-            if (valueFromSourceColumn !== undefined && valueFromSourceColumn !== null) {
-                if (Array.isArray(valueFromSourceColumn)) { // If the source column itself is multi-value
-                    valueFromSourceColumn.forEach(item => addOption(String(item), String(item)));
-                } else {
-                    const valStr = String(valueFromSourceColumn);
-                    if (valStr.trim() !== '' || valStr === '') addOption(valStr, valStr);
+            addOption(optionValue, optionLabel);
+        });
+    } else {
+        _csvDataInstance.forEach(row => {
+            const cellData = row[colDef.name];
+            if (cellData !== undefined && cellData !== null) {
+                if (Array.isArray(cellData)) {
+                    cellData.forEach(item => addOption(String(item), String(item)));
+                } else if (String(cellData).trim() !== '' || String(cellData) === '') {
+                    addOption(String(cellData), String(cellData));
                 }
             }
         });
     }
 
-    // 4. Final processing (sorting, adding '(No Selection)')
     const finalOptions = [];
     optionsMap.forEach((label, value) => {
-        const displayLabel = label.startsWith('(Value:') ? value : label;
-        finalOptions.push({ value, label: displayLabel });
+        finalOptions.push({ value, label });
     });
-    finalOptions.sort((a, b) => a.label.toLowerCase().localeCompare(b.label.toLowerCase()));
-
+    finalOptions.sort((a, b) => {
+        if (a.label === '(No Selection)') return -1;
+        if (b.label === '(No Selection)') return 1;
+        return a.label.toLowerCase().localeCompare(b.label.toLowerCase());
+    });
     if (colDef.type === 'select' && !colDef.required) {
-        const hasExplicitBlank = finalOptions.some(opt => opt.value === '');
-        if (!hasExplicitBlank) {
+        if (!finalOptions.some(opt => opt.value === '')) {
             finalOptions.unshift({ value: '', label: '(No Selection)' });
-        } else {
-            const blankOption = finalOptions.find(opt => opt.value === '');
-            if (blankOption && (blankOption.label === '' || blankOption.label.startsWith('(Value:'))) {
-                blankOption.label = '(No Selection)';
-            }
         }
     }
     return finalOptions;
 }
 
-/**
- * Creates and displays a custom popup for 'select' and 'multi-select' fields.
- * @param {HTMLTableCellElement} td - The table cell being edited.
- * @param {*} currentValueForPopup - The current value(s) for the cell.
- * @param {Object} colDef - The column definition.
- * @param {number} rowIndex - The row index.
- * @param {string} columnName - The column name.
- */
 function createSelectPopup(td, currentValueForPopup, colDef, rowIndex, columnName) {
     if (_activePopup) _activePopup.remove();
     const popup = document.createElement('div');
@@ -646,17 +480,14 @@ function createSelectPopup(td, currentValueForPopup, colDef, rowIndex, columnNam
     popup.style.left = `${rect.left + window.scrollX}px`;
     popup.style.minWidth = `${Math.max(td.offsetWidth, 200)}px`;
     popup.style.zIndex = '1000';
-
-    let allOptions = getOptionsForColumn(colDef, rowIndex); // <<< MODIFIED: Pass rowIndex
+    let allOptions = getOptionsForColumn(colDef, rowIndex);
     const useSearch = allOptions.length >= 15 || (colDef.type === 'multi-select' && colDef.allowNewTags);
-
     let currentSelectionsArray = [];
     if (colDef.type === 'multi-select') {
         currentSelectionsArray = Array.isArray(currentValueForPopup) ? [...currentValueForPopup.map(String)] : [];
     } else {
         currentSelectionsArray = currentValueForPopup !== undefined && currentValueForPopup !== null ? [String(currentValueForPopup)] : [''];
     }
-
     const searchInput = document.createElement('input');
     if (useSearch) {
         searchInput.type = 'search';
@@ -664,11 +495,9 @@ function createSelectPopup(td, currentValueForPopup, colDef, rowIndex, columnNam
         searchInput.className = 'popup-search-input';
         popup.appendChild(searchInput);
     }
-
     const optionsList = document.createElement('ul');
     optionsList.className = 'popup-options-list';
     popup.appendChild(optionsList);
-
     window._editorUpdateAndCloseFromPopup = (valueToSet) => {
         _csvDataInstance[rowIndex][columnName] = valueToSet;
         td.innerHTML = getStyledCellDisplay(valueToSet, colDef);
@@ -676,12 +505,10 @@ function createSelectPopup(td, currentValueForPopup, colDef, rowIndex, columnNam
         if (_activePopup === popup) { popup.remove(); _activePopup = null; }
         window.dispatchEvent(new CustomEvent('editorDataChanged'));
     };
-
     const rerenderOptionsList = () => {
         const searchTerm = useSearch ? searchInput.value.toLowerCase() : '';
         filterAndSortPopupOptions(optionsList, searchTerm, allOptions, currentSelectionsArray, colDef);
     };
-
     if (useSearch) {
         searchInput.addEventListener('input', rerenderOptionsList);
         searchInput.addEventListener('keydown', (e) => {
@@ -689,9 +516,7 @@ function createSelectPopup(td, currentValueForPopup, colDef, rowIndex, columnNam
                 e.preventDefault();
                 if (colDef.type === 'multi-select' && colDef.allowNewTags && searchInput.value.trim() !== '') {
                     const newTag = searchInput.value.trim();
-                    if (!currentSelectionsArray.includes(newTag)) {
-                        currentSelectionsArray.push(newTag);
-                    }
+                    if (!currentSelectionsArray.includes(newTag)) currentSelectionsArray.push(newTag);
                     if (!allOptions.some(opt => opt.value === newTag)) {
                         allOptions.push({ value: newTag, label: newTag });
                         allOptions.sort((a, b) => a.label.toLowerCase().localeCompare(b.label.toLowerCase()));
@@ -699,7 +524,7 @@ function createSelectPopup(td, currentValueForPopup, colDef, rowIndex, columnNam
                     searchInput.value = '';
                     rerenderOptionsList();
                 } else if (colDef.type === 'select') {
-                    const firstVisibleOption = optionsList.querySelector('li:not([data-filtered-out="true"])');
+                    const firstVisibleOption = optionsList.querySelector('li');
                     if (firstVisibleOption) firstVisibleOption.click();
                 }
             } else if (e.key === 'Escape') {
@@ -709,39 +534,22 @@ function createSelectPopup(td, currentValueForPopup, colDef, rowIndex, columnNam
             }
         });
     }
-
     rerenderOptionsList();
-
     if (colDef.type === 'multi-select') {
         const applyBtn = document.createElement('button');
         applyBtn.textContent = 'Apply Selections';
         applyBtn.className = 'popup-apply-btn';
-        applyBtn.addEventListener('click', () => {
-            window._editorUpdateAndCloseFromPopup([...currentSelectionsArray]);
-        });
+        applyBtn.addEventListener('click', () => { window._editorUpdateAndCloseFromPopup([...currentSelectionsArray]); });
         popup.appendChild(applyBtn);
     }
-
     document.body.appendChild(popup);
     if (useSearch && searchInput) searchInput.focus();
     else if (optionsList.firstChild) optionsList.firstChild.focus();
-
     setTimeout(() => { document.addEventListener('click', handleClickOutsidePopup, { once: true, capture: true }); }, 0);
 }
 
-/**
- * Filters options by search term, then sorts them, and calls renderPopupOptions.
- * @param {HTMLUListElement} listElement - The <ul> element to populate.
- * @param {string} searchTerm - The search term (already lowercased).
- * @param {Array<Object>} allAvailableOptions - The complete list of {value, label} options.
- * @param {Array<string>} currentSelectedValuesArray - Array of currently selected string values.
- * @param {Object} colDef - The column definition.
- */
 function filterAndSortPopupOptions(listElement, searchTerm, allAvailableOptions, currentSelectedValuesArray, colDef) {
-    const filteredBySearch = searchTerm
-        ? allAvailableOptions.filter(opt => opt.label.toLowerCase().includes(searchTerm))
-        : [...allAvailableOptions];
-
+    const filteredBySearch = searchTerm ? allAvailableOptions.filter(opt => opt.label.toLowerCase().includes(searchTerm)) : [...allAvailableOptions];
     let optionsToRender;
     if (colDef.type === 'multi-select') {
         const selectedOptions = [];
@@ -763,25 +571,16 @@ function filterAndSortPopupOptions(listElement, searchTerm, allAvailableOptions,
     renderPopupOptions(listElement, optionsToRender, currentSelectedValuesArray, colDef);
 }
 
-/**
- * Renders the individual option items (<li>) into the popup's list.
- * @param {HTMLUListElement} listElement - The <ul> element where options will be rendered.
- * @param {Array<Object>} optionsToDisplay - The filtered and sorted list of {value, label} options to display.
- * @param {Array<string>} currentSelectedValuesArrayFromCaller - Array from createSelectPopup scope.
- * @param {Object} colDef - The column definition.
- */
 function renderPopupOptions(listElement, optionsToDisplay, currentSelectedValuesArrayFromCaller, colDef) {
     listElement.innerHTML = '';
     const isMulti = colDef.type === 'multi-select';
     const currentSelectionsSet = new Set(currentSelectedValuesArrayFromCaller.map(String));
-
     if (optionsToDisplay.length === 0 ) {
         const li = document.createElement('li');
         li.textContent = (isMulti && colDef.allowNewTags) ? "Type to add new or filter existing." : "No options match search.";
         li.style.fontStyle = "italic"; li.style.color = "#777";
         listElement.appendChild(li); return;
     }
-
     optionsToDisplay.forEach(opt => {
         const li = document.createElement('li'); li.tabIndex = 0;
         const valStr = String(opt.value);
@@ -793,16 +592,11 @@ function renderPopupOptions(listElement, optionsToDisplay, currentSelectedValues
             if (currentSelectionsSet.has(valStr)) cb.checked = true;
             cb.addEventListener('change', () => {
                 if (cb.checked) {
-                    if (!currentSelectedValuesArrayFromCaller.includes(valStr)) {
-                        currentSelectedValuesArrayFromCaller.push(valStr);
-                    }
+                    if (!currentSelectedValuesArrayFromCaller.includes(valStr)) currentSelectedValuesArrayFromCaller.push(valStr);
                 } else {
                     const index = currentSelectedValuesArrayFromCaller.indexOf(valStr);
-                    if (index > -1) {
-                        currentSelectedValuesArrayFromCaller.splice(index, 1);
-                    }
+                    if (index > -1) currentSelectedValuesArrayFromCaller.splice(index, 1);
                 }
-                console.log("EDITOR_GRID: renderPopupOptions - Multi-select popup selections changed:", currentSelectedValuesArrayFromCaller);
             });
             const label = document.createElement('label'); label.htmlFor = cb.id;
             label.appendChild(cb); label.appendChild(document.createTextNode(opt.label));
@@ -812,9 +606,7 @@ function renderPopupOptions(listElement, optionsToDisplay, currentSelectedValues
         } else {
             li.textContent = opt.label; li.dataset.value = valStr;
             if (currentSelectionsSet.has(valStr)) li.classList.add('selected');
-            const selectAndClose = () => {
-                window._editorUpdateAndCloseFromPopup(opt.value);
-            };
+            const selectAndClose = () => { window._editorUpdateAndCloseFromPopup(opt.value); };
             li.addEventListener('click', selectAndClose);
             li.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectAndClose(); }});
         }
@@ -822,10 +614,6 @@ function renderPopupOptions(listElement, optionsToDisplay, currentSelectedValues
     });
 }
 
-/**
- * Handles clicks outside the active popup to close it.
- * @param {Event} event - The click event.
- */
 function handleClickOutsidePopup(event) {
     if (_activePopup && !_activePopup.contains(event.target)) {
         const td = _activePopup.td;
@@ -848,30 +636,22 @@ function handleClickOutsidePopup(event) {
     }
 }
 
-/**
- * Adds a new empty row to the CSV data and re-renders the grid.
- * @returns {boolean} True if the row was added successfully, false otherwise.
- */
 function addNewRow() {
-    if (!_editorConfigInstance || !_editorConfigInstance.columns) {
-        console.error("EDITOR_GRID: addNewRow - Cannot add row: Editor config not loaded or has no columns.");
-        return false;
-    }
-    if (!_csvDataInstance) {
-        console.error("EDITOR_GRID: addNewRow - Cannot add row: _csvDataInstance not initialized.");
-        return false;
-    }
-
+    if (!_editorConfigInstance || !_editorConfigInstance.columns) return false;
+    if (!_csvDataInstance) return false;
     const newRowObject = {};
     _editorConfigInstance.columns.forEach(colDef => {
-        if (colDef.type === 'checkbox') {
-            newRowObject[colDef.name] = _editorConfigInstance.csvOutputOptions?.booleanFalseValue || "FALSE";
-        } else if (colDef.type === 'multi-select') {
-            newRowObject[colDef.name] = [];
-        } else {
-            newRowObject[colDef.name] = '';
-        }
+        if (colDef.name === 'ItemID') return;
+        if (colDef.type === 'checkbox') newRowObject[colDef.name] = _editorConfigInstance.csvOutputOptions?.booleanFalseValue || "FALSE";
+        else if (colDef.type === 'multi-select') newRowObject[colDef.name] = [];
+        else newRowObject[colDef.name] = '';
     });
+    const idColumnName = "ItemID";
+    if (_editorConfigInstance.columns.some(c => c.name === idColumnName)) {
+        const timestamp = Date.now();
+        const randomSuffix = Math.random().toString(36).substring(2, 5);
+        newRowObject[idColumnName] = `item_${timestamp}_${randomSuffix}`;
+    } else { console.warn(`ID column "${idColumnName}" not found in config.`); }
     newRowObject._originalIndex = -1;
     const pkColName = _editorConfigInstance?.changeTrackingPrimaryKeyColumn;
     if (pkColName && newRowObject.hasOwnProperty(pkColName)) {
@@ -879,64 +659,47 @@ function addNewRow() {
     } else {
         newRowObject._originalPkValue = undefined;
     }
-
     const editorCfg = _editorConfigInstance;
     const partitionConfig = editorCfg?.editorDisplaySettings?.partitionBy;
     let insertAtIndex = _csvDataInstance.length;
-
     if (partitionConfig?.enabled && partitionConfig?.filter?.conditions?.length > 0) {
         const effectiveHeadersForNewRowCheck = editorCfg.columns.map(c => c.name);
         const configForNewRowCheck = {
-            generalSettings: {
-                trueValues: (_viewerConfigInstance?.generalSettings?.trueValues) || ["true", "yes", "1", "y", "x", "on", "âœ“"]
-            },
+            generalSettings: { trueValues: (_viewerConfigInstance?.generalSettings?.trueValues) || [] },
             csvHeaders: effectiveHeadersForNewRowCheck
         };
         const firstPartitionedItemIndex = _csvDataInstance.findIndex(row => {
             const filterGroup = partitionConfig.filter;
             if (filterGroup.logic && filterGroup.logic.toUpperCase() === 'OR') {
-                return filterGroup.conditions.some(singleCondition => checkCondition(row, singleCondition, configForNewRowCheck));
+                return filterGroup.conditions.some(c => checkCondition(row, c, configForNewRowCheck));
             } else {
-                return filterGroup.conditions.every(singleCondition => checkCondition(row, singleCondition, configForNewRowCheck));
+                return filterGroup.conditions.every(c => checkCondition(row, c, configForNewRowCheck));
             }
         });
-        if (firstPartitionedItemIndex !== -1) {
-            insertAtIndex = firstPartitionedItemIndex;
-        }
+        if (firstPartitionedItemIndex !== -1) insertAtIndex = firstPartitionedItemIndex;
     }
-
     _csvDataInstance.splice(insertAtIndex, 0, newRowObject);
-    console.log(`EDITOR_GRID: addNewRow - New row added at index ${insertAtIndex}.`);
     renderGridData();
-
     const { editorGridTbody } = editorDomElements;
     if (editorGridTbody && editorGridTbody.rows[insertAtIndex]) {
         editorGridTbody.rows[insertAtIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         const firstEditableCell = editorGridTbody.rows[insertAtIndex].querySelector('td:not(.cell-readonly)');
-        if (firstEditableCell) {
-            handleCellClickToEdit({ target: firstEditableCell });
-        }
+        if (firstEditableCell) handleCellClickToEdit({ target: firstEditableCell });
     }
     window.dispatchEvent(new CustomEvent('editorDataChanged'));
     return true;
 }
 
-/**
- * Handles clicks on "Delete" buttons to remove a row.
- * @param {Event} event - The click event from the delete button.
- */
 function handleDeleteRowClick(event) {
     const buttonElement = event.target;
     const rowIndex = parseInt(buttonElement.dataset.rowIndex, 10);
-
     if (confirm(`Are you sure you want to delete row ${rowIndex + 1}?`)) {
         if (_csvDataInstance && rowIndex >= 0 && rowIndex < _csvDataInstance.length) {
             _csvDataInstance.splice(rowIndex, 1);
-            console.log(`EDITOR_GRID: handleDeleteRowClick - Row ${rowIndex} deleted.`);
             renderGridData();
             window.dispatchEvent(new CustomEvent('editorDataChanged'));
-        } else {
-            console.error(`EDITOR_GRID: handleDeleteRowClick - Invalid rowIndex ${rowIndex} or _csvDataInstance issue.`);
         }
     }
 }
+
+// --- END OF FILE csv_editor/js/editor_data_grid.js ---

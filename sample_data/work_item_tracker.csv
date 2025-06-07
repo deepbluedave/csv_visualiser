@@ -1,0 +1,22 @@
+ItemID,ItemName,ItemType,ParentItemID,Status,Assignee,Priority,StartDate,DueDate,EstimatedHours,ActualHours,Description,ProjectLink,IsBlocked,BlockerReason
+PROJ-001,Jupiter Mission Planning,Project,,To Do,Planning Team,Critical,2024-06-01,2024-12-31,500,,Overall planning for the mission to Jupiter's moons.,https://wiki.corp.com/jupiter_mission,FALSE,
+EPIC-010,Trajectory Calculation & Navigation,Project,PROJ-001,In Progress,Astro Dynamics Team,Critical,2024-06-15,2024-09-30,200,,Calculate optimal trajectory, considering gravity assists and fuel efficiency.,https://wiki.corp.com/jupiter_mission/trajectory,FALSE,
+TASK-101,Initial trajectory simulation,Task,EPIC-010,Done,Dr. Lena Hanson,High,2024-06-20,2024-07-15,40,38,"Run first pass simulations based on known planetary alignments.",,FALSE,
+TASK-102,Gravity assist window analysis,Task,EPIC-010,In Progress,Dr. Raj Patel,High,2024-07-16,2024-08-15,60,,Identify optimal Earth and Mars gravity assist windows.,,FALSE,
+TASK-103,Mid-course correction planning,Task,EPIC-010,To Do,Astro Dynamics Team,Medium,2024-08-16,2024-09-15,50,,Plan potential mid-course correction burns.,,FALSE,
+TASK-104,Final trajectory validation,Task,EPIC-010,Blocked,Dr. Lena Hanson,Critical,2024-09-01,2024-09-25,30,,Requires refined engine performance data.,,TRUE,"Waiting on Engine Team (TASK-203)"
+SUB-1011,Setup simulation environment,Sub-Task,TASK-101,Done,Intern Team,Medium,2024-06-18,2024-06-19,8,10,"Install software, configure parameters.",,FALSE,
+EPIC-020,Payload Design & Integration,Project,PROJ-001,In Progress,Payload Team,Critical,2024-07-01,2024-11-30,300,,Design and integrate scientific instruments and lander.,https://wiki.corp.com/jupiter_mission/payload,FALSE,
+TASK-201,Science instrument selection,Task,EPIC-020,Done,Dr. Eva Rostova,High,2024-07-05,2024-07-31,50,45,"Finalize list of scientific instruments based on mission goals.",,FALSE,
+TASK-202,Lander module design,Task,EPIC-020,In Progress,Engineering Dept,Critical,2024-08-01,2024-10-31,150,,Design the lander for Europa, including descent and surface operation systems.,,TRUE,"Power system redesign required due to new instrument (TASK-201)"
+TASK-203,Engine performance data finalization,Task,EPIC-020,In Review,Engine Team,High,2024-07-15,2024-08-30,80,90,"Provide final thrust and ISP curves for the main engine.",,FALSE,
+PROJ-002,Mars Colony Supply Run MCR-05,Project,,Done,Logistics Team,High,2024-01-10,2024-05-30,800,780,Fifth resupply mission to Ares Station.,https://wiki.corp.com/mcr05,FALSE,
+TASK-301,Cargo manifest finalization,Task,PROJ-002,Done,Quartermaster Kai,Critical,2024-01-15,2024-01-30,20,20,"Lock down all items for MCR-05.",,FALSE,
+TASK-302,Launch window confirmation,Task,PROJ-002,Done,Flight Control,High,2024-02-01,2024-02-10,10,8,"Confirm optimal launch window with Space Traffic Control.",,FALSE,
+EPIC-030,Develop New Website CMS,Project,,Cancelled,Web Team Alpha,Medium,2024-03-01,2024-08-01,250,,Project to build a new CMS from scratch.,https://wiki.corp.com/new_cms,FALSE,"Budget reallocated"
+TASK-401,Requirements gathering for CMS,Task,EPIC-030,Done,Business Analysts,High,2024-03-05,2024-03-20,40,35,"Interview stakeholders for CMS features.",,FALSE,
+TASK-402,CMS Vendor Evaluation,Task,EPIC-030,To Do,Web Team Alpha,Medium,2024-03-21,2024-04-10,30,,Evaluate off-the-shelf CMS solutions as an alternative (project later cancelled).,,FALSE,
+PROJ-003,Stealth System Upgrade,Project,,In Progress,R&D Division,Critical,2024-08-01,2025-02-28,600,,Develop next-generation cloaking technology for scout ships.,,FALSE,
+EPIC-040,Metamaterial Research,Project,PROJ-003,In Progress,Dr. Aris Thorne,Critical,2024-08-10,2024-12-20,250,,Research novel metamaterials for light bending.,,FALSE,
+TASK-501,Theoretical model development,Task,EPIC-040,In Progress,Dr. Aris Thorne,High,2024-08-15,2024-10-15,100,,Develop quantum models for metamaterial interaction with light.,,FALSE,
+TASK-502,Material Synthesis,Task,EPIC-040,To Do,Materials Lab,High,2024-10-01,2024-11-30,120,,Synthesize candidate metamaterials based on theoretical models.,,FALSE,

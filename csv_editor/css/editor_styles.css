@@ -342,6 +342,22 @@ h1 {
     font-style: italic;
 }
 
+/* --- General Cell Content Handling --- */
+#editorGridContainer td .cell-content-wrapper,
+#editorGridContainer td.cell-readonly,
+#editorGridContainer td .cell-text {
+    /* These styles ensure that long, unbreakable text like IDs get truncated */
+    display: block; /* Make it a block element to control overflow */
+    white-space: nowrap; /* Prevent the text from wrapping to a new line */
+    overflow: hidden; /* Hide the part of the text that overflows the cell's width */
+    text-overflow: ellipsis; /* Display "..." for the hidden part */
+}
+
+/* Ensure the wrapper itself doesn't shrink unnecessarily */
+#editorGridContainer td .cell-content-wrapper {
+    width: 100%;
+}
+
 /* Custom Select Popup Styles */
 .custom-select-popup {
     position: absolute;
@@ -498,3 +514,4 @@ h1 {
     margin-right: 10px; /* Space after the dropdown */
     min-width: 150px; /* Ensure it's not too small */
 }
+

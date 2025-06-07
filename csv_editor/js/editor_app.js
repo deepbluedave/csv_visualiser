@@ -26,6 +26,42 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- Helper Function Definitions ---
 
+
+    /**
+        * Formats a relational ID (or array of IDs) for the changelog digest.
+        * Looks up the corresponding name for the ID and returns "Name (ID)".
+        * @param {*} value - The ID or array of IDs to format.
+        * @param {object} colDef - The column definition for the field being checked.
+        * @returns {string} The formatted, human-readable string.
+        */
+    function formatRelationalValueForDigest(value, colDef) {
+        if (value === null || value === undefined || value === '') return "(not set)";
+
+        const idsToFormat = Array.isArray(value) ? value : [value];
+        if (idsToFormat.length === 0) return "(empty list)";
+
+        const derivationConfig = colDef.deriveOptionsFrom;
+        if (!derivationConfig) {
+            // Fallback for non-relational fields, should not happen if called correctly
+            return formatValueForDigest(value);
+        }
+
+        const formattedValues = idsToFormat.map(id => {
+            if (id === null || typeof id === 'undefined' || String(id).trim() === '') return "(empty)";
+
+            const linkedItem = _csvDataInstance.find(row => String(row[derivationConfig.column]) === String(id));
+
+            if (linkedItem) {
+                const displayLabel = linkedItem[derivationConfig.labelColumn] || `(Label missing)`;
+                return `${displayLabel} (${id})`;
+            } else {
+                return `${id} (Not Found)`;
+            }
+        });
+
+        return `[${formattedValues.join(', ')}]`;
+    }
+
     /**
         * Generates a formatted UTC timestamp string.
         * @param {Date} dateObject - The Date object to format.
@@ -534,19 +570,17 @@ document.addEventListener('DOMContentLoaded', async () => {
          * formatted in a Markdown-friendly way that's also readable in a <pre> tag.
          * @returns {string} A string detailing additions, deletions, and modifications.
          */
-    function generateChangeDigestOnDemand() {
+   function generateChangeDigestOnDemand() {
         console.log("EDITOR_APP: generateChangeDigestOnDemand - Generating Markdown change digest...");
         const editorCfg = getEditorConfig();
         if (!editorCfg || !editorCfg.columns || !initialCsvData) {
-            console.warn("EDITOR_APP: generateChangeDigestOnDemand - Editor config, columns, or initial data not available.");
+            console.warn("EDITOR_APP: generateChangeDigestOnDemand - Config or initial data not available.");
             return "*Cannot generate change digest: Configuration or initial data is missing.*\n";
         }
-
         const pkColumnName = editorCfg.changeTrackingPrimaryKeyColumn;
         const columnDefs = editorCfg.columns;
-        let digestLines = []; // Use an array to build lines, then join
+        let digestLines = [];
         let changesFound = false;
-
         const currentDataMapByOriginalIndex = new Map();
         csvDataMain.forEach(row => {
             if (row._originalIndex !== -1 && row._originalIndex !== undefined) {
@@ -560,36 +594,44 @@ document.addEventListener('DOMContentLoaded', async () => {
                 changesFound = true;
                 const identifier = pkColumnName ? (initialRow[pkColumnName] || `Original PK missing, Index: ${initialRow._originalIndex}`) : `Original Index: ${initialRow._originalIndex}`;
                 digestLines.push(`### Initiative: ${identifier}`);
-                digestLines.push(`Action: DELETED - `);
+                digestLines.push(`Action: DELETED`);
                 digestLines.push("Original Values:");
                 columnDefs.forEach(colDef => {
-                    digestLines.push(`  - ${colDef.label || colDef.name}: ${formatValueForDigest(initialRow[colDef.name])}`);
+                    const valueToFormat = initialRow[colDef.name];
+                    // <<< USE NEW HELPER FOR RELATIONAL COLUMNS >>>
+                    const formattedValue = colDef.deriveOptionsFrom
+                        ? formatRelationalValueForDigest(valueToFormat, colDef)
+                        : formatValueForDigest(valueToFormat);
+                    digestLines.push(`  - ${colDef.label || colDef.name}: ${formattedValue}`);
                 });
-                digestLines.push(""); // Blank line for spacing
+                digestLines.push("");
             }
         });
 
         // 2. Detect Additions and Modifications
         csvDataMain.forEach(currentRow => {
             const originalRowIndex = currentRow._originalIndex;
-
             if (originalRowIndex === -1 || originalRowIndex === undefined) { // New row
                 changesFound = true;
                 const identifier = pkColumnName ? (currentRow[pkColumnName] || "New Item (PK Missing/Not Set)") : `New Item (Added at runtime)`;
                 digestLines.push(`### Initiative: ${identifier}`);
-                digestLines.push(`Action: ADDED - `);
+                digestLines.push(`Action: ADDED`);
                 digestLines.push("Values:");
                 columnDefs.forEach(colDef => {
-                    digestLines.push(`  - ${colDef.label || colDef.name}: ${formatValueForDigest(currentRow[colDef.name])}`);
+                    const valueToFormat = currentRow[colDef.name];
+                     // <<< USE NEW HELPER FOR RELATIONAL COLUMNS >>>
+                    const formattedValue = colDef.deriveOptionsFrom
+                        ? formatRelationalValueForDigest(valueToFormat, colDef)
+                        : formatValueForDigest(valueToFormat);
+                    digestLines.push(`  - ${colDef.label || colDef.name}: ${formattedValue}`);
                 });
-                digestLines.push(""); // Blank line
+                digestLines.push("");
             } else { // Existing row, check for modifications
                 const initialRow = initialCsvData.find(r => r._originalIndex === originalRowIndex);
                 if (!initialRow) {
-                    console.warn(`EDITOR_APP: generateChangeDigestOnDemand - Consistency issue: Current row with _originalIndex ${originalRowIndex} not found in initialCsvData.`);
-                    return; // Skip this row if initial counterpart is missing
+                    console.warn(`Consistency issue: Current row with _originalIndex ${originalRowIndex} not found in initialCsvData.`);
+                    return;
                 }
-
                 let rowModificationsList = [];
                 const currentActualPK = pkColumnName ? currentRow[pkColumnName] : null;
                 const originalActualPK = pkColumnName ? initialRow._originalPkValue : null;
@@ -600,12 +642,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 columnDefs.forEach(colDef => {
                     const columnName = colDef.name;
-                    if (pkColumnName && columnName === pkColumnName) return; // PK change already handled
-
+                    if (pkColumnName && columnName === pkColumnName) return;
                     const initialValue = initialRow[columnName];
                     const currentValue = currentRow[columnName];
                     let valueChanged = false;
-
                     if (colDef.type === 'multi-select') {
                         const initialArray = Array.isArray(initialValue) ? initialValue.map(String).sort() : (initialValue ? [String(initialValue)].sort() : []);
                         const currentArray = Array.isArray(currentValue) ? currentValue.map(String).sort() : (currentValue ? [String(currentValue)].sort() : []);
@@ -617,9 +657,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                             valueChanged = true;
                         }
                     }
-
                     if (valueChanged) {
-                        rowModificationsList.push(`  - ${colDef.label || columnName}: ${formatValueForDigest(initialValue)} --> ${formatValueForDigest(currentValue)}`);
+                        // <<< USE NEW HELPER FOR RELATIONAL COLUMNS >>>
+                        const formattedInitial = colDef.deriveOptionsFrom
+                            ? formatRelationalValueForDigest(initialValue, colDef)
+                            : formatValueForDigest(initialValue);
+                        const formattedCurrent = colDef.deriveOptionsFrom
+                            ? formatRelationalValueForDigest(currentValue, colDef)
+                            : formatValueForDigest(currentValue);
+                        rowModificationsList.push(`  - ${colDef.label || columnName}: ${formattedInitial} --> ${formattedCurrent}`);
                     }
                 });
 
@@ -630,10 +676,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (pkColumnName && String(originalActualPK ?? '') !== String(currentActualPK ?? '') && String(originalActualPK ?? '') !== displayIdentifier) {
                         digestLines.push(`(Originally identified as: ${formatValueForDigest(originalActualPK)})`);
                     }
-                    digestLines.push(`Action: MODIFIED - `);
+                    digestLines.push(`Action: MODIFIED`);
                     digestLines.push("Modifications:");
                     rowModificationsList.forEach(change => digestLines.push(change));
-                    digestLines.push(""); // Blank line
+                    digestLines.push("");
                 }
             }
         });
@@ -641,7 +687,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!changesFound) {
             return "*No changes detected since the initial data load.*\n";
         }
-        console.log("EDITOR_APP: generateChangeDigestOnDemand - Markdown change digest generated.");
         return digestLines.join("\n");
     }
 

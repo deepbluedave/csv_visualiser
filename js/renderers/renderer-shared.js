@@ -105,142 +105,151 @@ function isTruthy(value, config) {
 
 
 /**
- * Generates an array of HTML strings for indicators (icons/tags) for a given column in a row.
+ * Generates an array of HTML strings for indicators for a given column in a row.
  * Handles arrays for multi-value items. Prioritizes global linkColumns. Uses global indicatorStyles.
+ * Includes "lookup" type for relational data display.
  * @param {object} row The data row object.
  * @param {string} columnName The header name of the column.
- * @param {object} config The application configuration object (global).
- * @returns {string[]} An array of HTML strings, each representing a single indicator. Returns empty array if no indicators are generated.
+ * @param {object} globalConfig The global application configuration object.
+ * @param {object[]} fullDataset The entire parsedData array, required for lookups.
+ * @returns {string[]} An array of HTML strings, each representing a single indicator.
  */
-function generateIndicatorsHTML(row, columnName, config) {
-    const linkColumns = config.generalSettings?.linkColumns || [];
+function generateIndicatorsHTML(row, columnName, globalConfig, fullDataset) {
+    const linkColumns = globalConfig.generalSettings?.linkColumns || [];
     const value = row[columnName];
-    const styleConfig = config.indicatorStyles ? config.indicatorStyles[columnName] : null;
-    const generatedHtmlArray = []; // <<< CHANGE: Initialize array
+    const styleConfig = globalConfig.indicatorStyles ? globalConfig.indicatorStyles[columnName] : null;
+    const generatedHtmlArray = [];
 
     // --- Global Link Column Check (Highest Priority) ---
     if (linkColumns.includes(columnName)) {
-        // --- START REPLACEMENT ---
-        const prefixes = config.generalSettings?.linkPrefixes || {};
-        const prefix = prefixes[columnName]; // Get prefix for this specific column
-        const valuesToCheck = Array.isArray(value) ? value : [value]; // Handle multi-value
+        const prefixes = globalConfig.generalSettings?.linkPrefixes || {};
+        const prefix = prefixes[columnName];
+        const valuesToCheck = Array.isArray(value) ? value : [value];
 
         valuesToCheck.forEach(singleValue => {
-            const cellValue = String(singleValue ?? '').trim(); // Get the ID or potential URL
+            const cellValue = String(singleValue ?? '').trim();
             let fullUrl = null;
             let linkTitle = '';
 
             if (prefix && cellValue) {
-                // Prefix exists AND cell value is not empty
-                fullUrl = prefix + cellValue; // Construct the URL
+                fullUrl = prefix + cellValue;
                 linkTitle = `Open Link: ${fullUrl}`;
-            } else if (!prefix && cellValue) {
-                // No prefix defined for this column, treat cellValue as potential full URL
-                if (cellValue.startsWith('http://') || cellValue.startsWith('https://')) {
-                    fullUrl = cellValue;
-                    linkTitle = `Open Link: ${fullUrl}`;
-                }
-                 // Optional: Handle non-URL text in link columns without prefix (currently ignored)
-                 // else { console.log(`Value in link column "${columnName}" is not a URL: ${cellValue}`); }
+            } else if (!prefix && cellValue && (cellValue.startsWith('http://') || cellValue.startsWith('https://'))) {
+                fullUrl = cellValue;
+                linkTitle = `Open Link: ${fullUrl}`;
             }
 
-            // Only add the link HTML if a valid URL was constructed/found
             if (fullUrl) {
-                generatedHtmlArray.push(`<a href="${fullUrl}" target="_blank" rel="noopener noreferrer" title="${linkTitle}" class="card-link-icon">🔗</a>`);
+                generatedHtmlArray.push(`<a href="${fullUrl}" target="_blank" rel="noopener noreferrer" title="${linkTitle}" class="card-link-icon">ðŸ”—</a>`);
             }
         });
-         // --- END REPLACEMENT ---
         return generatedHtmlArray;
     }
 
-
     // --- Standard Indicator Style Logic ---
-    if (!styleConfig || styleConfig.type === 'none') return generatedHtmlArray; // <<< CHANGE: Return empty array
+    if (!styleConfig || styleConfig.type === 'none') {
+        return generatedHtmlArray;
+    }
 
     const valuesToProcess = Array.isArray(value) ? value : [value];
 
     valuesToProcess.forEach(singleValue => {
         const currentValue = singleValue ?? '';
-        let itemHtml = ''; // HTML for this specific value
+        let itemHtml = '';
 
         try {
-            // --- ICON type --- (Logic remains largely the same)
             if (styleConfig.type === 'icon') {
-                // ... (keep the existing icon logic as it generates a single span string 'currentIconHtml') ...
-                 let iconApplied = false;
-                 let currentIconHtml = '';
- 
-                 // 1. Check trueCondition
-                 if (styleConfig.trueCondition && !iconApplied && isTruthy(currentValue, config)) {
-                     currentIconHtml = `<span class="csv-dashboard-icon ${styleConfig.trueCondition.cssClass || ''}" title="${styleConfig.trueCondition.title || columnName}">${styleConfig.trueCondition.value || '?'}</span>`;
-                     iconApplied = true;
-                 }
-                 // 2. Check valueMap...
-                 if (styleConfig.valueMap && !iconApplied) {
-                     // ... (valueMap logic remains the same) ...
-                      const valueLower = String(currentValue).toLowerCase();
-                      let mapping = null;
-                      if (styleConfig.valueMap.hasOwnProperty(currentValue)) mapping = styleConfig.valueMap[currentValue];
-                      else if (styleConfig.valueMap.hasOwnProperty(valueLower)) mapping = styleConfig.valueMap[valueLower];
-                      // ... (falsey checks) ...
-                      if (!mapping) {
-                         if (styleConfig.valueMap.hasOwnProperty(currentValue) && styleConfig.valueMap[currentValue]?.value === "") mapping = styleConfig.valueMap[currentValue];
-                         else if (styleConfig.valueMap.hasOwnProperty('false') && valueLower === 'false') mapping = styleConfig.valueMap['false'];
-                         else if (styleConfig.valueMap.hasOwnProperty('FALSE') && String(currentValue) === 'FALSE') mapping = styleConfig.valueMap['FALSE'];
-                         else if (styleConfig.valueMap.hasOwnProperty('0') && String(currentValue) === '0') mapping = styleConfig.valueMap['0'];
-                         else if (styleConfig.valueMap.hasOwnProperty('') && currentValue === '') mapping = styleConfig.valueMap[''];
-                     }
-                     // Apply mapping if found...
-                     if (mapping && mapping !== styleConfig.valueMap.default && mapping.value !== undefined) {
-                          if (mapping.value !== "") currentIconHtml = `<span class="csv-dashboard-icon ${mapping.cssClass || ''}" title="${mapping.title || columnName + ': ' + currentValue}">${mapping.value}</span>`;
-                          else currentIconHtml = "";
-                          iconApplied = true;
-                     }
-                     // 3. Check default...
-                      else if (styleConfig.valueMap.default && !iconApplied && styleConfig.valueMap.default.value !== undefined) {
-                          const defaultMapping = styleConfig.valueMap.default;
-                           if (defaultMapping.value !== "") {
-                             currentIconHtml = `<span class="csv-dashboard-icon ${defaultMapping.cssClass || ''}" title="${defaultMapping.title || columnName + ': ' + currentValue}">${defaultMapping.value}</span>`;
-                             iconApplied = true;
-                           }
-                      }
-                 }
+                let iconApplied = false;
+                let currentIconHtml = '';
+                if (styleConfig.trueCondition && !iconApplied && isTruthy(currentValue, globalConfig)) {
+                    currentIconHtml = `<span class="csv-dashboard-icon ${styleConfig.trueCondition.cssClass || ''}" title="${styleConfig.trueCondition.title || columnName}">${styleConfig.trueCondition.value || '?'}</span>`;
+                    iconApplied = true;
+                }
+                if (styleConfig.valueMap && !iconApplied) {
+                    const valueLower = String(currentValue).toLowerCase();
+                    let mapping = null;
+                    if (styleConfig.valueMap.hasOwnProperty(currentValue)) {
+                        mapping = styleConfig.valueMap[currentValue];
+                    } else if (styleConfig.valueMap.hasOwnProperty(valueLower)) {
+                        mapping = styleConfig.valueMap[valueLower];
+                    }
+                    if (!mapping) {
+                        if (styleConfig.valueMap.hasOwnProperty('') && currentValue === '') {
+                            mapping = styleConfig.valueMap[''];
+                        }
+                    }
+                    if (mapping && mapping !== styleConfig.valueMap.default && mapping.value !== undefined) {
+                        if (mapping.value !== "") {
+                            currentIconHtml = `<span class="csv-dashboard-icon ${mapping.cssClass || ''}" title="${mapping.title || columnName + ': ' + currentValue}">${mapping.value}</span>`;
+                        } else {
+                            currentIconHtml = "";
+                        }
+                        iconApplied = true;
+                    } else if (styleConfig.valueMap.default && !iconApplied && styleConfig.valueMap.default.value !== undefined) {
+                        const defaultMapping = styleConfig.valueMap.default;
+                        if (defaultMapping.value !== "") {
+                            currentIconHtml = `<span class="csv-dashboard-icon ${defaultMapping.cssClass || ''}" title="${defaultMapping.title || columnName + ': ' + currentValue}">${defaultMapping.value}</span>`;
+                            iconApplied = true;
+                        }
+                    }
+                }
                 itemHtml += currentIconHtml;
-            }
-            // --- TAG type --- (Now uses updated formatTag internally)
-            else if (styleConfig.type === 'tag') {
-                // formatTag already returns a single tag string or empty string
-                const tagHTML = formatTag(currentValue, config, columnName, styleConfig.titlePrefix);
+            } else if (styleConfig.type === 'tag') {
+                const tagHTML = formatTag(currentValue, globalConfig, columnName, styleConfig.titlePrefix);
                 if (tagHTML) {
                     itemHtml += tagHTML;
                 }
+            } else if (styleConfig.type === 'lookup') {
+                const lookupId = String(currentValue).trim();
+                if (lookupId === '') {
+                    itemHtml = '';
+                } else {
+                    const sourceConfig = styleConfig.source;
+                    if (!sourceConfig || !sourceConfig.dataColumn || !sourceConfig.displayColumn) {
+                        console.warn(`Lookup configuration for column "${columnName}" is invalid. Missing source.dataColumn or source.displayColumn.`);
+                        itemHtml = `<span class="tag tag-default" style="background-color: #f8d7da; color: #58151c;">Config Error</span>`;
+                    } else {
+                        // Use the passed-in fullDataset for the lookup
+                        if (!fullDataset || !Array.isArray(fullDataset)) {
+                             console.error(`Lookup for column "${columnName}" failed: fullDataset was not provided or not an array.`);
+                             itemHtml = `<span class="tag" style="background-color: #f8d7da; color: #58151c;">Data Error</span>`;
+                        } else {
+                             const foundItem = fullDataset.find(dataRow => String(dataRow[sourceConfig.dataColumn]) === lookupId);
+                             if (foundItem) {
+                                 const displayValue = foundItem[sourceConfig.displayColumn] || `(Label missing for ${lookupId})`;
+                                 if (styleConfig.styleAs === 'tag') {
+                                     const tempStyleConfig = { ...styleConfig, type: 'tag', valueMap: null, styleRules: null };
+                                     itemHtml = formatTag(displayValue, tempStyleConfig, columnName, styleConfig.titlePrefix);
+                                 } else {
+                                     itemHtml = `<span class="cell-text">${displayValue}</span>`;
+                                 }
+                             } else {
+                                 itemHtml = `<span class="tag" style="background-color: #fff3cd; color: #664d03;" title="Parent ID not found: ${lookupId}">${lookupId} (Not Found)</span>`;
+                             }
+                        }
+                    }
+                }
             }
         } catch (e) {
-            console.error(`Error generating standard indicator for column "${columnName}", value "${currentValue}":`, e);
+            console.error(`Error generating indicator for column "${columnName}", value "${currentValue}":`, e);
         }
 
-        // <<< CHANGE: Push the generated HTML for this single item to the array
-        if (itemHtml !== '') { // Only push if something was generated
-           generatedHtmlArray.push(itemHtml);
+        if (itemHtml !== '') {
+            generatedHtmlArray.push(itemHtml);
         }
-    }); // End forEach value
+    });
 
-    // <<< CHANGE: Remove separator/joining logic, just return the array
-    // const separator = (styleConfig?.layout === 'stacked' && generatedHtmlArray.length > 1) ? '<br>' : ' ';
-    // indicatorsHTML = generatedHtmlArray.join(separator);
     return generatedHtmlArray;
 }
 
 // --- createInitiativeCard and renderGroupedItemsAsGrid remain unchanged ---
 // --- They rely on generateIndicatorsHTML which now handles stacking internally ---
 
+// REPLACE the existing createInitiativeCard function in js/renderers/renderer-shared.js with this:
 /**
  * Creates the HTML structure for a single initiative card.
- * Reads configuration from the specific tab's config (`tabViewConfig`).
- * Uses global config for headers, indicators, etc. (`globalConfig`).
- * Renders indicators using flexbox layout.
  * @param {object} row The data row object.
- * @param {object} tabViewConfig The configuration object for the specific tab this card belongs to (e.g., tab.config).
+ * @param {object} tabViewConfig The configuration object for the specific tab this card belongs to.
  * @param {object} globalConfig The global application configuration object.
  * @param {string} [cardClass='kanban-card'] The CSS class for the card element.
  * @returns {HTMLElement} The card DOM element.
@@ -248,14 +257,11 @@ function generateIndicatorsHTML(row, columnName, config) {
 function createInitiativeCard(row, tabViewConfig, globalConfig, cardClass = 'kanban-card') {
     const cardDiv = document.createElement('div');
     cardDiv.className = cardClass;
-
     const headerDiv = document.createElement('div');
     headerDiv.className = 'card-header';
-
     const titleSpan = document.createElement('span');
     titleSpan.className = 'card-title';
 
-    // ... (Title column determination and link handling remains the same) ...
     let titleCol = 'Title';
     const validHeaders = globalConfig.csvHeaders || [];
     if (validHeaders.length > 0 && !validHeaders.includes(titleCol)) titleCol = validHeaders[0];
@@ -279,33 +285,24 @@ function createInitiativeCard(row, tabViewConfig, globalConfig, cardClass = 'kan
     } else {
         titleSpan.title = titleValue; headerDiv.appendChild(titleSpan);
     }
-    // --- *** END Title part *** ---
 
-
-    // --- *** UPDATED: Indicators Handling *** ---
     const indicatorsSpan = document.createElement('span');
-    indicatorsSpan.className = 'card-indicators'; // CSS will apply flex display to this
-
-    const indicatorCols = tabViewConfig?.cardIndicatorColumns || []; // Use passed tab config
+    indicatorsSpan.className = 'card-indicators';
+    const indicatorCols = tabViewConfig?.cardIndicatorColumns || [];
 
     indicatorCols.forEach(colName => {
         if (validHeaders.includes(colName)) {
-            // Call the MODIFIED generateIndicatorsHTML which returns an ARRAY of HTML strings
-            const indicatorHtmlArray = generateIndicatorsHTML(row, colName, globalConfig);
-
-            // Append each indicator HTML string to the container
+            // Pass globalConfig.parsedData as the full dataset for lookups
+            const indicatorHtmlArray = generateIndicatorsHTML(row, colName, globalConfig, globalConfig.parsedData);
             indicatorHtmlArray.forEach(indicatorHtmlString => {
-                 // Use insertAdjacentHTML for potentially better performance than repeated innerHTML+=
                  indicatorsSpan.insertAdjacentHTML('beforeend', indicatorHtmlString);
-                 // Note: Spacing between indicators is now handled by CSS 'gap' property
             });
         }
     });
 
-    if (indicatorsSpan.childNodes.length > 0) { // Check if any indicators were actually added
+    if (indicatorsSpan.childNodes.length > 0) {
         headerDiv.appendChild(indicatorsSpan);
     }
-     // --- *** END UPDATED: Indicators Handling *** ---
 
     cardDiv.appendChild(headerDiv);
     return cardDiv;
