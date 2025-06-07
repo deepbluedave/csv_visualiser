@@ -37,8 +37,8 @@ This section details the key capabilities of the CSV Editor.
     *   The list of choices available in `select` and `multi-select` popups is highly dynamic and aggregated from several sources to provide comprehensive and relevant options:
         1.  **Explicit Options:** Defined directly in the `columns[n].options` array within `editor_config.js`.
         2.  **Viewer Config Derivation:** If `columns[n].optionsSource: "viewerConfigValueMap"` is set, options are derived from the `valueMap` keys in the corresponding `indicatorStyles` section of the loaded `viewer_config.js`.
-        3.  **Cross-Column Derivation with Filtering (New):** If `columns[n].deriveOptionsFromColumn: "SourceColumnName"` is set, options are populated from the unique values found in the specified `SourceColumnName` within the current dataset.
-            *   Additionally, an optional `columns[n].sourceColumnFilter` (using standard filter criteria `{logic, conditions:[]}`) can be applied to these source rows. Only values from source rows matching this filter will be included in the picklist. This allows, for example, populating a "Parent" field only with "Entry Names" from rows that are themselves master items (e.g., their own "Parent" field is empty).
+        3.  **Relational Lookup with Filtering (New):** Use `columns[n].deriveOptionsFrom` to pull option **values** from another column (e.g., an `ItemID` column) and optionally specify a `labelColumn` to show a friendlier name. This mechanism allows a "Parent" select field to reference other rows, establishing parent/child relationships.
+            *   An optional `columns[n].sourceColumnFilter` (using standard filter criteria `{logic, conditions:[]}`) can limit which rows are offered. A common pattern is filtering to only show top-level items as potential parents.
             *   Self-references are automatically excluded (e.g., an entry cannot be its own parent if derived this way).
         4.  **Existing Data Values:** All unique values currently present in the column being edited (or the derived source column, after its own filtering) across all rows of the loaded CSV are automatically included as selectable options.
 
@@ -50,6 +50,7 @@ This section details the key capabilities of the CSV Editor.
 
 *   **Data Operations:**
     *   **Add New Row:** A button allows users to append new, empty (or default-valued) rows to the dataset. If display filters are active, new rows (which typically default to "master" status if a parent-child relationship is defined) will appear if they match the current filter.
+    *   **Automatic ID Generation (New):** If the configuration includes a column named `ItemID`, newly added rows automatically receive a unique value like `item_[timestamp]_[rand]`, ensuring each entry can be referenced as a parent or child.
     *   **Delete Existing Row:** Each row has a delete button. A confirmation prompt is shown before a row is permanently removed from the dataset.
     *   **Sort Data (Default):** A button allows users to re-apply the default sorting rules (defined in `viewer_config.js`'s `generalSettings.defaultItemSortBy`) and any visual partitioning rules (from `editor_config.js`'s `editorDisplaySettings.partitionBy`) to the entire dataset.
 
@@ -226,8 +227,8 @@ window.editorConfig = {
       // For type: "select" or "multi-select"
       "optionsSource": "viewerConfigValueMap", // "viewerConfigValueMap" or "editorConfig" (default if `options` present)
       "options": ["Option A", { "value": "opt_b", "label": "Option B" }], // Explicit options
-      "deriveOptionsFromColumn": "AnotherColumnName", // Optional, New: Derive options from values in this other column
-      "sourceColumnFilter": { // Optional filter for options derived via deriveOptionsFromColumn
+      "deriveOptionsFrom": { "column": "AnotherColumnName", "labelColumn": "LabelField" }, // Optional: derive options from existing rows
+      "sourceColumnFilter": { // Optional filter for options derived via deriveOptionsFrom
         "logic": "AND",
         "conditions": [
           { "column": "ColumnInSourceRow", "filterType": "valueIsEmpty" }
