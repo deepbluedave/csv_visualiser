@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- DOM Element References ---
     const {
         viewerConfigFileInput, editorConfigFileInput, csvDataFileInput,
-        addRowBtn, sortDataBtn, exportCsvBtn, statusMessages,
+        addRowBtn, sortDataBtn, exportCsvBtn, uploadConfluenceBtn, statusMessages,
         viewChangesBtn, changesModal, changeDigestOutput, closeChangesModalBtn
     } = editorDomElements;
     const mainPageHeading = document.querySelector('#csv-editor-wrapper h1');
@@ -175,11 +175,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         const canExport = !!(editorCfg && editorCfg.columns && editorCfg.columns.length > 0);
         const canSort = !!(csvDataMain.length > 0 && viewerCfg?.generalSettings?.defaultItemSortBy?.length > 0 && editorCfg?.columns?.length > 0);
         const canViewChanges = !!(editorCfg && (initialCsvData.length > 0 || cachedCumulativeLogContent !== null));
+        const confluenceEnabled = !!(editorCfg?.confluenceAttachmentSettings?.enabled);
 
         if (addRowBtn) addRowBtn.disabled = !canAddRow;
         if (sortDataBtn) sortDataBtn.disabled = !canSort;
         if (exportCsvBtn) exportCsvBtn.disabled = !canExport;
         if (viewChangesBtn) viewChangesBtn.disabled = !canViewChanges;
+        if (uploadConfluenceBtn) {
+            if (confluenceEnabled) {
+                uploadConfluenceBtn.style.display = '';
+                const ready = csvDataMain.length > 0 && confluenceAvailable();
+                uploadConfluenceBtn.disabled = !ready;
+            } else {
+                uploadConfluenceBtn.style.display = 'none';
+            }
+        }
     }
 
     async function loadFileFromUrl(url, type, expectedGlobalVarName = null) {
@@ -1074,6 +1084,43 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             triggerDownload(combinedLogContent, changelogFilename, 'text/markdown;charset=utf-8;');
             updateEditorStatus(`Changelog exported to ${changelogFilename}. Export process complete.`);
+        });
+    }
+
+    if (uploadConfluenceBtn) {
+        uploadConfluenceBtn.addEventListener('click', async () => {
+            const cfg = getEditorConfig();
+            if (!cfg) { updateEditorStatus('Editor config not loaded.', true); return; }
+            if (!confluenceAvailable()) { updateEditorStatus('Confluence integration not available.', true); return; }
+
+            updateEditorStatus('Uploading attachments to Confluence...');
+            try {
+                const csvOptions = cfg.csvOutputOptions || {};
+                const csvString = generateCsvForExport(csvDataMain, cfg.columns, csvOptions);
+                const csvName = cfg.confluenceAttachmentSettings?.csvAttachmentName || 'editor_data.csv';
+
+                const now = new Date();
+                const ts = getFormattedTimestampsForLog(now);
+                const newChangesStamp = `${ts.utc} | ${ts.newYork} | ${ts.phoenix}`;
+                let changesDigest = '*No new changes detected since last CSV load.*\n';
+                if (initialCsvData.length > 0) changesDigest = generateChangeDigestOnDemand();
+
+                let combined = `## Changes Recorded: ${newChangesStamp}\n\n` + changesDigest + "\n\n---\n\n";
+                if (cachedCumulativeLogContent !== null) {
+                    combined += cachedCumulativeLogContent;
+                } else if (cfg.cumulativeLogUrl) {
+                    combined += `*Note: Previous cumulative log from ${cfg.cumulativeLogUrl} could not be loaded.*\n`;
+                }
+                const logName = cfg.confluenceAttachmentSettings?.changelogAttachmentName || 'changelog.md';
+
+                await saveOrUpdateConfluenceAttachment(csvName, csvString);
+                await saveOrUpdateConfluenceAttachment(logName, combined);
+                updateEditorStatus('Attachments saved to Confluence.');
+            } catch (err) {
+                console.error('Confluence upload failed', err);
+                const msg = err.statusText || err.message || 'Unknown error';
+                updateEditorStatus(`Error uploading to Confluence: ${msg}`, true);
+            }
         });
     }
 

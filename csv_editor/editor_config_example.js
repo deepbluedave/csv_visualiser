@@ -19,6 +19,12 @@ window.editorConfig = {
         "booleanFalseValue": "FALSE"
     },
 
+    "confluenceAttachmentSettings": {
+        "enabled": false,
+        "csvAttachmentName": "EditorData.csv",
+        "changelogAttachmentName": "EditorChangelog.md"
+    },
+
     "editorDisplaySettings": {
         "partitionBy": {
             "enabled": true,
