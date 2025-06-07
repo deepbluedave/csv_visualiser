@@ -414,7 +414,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const effectiveHeadersForPartitionCheck = editorCfg.columns.map(c => c.name);
             const configForPartitionCheck = {
                 generalSettings: {
-                    trueValues: viewerCfg?.generalSettings?.trueValues || ["true", "yes", "1", "y", "x", "on", "âœ“"]
+                    trueValues: viewerCfg?.generalSettings?.trueValues || ["true", "yes", "1", "y", "x", "on", "✓"]
                 },
                 csvHeaders: effectiveHeadersForPartitionCheck
             };
@@ -808,7 +808,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const configForCheck = {
             csvHeaders: headersForCheck,
             generalSettings: {
-                trueValues: viewerCfg?.generalSettings?.trueValues || ["true", "yes", "1", "y", "x", "on", "âœ“"]
+                trueValues: viewerCfg?.generalSettings?.trueValues || ["true", "yes", "1", "y", "x", "on", "✓"]
             }
         };
 
@@ -1070,7 +1070,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // Construct Markdown changelog content using the new timestamp format
             let combinedLogContent = `## Changes Recorded: ${newChangesTimestampForContent}\n\n`;
-            const user = (typeof getConfluenceUser === 'function') ? getConfluenceUser() : null;
+            const user = getConfluenceUser();
             if (user) {
                 combinedLogContent += `Editor - User ID: ${user.id} | UserName: ${user.name}\n\n`;
             } else {
@@ -1112,7 +1112,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (initialCsvData.length > 0) changesDigest = generateChangeDigestOnDemand();
 
                 let combined = `## Changes Recorded: ${newChangesStamp}\n\n` + changesDigest + "\n\n";
-                const user = (typeof getConfluenceUser === 'function') ? getConfluenceUser() : null;
+                const user = getConfluenceUser();
                 if (user) {
                     combined += `Editor - User ID: ${user.id} | UserName: ${user.name}\n\n`;
                 } else {
@@ -1158,7 +1158,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // Construct Markdown changelog content for modal
             let combinedDigestText = `## Changes Recorded: ${newChangesTimestampForContent}\n\n`;
-            const user = (typeof getConfluenceUser === 'function') ? getConfluenceUser() : null;
+            const user = getConfluenceUser();
             if (user) {
                 combinedDigestText += `Editor - User ID: ${user.id} | UserName: ${user.name}\n\n`;
             } else {

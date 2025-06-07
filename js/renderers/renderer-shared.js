@@ -140,7 +140,7 @@ function generateIndicatorsHTML(row, columnName, globalConfig, fullDataset) {
             }
 
             if (fullUrl) {
-                generatedHtmlArray.push(`<a href="${fullUrl}" target="_blank" rel="noopener noreferrer" title="${linkTitle}" class="card-link-icon">ðŸ”—</a>`);
+                generatedHtmlArray.push(`<a href="${fullUrl}" target="_blank" rel="noopener noreferrer" title="${linkTitle}" class="card-link-icon">🔗</a>`);
             }
         });
         return generatedHtmlArray;
