@@ -16,7 +16,7 @@ function renderTableHierarchy(filteredData, tabConfig, globalConfig, targetEleme
     targetElement.innerHTML = '';
 
     const config = tabConfig.config;
-    const { idColumn, parentColumn, displayColumns, columnWidths, headerOrientations } = config;
+    const { idColumn, parentColumn, displayColumns, columnWidths, headerOrientations, columnLabels } = config; // <<< GET columnLabels
     const validHeaders = globalConfig.csvHeaders || [];
 
     if (!idColumn || !validHeaders.includes(idColumn)) {
@@ -79,13 +79,17 @@ function renderTableHierarchy(filteredData, tabConfig, globalConfig, targetEleme
     targetElement.appendChild(table);
 
     const validDisplayCols = displayColumns.filter(header => validHeaders.includes(header));
+    const labels = columnLabels || {}; // Use passed in labels or empty object
+
     validDisplayCols.forEach(header => {
         const th = document.createElement('th');
         const orientation = (headerOrientations && (headerOrientations[header] || headerOrientations['default'])) || 'vertical';
         th.classList.add(orientation === 'horizontal' ? 'header-horizontal' : 'header-vertical');
         const span = document.createElement('span');
         span.className = 'header-text';
-        span.textContent = header;
+        // <<< MODIFIED LINE: Use the label from columnLabels, or fall back to the header name >>>
+        span.textContent = labels[header] || header;
+        span.title = header;
         th.appendChild(span);
         if (columnWidths && columnWidths[header]) {
             th.style.width = columnWidths[header];
@@ -107,7 +111,6 @@ function renderTableHierarchy(filteredData, tabConfig, globalConfig, targetEleme
             if (colIndex === 0 && level > 0) {
                 cellContentWrapper.style.paddingLeft = `${level * 25}px`;
             }
-            // Pass the original filteredData as the full dataset for any lookups
             const indicatorHtmlArray = generateIndicatorsHTML(item, header, globalConfig, filteredData);
             if (indicatorHtmlArray.length > 0) {
                 const indicatorContainer = document.createElement('span');

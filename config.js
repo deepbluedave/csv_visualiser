@@ -12,6 +12,7 @@ let defaultConfig = {
     "linkColumns": ["InfoLink"],
     "defaultCardIndicatorColumns": ["Pillar", "WorkItemType", "Status", "Owner", "DueDate"],
     "defaultItemSortBy": [
+      { "column": "Pillar", "direction": "asc" },
       { "column": "Priority", "direction": "custom", "order": ["Critical", "High", "Medium", "Low"] },
       { "column": "DueDate", "direction": "asc" }
     ]
@@ -118,6 +119,12 @@ let defaultConfig = {
       "id": "all-items", "title": "📋 All Items", "type": "table", "enabled": true, "filter": null,
       "config": {
         "displayColumns": ["WorkItem", "Pillar", "WorkItemType", "ParentItemID", "Status", "Owner", "AssignedTo", "Priority", "DueDate", "InfoLink"],
+        "columnLabels": {
+          "ItemID": "ID",
+          "WorkItem": "Work Item Title",
+          "ParentItemID": "Parent Item", // <<< HERE is the override
+          "WorkItemType": "Type"
+        },
         "columnWidths": { "WorkItem": "300px", "Pillar": "180px", "ParentItemID": "150px", "Status": "130px", "Assignee": "150px" }
       }
     },
@@ -146,18 +153,26 @@ let defaultConfig = {
         // --- Standard table-like configurations ---
         "displayColumns": [
           "WorkItem",
+          "Pillar",
           "ItemType",
           "Status",
           "Owner",
           "DueDate",
           "IsBlocked"
         ],
+        "columnLabels": {
+          "ItemID": "ID",
+          "WorkItem": "Title",
+          "ParentItemID": "Parent Item", // <<< HERE is the override
+          "WorkItemType": "Type"
+        },
         "columnWidths": {
-          "WorkItem": "400px",  // Give the main hierarchical column plenty of space
+          "Pillar": "80px", // Default width for unspecified columns
+          "WorkItem": "200px",  // Give the main hierarchical column plenty of space
           "ItemType": "180px",
-          "Status": "150px",
-          "Owner": "150px",
-          "DueDate": "120px",
+          "Status": "80px",
+          "Owner": "80px",
+          "DueDate": "80px",
           "IsBlocked": "80px"
         },
         "headerOrientations": {
@@ -181,7 +196,7 @@ let defaultConfig = {
       "config": {
         "primaryNodeIdColumn": "WorkItem",
         "primaryNodeLabelColumn": "WorkItem",
-        "categoryNodeColumns": ["Pillar", "Status", "Assignee"],
+        "categoryNodeColumns": ["ParentItemID"],
         "nodeColorColumn": "Pillar",
         "nodeShape": "box",
         "nodeTooltipColumns": ["WorkItemType", "Owner", "Status", "DueDate"],

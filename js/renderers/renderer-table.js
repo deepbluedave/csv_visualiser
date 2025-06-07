@@ -2,11 +2,12 @@
 
 /**
  * Renders data into a table within the specified target element.
+ * Uses configuration specific to the tab.
  * @param {object[]} filteredData The data rows already filtered for this tab.
  * @param {object} tabConfig The configuration object for this specific table tab.
  * @param {object} globalConfig The global application configuration.
  * @param {HTMLElement} targetElement The container element for this tab.
- * @param {Function} showMessage Function to display messages.
+ * @param {Function} showMessage Function to display messages in the view.
  */
 function renderTable(filteredData, tabConfig, globalConfig, targetElement, showMessage) {
     if (!targetElement) {
@@ -44,18 +45,23 @@ function renderTable(filteredData, tabConfig, globalConfig, targetElement, showM
     const linkColumns = globalConfig.generalSettings?.linkColumns || [];
     const colWidths = tabConfig.config?.columnWidths || {};
     const headerOrientations = tabConfig.config?.headerOrientations || {};
+    const columnLabels = tabConfig.config?.columnLabels || {}; // <<< GET THE NEW CONFIG
     let displayedHeaderCount = 0;
 
+    // --- Render Header ---
     displayCols.forEach(header => {
         if (validHeaders.includes(header)) {
             const th = document.createElement('th');
             const orientation = headerOrientations[header] || headerOrientations['default'] || 'vertical';
             th.classList.add(orientation === 'horizontal' ? 'header-horizontal' : 'header-vertical');
+
             const span = document.createElement('span');
             span.className = 'header-text';
-            span.textContent = header;
-            span.title = header;
+            // <<< MODIFIED LINE: Use the label from columnLabels, or fall back to the header name >>>
+            span.textContent = columnLabels[header] || header;
+            span.title = header; // Tooltip still shows the original column name
             th.appendChild(span);
+
             const width = colWidths[header] || colWidths['default'] || 'auto';
             if (width && width !== 'auto') {
                 th.style.width = width;
@@ -78,6 +84,7 @@ function renderTable(filteredData, tabConfig, globalConfig, targetElement, showM
         return;
     }
 
+    // --- Render Body ---
     dataToRender.forEach((row, rowIndex) => {
         const tr = document.createElement('tr');
         displayCols.forEach(header => {
@@ -121,7 +128,6 @@ function renderTable(filteredData, tabConfig, globalConfig, targetElement, showM
                 } else {
                     const columnStyle = globalConfig.indicatorStyles?.[header];
                     if (columnStyle && (columnStyle.type === 'icon' || columnStyle.type === 'tag' || columnStyle.type === 'lookup')) {
-                        // Pass the full dataset (dataToRender) for lookups
                         const indicatorHtmlArray = generateIndicatorsHTML(row, header, globalConfig, dataToRender);
                         if (indicatorHtmlArray.length > 0) {
                             cellHTML = indicatorHtmlArray.join(' ');
