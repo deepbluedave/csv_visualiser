@@ -324,4 +324,9 @@ The project is designed to be embeddable within other web pages or platforms (li
     *   Generates `deploy/dashboard_fragment.html`, which contains the core HTML structure needed for the dashboard, along with `<link>` and `<script>` tags pointing to the merged assets (`style.css`, `config.js`, `script.js`).
 *   **Embedding:** Copy the contents of the `deploy/` folder to your target hosting location (e.g., Confluence attachments). Edit the `href` and `src` paths within `dashboard_fragment.html` to correctly point to the location of the deployed `style.css`, `config.js`, and `script.js` files relative to where the fragment is being embedded. Paste the content of the (edited) `dashboard_fragment.html` into the host page or macro.
 
+## CSV Editor
+
+Need to edit your CSV data? A companion editor lives in the [csv_editor](csv_editor) folder. See [csv_editor/editor_readme.md](csv_editor/editor_readme.md) for details on its editing features.
+
+Alternative configuration examples are available under the [alt_config/](alt_config/) directory.
 ---
