@@ -1,7 +1,3 @@
-Okay, here is a comprehensive `README.md` for your project, written from scratch and incorporating all the features discussed.
-
----
-
 # Configurable CSV Dashboard Generator
 
 [![Made with Vanilla JS](https://img.shields.io/badge/Made%20with-Vanilla%20JS-f7df1e.svg)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
