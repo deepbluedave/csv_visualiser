@@ -1104,6 +1104,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const csvOptions = cfg.csvOutputOptions || {};
                 const csvString = generateCsvForExport(csvDataMain, cfg.columns, csvOptions);
                 const csvName = cfg.confluenceAttachmentSettings?.csvAttachmentName || 'editor_data.csv';
+                const csvPageId = cfg.confluenceAttachmentSettings?.csvAttachmentPageId || null;
 
                 const now = new Date();
                 const ts = getFormattedTimestampsForLog(now);
@@ -1125,9 +1126,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     combined += `*Note: Previous cumulative log from ${cfg.cumulativeLogUrl} could not be loaded.*\n`;
                 }
                 const logName = cfg.confluenceAttachmentSettings?.changelogAttachmentName || 'changelog.md';
+                const logPageId = cfg.confluenceAttachmentSettings?.changelogAttachmentPageId || null;
 
-                await saveOrUpdateConfluenceAttachment(csvName, csvString);
-                await saveOrUpdateConfluenceAttachment(logName, combined);
+                await saveOrUpdateConfluenceAttachment(csvName, csvString, csvPageId);
+                await saveOrUpdateConfluenceAttachment(logName, combined, logPageId);
                 updateEditorStatus('Attachments saved to Confluence.');
             } catch (err) {
                 console.error('Confluence upload failed', err);

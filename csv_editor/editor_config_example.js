@@ -22,7 +22,9 @@ window.editorConfig = {
     "confluenceAttachmentSettings": {
         "enabled": false,
         "csvAttachmentName": "EditorData.csv",
-        "changelogAttachmentName": "EditorChangelog.md"
+        "csvAttachmentPageId": null,
+        "changelogAttachmentName": "EditorChangelog.md",
+        "changelogAttachmentPageId": null
     },
 
     "editorDisplaySettings": {
