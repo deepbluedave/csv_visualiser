@@ -13,14 +13,14 @@ function getConfluenceUser() {
     return id ? { id: String(id).toUpperCase(), name } : null;
 }
 
-async function saveOrUpdateConfluenceAttachment(fileName, fileContent) {
+async function saveOrUpdateConfluenceAttachment(fileName, fileContent, targetPageId = null) {
     return new Promise(async (resolve, reject) => {
         if (!confluenceAvailable()) {
             return reject({ message: 'Confluence AJS object not available.' });
         }
-        const pageId = AJS.Meta.get('page-id');
+        const effectivePageId = targetPageId || AJS.Meta.get('page-id');
         const contextPath = AJS.contextPath();
-        if (!pageId) return reject({ message: 'Error: Could not determine Page ID.' });
+        if (!effectivePageId) return reject({ message: 'Error: Could not determine Page ID.' });
 
         const mimeType = fileName.endsWith('.csv') ? 'text/csv'
             : (fileName.endsWith('.md') ? 'text/markdown' : 'text/plain');
@@ -29,14 +29,14 @@ async function saveOrUpdateConfluenceAttachment(fileName, fileContent) {
         formData.append('comment', `File updated programmatically on ${new Date().toLocaleDateString()}`);
         formData.append('minorEdit', 'true');
 
-        const checkUrl = `${contextPath}/rest/api/content/${pageId}/child/attachment?filename=${encodeURIComponent(fileName)}`;
+        const checkUrl = `${contextPath}/rest/api/content/${effectivePageId}/child/attachment?filename=${encodeURIComponent(fileName)}`;
         try {
             const checkResp = await fetch(checkUrl, { credentials: 'same-origin' });
             if (checkResp.ok) {
                 const respData = await checkResp.json();
                 const attachmentId = (respData.results && respData.results.length > 0) ? respData.results[0].id : null;
                 if (attachmentId) {
-                    const updateUrl = `${contextPath}/rest/api/content/${pageId}/child/attachment/${attachmentId}/data`;
+                    const updateUrl = `${contextPath}/rest/api/content/${effectivePageId}/child/attachment/${attachmentId}/data`;
                     const upResp = await fetch(updateUrl, {
                         method: 'POST',
                         body: formData,
@@ -46,10 +46,10 @@ async function saveOrUpdateConfluenceAttachment(fileName, fileContent) {
                     if (!upResp.ok) throw upResp;
                     return resolve(await upResp.json());
                 } else {
-                    return resolve(await _createNewAttachment(pageId, contextPath, formData));
+                    return resolve(await _createNewAttachment(effectivePageId, contextPath, formData));
                 }
             } else if (checkResp.status === 404) {
-                return resolve(await _createNewAttachment(pageId, contextPath, formData));
+                return resolve(await _createNewAttachment(effectivePageId, contextPath, formData));
             } else {
                 throw checkResp;
             }
