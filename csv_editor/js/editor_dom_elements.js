@@ -7,6 +7,7 @@ const editorDomElements = {
     addRowBtn: document.getElementById('addRowBtn'),
     sortDataBtn: document.getElementById('sortDataBtn'),
     exportCsvBtn: document.getElementById('exportCsvBtn'),
+    uploadConfluenceBtn: document.getElementById('uploadConfluenceBtn'),
     statusMessages: document.getElementById('statusMessages'),
     editorGridContainer: document.getElementById('editorGridContainer'),
     editorGridTable: document.querySelector('#editorGridContainer table'),
@@ -32,5 +33,6 @@ if (!editorDomElements.viewChangesBtn) console.warn("DOM Element 'viewChangesBtn
 if (!editorDomElements.changesModal) console.warn("DOM Element 'changesModal' not found.");
 if (!editorDomElements.changeDigestOutput) console.warn("DOM Element 'changeDigestOutput' not found.");
 if (!editorDomElements.closeChangesModalBtn) console.warn("DOM Element 'closeChangesModalBtn' not found.");
+if (!editorDomElements.uploadConfluenceBtn) console.warn("DOM Element 'uploadConfluenceBtn' not found.");
 
 // --- End of file editor_dom_elements.js ---
