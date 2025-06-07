@@ -6,6 +6,13 @@ function confluenceAvailable() {
            AJS.Meta && typeof AJS.Meta.get === 'function';
 }
 
+function getConfluenceUser() {
+    if (!confluenceAvailable()) return null;
+    const id = AJS.params?.remoteUser;
+    const name = AJS.params?.userDisplayName;
+    return id ? { id: String(id).toUpperCase(), name } : null;
+}
+
 async function saveOrUpdateConfluenceAttachment(fileName, fileContent) {
     return new Promise(async (resolve, reject) => {
         if (!confluenceAvailable()) {
