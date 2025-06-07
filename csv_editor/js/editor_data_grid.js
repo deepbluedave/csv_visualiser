@@ -352,7 +352,17 @@ function handleCellClickToEdit(event) {
         const currentValInModel = _csvDataInstance[rowIndex][columnName];
         td.innerHTML = getStyledCellDisplay(currentValInModel, colDef);
         validateCell(td, currentValInModel, colDef);
-        if (saveChange) window.dispatchEvent(new CustomEvent('editorDataChanged'));
+        if (saveChange) {
+            const refreshNeeded = _editorConfigInstance?.columns?.some(cfg =>
+                cfg.deriveOptionsFrom && cfg.deriveOptionsFrom.labelColumn === columnName);
+            if (refreshNeeded) {
+                renderGridData();
+                if (typeof applyDisplayFilter === 'function') {
+                    applyDisplayFilter();
+                }
+            }
+            window.dispatchEvent(new CustomEvent('editorDataChanged'));
+        }
     };
     inputElement.addEventListener('blur', () => finishEdit(true));
     inputElement.addEventListener('keydown', (e) => {
