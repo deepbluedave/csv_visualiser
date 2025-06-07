@@ -34,7 +34,7 @@
                 <button id="addRowBtn" disabled>+ Add Row</button>
                 <button id="sortDataBtn" disabled>Sort Data (Default)</button>
                 <button id="exportCsvBtn" disabled>Export to CSV</button>
-                <button id="viewChangesBtn" disabled>View Changes</button> <!-- << NEW BUTTON -->
+                <button id="viewChangesBtn" disabled>View Changes</button> <!-- Button opens the change digest modal -->
                 <div id="displayFilterContainer" style="display: inline-block; margin-right: 10px;">
                 <!-- Dropdown will be inserted here by JS -->
                 </div>
@@ -50,7 +50,7 @@
         </div>
     </div>
 
-    <!-- << NEW MODAL STRUCTURE >> -->
+    <!-- Modal for displaying recorded changes -->
     <div id="changesModal" class="modal" style="display:none;">
         <div class="modal-content">
             <span class="close-button" id="closeChangesModalBtn">×</span>

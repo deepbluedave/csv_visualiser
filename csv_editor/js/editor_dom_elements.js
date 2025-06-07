@@ -13,7 +13,7 @@ const editorDomElements = {
     editorGridThead: document.querySelector('#editorGridContainer table thead'),
     editorGridTbody: document.querySelector('#editorGridContainer table tbody'),
     
-    // --- NEW ELEMENTS ---
+    // Elements supporting the change digest modal
     viewChangesBtn: document.getElementById('viewChangesBtn'),
     changesModal: document.getElementById('changesModal'),
     changeDigestOutput: document.getElementById('changeDigestOutput'),

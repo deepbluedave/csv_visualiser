@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let initialCsvData = [];
     let csvHeadersFromUpload = [];
     let cachedCumulativeLogContent = null;
-    let activeDisplayFilterId = null; // <<< NEW: To store the ID of the currently active display filter
+    let activeDisplayFilterId = null; // ID of the currently active display filter
 
     // --- DOM Element References ---
     const {
@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         viewChangesBtn, changesModal, changeDigestOutput, closeChangesModalBtn
     } = editorDomElements;
     const mainPageHeading = document.querySelector('#csv-editor-wrapper h1');
-    const displayFilterDropdown = document.createElement('select'); // <<< NEW: Create dropdown element
+    const displayFilterDropdown = document.createElement('select'); // Dropdown for selecting a display filter
     displayFilterDropdown.id = 'editorDisplayFilterDropdown';
     displayFilterDropdown.style.marginLeft = '15px'; // Add some spacing
 
@@ -230,7 +230,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         initialCsvData.length = 0;
         csvHeadersFromUpload = [];
         cachedCumulativeLogContent = null;
-        activeDisplayFilterId = null; // <<< NEW: Reset active filter
+        activeDisplayFilterId = null; // Reset active filter ID
 
         clearAllConfigs();
         viewerConfigLocal = null;
@@ -248,7 +248,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             editorConfigFileInput.previousElementSibling.textContent = "Load Editor Config (editor_config.js):";
         }
         if (csvDataFileInput) csvDataFileInput.parentElement.style.display = '';
-        populateDisplayFilterDropdown(); // <<< NEW: Repopulate/clear dropdown
+        populateDisplayFilterDropdown(); // Refresh filter dropdown
     }
 
     function handleConfigLoadError(configType, error) {
@@ -263,8 +263,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             editorConfigLocal = null;
             clearGridStructure();
             cachedCumulativeLogContent = null;
-            activeDisplayFilterId = null; // <<< NEW: Reset
-            populateDisplayFilterDropdown(); // <<< NEW: Repopulate/clear
+            activeDisplayFilterId = null; // Reset after loading
+            populateDisplayFilterDropdown(); // Repopulate dropdown
         }
         initDataGridReferences(csvDataMain, getEditorConfig(), getViewerConfig());
     }
@@ -279,9 +279,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             resetEditorTitles();
         }
 
-        // <<< NEW: Populate display filter dropdown based on new editorConfig >>>
+        // Update the dropdown after loading new editorConfig
         populateDisplayFilterDropdown();
-        // <<< END NEW >>>
 
         if (edCfg) {
             console.log("EDITOR_APP: finalizeConfigAndDataLoad - Editor config present, rendering grid structure.");
@@ -598,7 +597,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 digestLines.push("Original Values:");
                 columnDefs.forEach(colDef => {
                     const valueToFormat = initialRow[colDef.name];
-                    // <<< USE NEW HELPER FOR RELATIONAL COLUMNS >>>
+                    // Format values from relational columns
                     const formattedValue = colDef.deriveOptionsFrom
                         ? formatRelationalValueForDigest(valueToFormat, colDef)
                         : formatValueForDigest(valueToFormat);
@@ -619,7 +618,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 digestLines.push("Values:");
                 columnDefs.forEach(colDef => {
                     const valueToFormat = currentRow[colDef.name];
-                     // <<< USE NEW HELPER FOR RELATIONAL COLUMNS >>>
+                     // Format values from relational columns
                     const formattedValue = colDef.deriveOptionsFrom
                         ? formatRelationalValueForDigest(valueToFormat, colDef)
                         : formatValueForDigest(valueToFormat);
@@ -658,7 +657,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         }
                     }
                     if (valueChanged) {
-                        // <<< USE NEW HELPER FOR RELATIONAL COLUMNS >>>
+                        // Format values from relational columns
                         const formattedInitial = colDef.deriveOptionsFrom
                             ? formatRelationalValueForDigest(initialValue, colDef)
                             : formatValueForDigest(initialValue);
@@ -722,7 +721,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return stringValue.replace(/"/g, '""');
     }
 
-    // <<< NEW FUNCTION: Populate Display Filter Dropdown >>>
+    // Populate the display filter dropdown
     function populateDisplayFilterDropdown() {
         const editorCfg = getEditorConfig();
         const filters = editorCfg?.editorDisplaySettings?.displayFilters;
@@ -778,7 +777,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // <<< NEW FUNCTION: Apply CSS-based Display Filter >>>
+    // Apply CSS-based display filtering
     function applyDisplayFilter() {
         console.log(`EDITOR_APP: applyDisplayFilter - Applying filter: ${activeDisplayFilterId || 'None (Show All)'}`);
         const editorCfg = getEditorConfig();
@@ -973,7 +972,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // <<< NEW: Event Listener for Display Filter Dropdown >>>
+    // Event listener for the display filter dropdown
     displayFilterDropdown.addEventListener('change', (event) => {
         activeDisplayFilterId = event.target.value;
         console.log(`EDITOR_APP: Display filter changed to: ${activeDisplayFilterId}`);
@@ -1034,10 +1033,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             const now = new Date(); // Use a single 'now' for all timestamps
             const timestampForFilename = getFormattedUTCTimestamp(now, true); // For YYYYMMDD_HHMM filename part
 
-            // <<< MODIFIED: Use new timestamp function for log content >>>
+            // Use helper to format timestamps for the log
             const contentTimestamps = getFormattedTimestampsForLog(now);
             const newChangesTimestampForContent = `${contentTimestamps.utc} | ${contentTimestamps.newYork} | ${contentTimestamps.phoenix}`;
-            // <<< END MODIFIED >>>
 
             const baseFilenameSuffix = `_${timestampForFilename}_UTC`; // Suffix for filenames
 
@@ -1093,11 +1091,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 newChangesDigest = generateChangeDigestOnDemand();
             }
 
-            // <<< MODIFIED: Use new timestamp function for log content >>>
+            // Use helper to format timestamps for the log
             const nowForView = new Date();
             const contentTimestamps = getFormattedTimestampsForLog(nowForView);
             const newChangesTimestampForContent = `${contentTimestamps.utc} | ${contentTimestamps.newYork} | ${contentTimestamps.phoenix}`;
-            // <<< END MODIFIED >>>
 
             // Construct Markdown changelog content for modal
             let combinedDigestText = `## Changes Recorded: ${newChangesTimestampForContent}\n\n`;

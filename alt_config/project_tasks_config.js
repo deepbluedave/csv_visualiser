@@ -68,7 +68,7 @@ let defaultConfig = {
       "RelatedTicketURL": { "type": "none" }
   },
 
-  // --- NEW: Tab Definitions ---
+  // Tab definitions
   "tabs": [
     // --- Tab 1: Basic Table View (All Tasks) ---
     {

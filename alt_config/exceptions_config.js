@@ -176,7 +176,7 @@ let defaultConfig = {
         "groupByColumn": "Risk Level",
         "groupSortBy": ["Elevated", "High", "Medium", "Low"], // Custom risk order
         "cardTitleColumn": "Exception Title",
-        "cardIndicatorColumns": [ // <<<< OVERRIDE: Keeping this specific list because it includes 'Status'
+        "cardIndicatorColumns": [ // Custom list to include Status
           "Application Name",
           "Status", // Include Status on the card for this view
           "Standard Excepted",
@@ -185,7 +185,7 @@ let defaultConfig = {
           "Link"
         ],
         "cardLinkColumn": "Link",
-        "itemSortBy": [ // <<<< OVERRIDE: Sorting only by Renewal Date here, not Risk Level
+        "itemSortBy": [ // Sort only by Renewal Date here
           { "column": "Renewal Date", "direction": "asc" }
         ],
         "layout": { "minColumnWidth": "340px", "columnGap": "12px", "itemGap": "8px" }
@@ -205,7 +205,7 @@ let defaultConfig = {
         "cardTitleColumn": "Exception Title",
         // "cardIndicatorColumns": [...] // REMOVED - Uses generalSettings.defaultCardIndicatorColumns
         "cardLinkColumn": "Link",
-        "itemSortBy": [ // <<<< OVERRIDE: Different sort order for this view
+        "itemSortBy": [ // Custom sort order for this view
           { "column": "Risk Level", "direction": "custom", "order": ["Elevated", "High", "Medium", "Low"] },
           { "column": "Renewal Date", "direction": "asc" }
         ],
@@ -252,7 +252,7 @@ let defaultConfig = {
       "config": {
         "groupByColumn": "Application Name", // Group by application
         "counters": [
-          // --- NEW PREDEFINED COUNTER using AND logic ---
+          // Predefined counter using AND logic
           {
             "title": "Active High/Medium Risk", // Descriptive title
             "logic": "AND", // Both conditions must be true

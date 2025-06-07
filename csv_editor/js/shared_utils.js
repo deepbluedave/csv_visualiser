@@ -204,7 +204,7 @@ function checkCondition(row, condition, appConfig) {
 }
 
 /**
- * NEW HELPER FUNCTION: Evaluates a row against a full filter group ({logic, conditions}).
+ * Evaluates a row against a full filter group ({logic, conditions}).
  * @param {object} row The data row to check.
  * @param {object} filterGroup The filter criteria object {logic, conditions: [...]}.
  * @param {object} appConfig The config object, passed down to checkCondition.
