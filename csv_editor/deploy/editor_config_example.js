@@ -3,7 +3,7 @@
 window.editorConfig = {
     "editorSchemaVersion": 1.0,
 
-    // --- NEW: Optional URLs for pre-loading ---
+    // Optional URLs for pre-loading
     "preloadUrls": {
         "viewerConfigUrl": "../../alt_config/fantasy_world_atlas.js", // Example: Relative path or full URL
         "csvDataUrl": "../../sample_data/fantasy_world_atlas.csv"       // Example: Relative path or full URL
@@ -90,7 +90,7 @@ window.editorConfig = {
             "optionsSource": "viewerConfigValueMap", // Derives from viewer_config.indicatorStyles["Complexity/Size"].valueMap
             "viewerStyleColumnName": "Complexity/Size",
             "columnWidth": "60px",
-            "orientation": "vertical" // <<<< ADD THIS LINE
+            "orientation": "vertical" // Ensure vertical headers
         },
         {
             "name": "Art Needed",
@@ -99,7 +99,7 @@ window.editorConfig = {
             "required": false,
             // "viewerStyleColumnName": "Art Needed" // Implied, for icon display
             "columnWidth": "60px",
-            "orientation": "vertical" // <<<< ADD THIS LINE
+            "orientation": "vertical" // Ensure vertical headers
         },
         {
             "name": "Plot Hook Included",
@@ -108,7 +108,7 @@ window.editorConfig = {
             "required": false,
             // "viewerStyleColumnName": "Plot Hook Included" // Implied, for icon display
             "columnWidth": "60px",
-            "orientation": "vertical" // <<<< ADD THIS LINE
+            "orientation": "vertical" // Ensure vertical headers
         },
         {
             "name": "Draft Date",

@@ -46,7 +46,7 @@ let defaultConfig = {
         "default": { "bgColor": "#e9ecef", "textColor": "#495057" }
       }
     },
-    // <<< NEW: Lookup style for the ParentItemID column >>>
+    // Style configuration for the ParentItemID column
     "ParentItemID": {
       "type": "lookup",
       "source": {
@@ -122,7 +122,7 @@ let defaultConfig = {
         "columnLabels": {
           "ItemID": "ID",
           "WorkItem": "Work Item Title",
-          "ParentItemID": "Parent Item", // <<< HERE is the override
+          "ParentItemID": "Parent Item", // Override default label
           "WorkItemType": "Type"
         },
         "columnWidths": { "WorkItem": "300px", "Pillar": "180px", "ParentItemID": "150px", "Status": "130px", "Assignee": "150px" }
@@ -163,7 +163,7 @@ let defaultConfig = {
         "columnLabels": {
           "ItemID": "ID",
           "WorkItem": "Title",
-          "ParentItemID": "Parent Item", // <<< HERE is the override
+          "ParentItemID": "Parent Item", // Override default label
           "WorkItemType": "Type"
         },
         "columnWidths": {

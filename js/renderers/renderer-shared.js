@@ -40,7 +40,7 @@ function isTruthy(value, config) {
     const columnStyle = config.indicatorStyles?.[columnName];
     let tagStyle = null; // This will hold the final style object to apply
 
-    // --- NEW: Check for styleRules first ---
+    // Check styleRules before valueMap
     if (columnStyle && columnStyle.type === 'tag' && Array.isArray(columnStyle.styleRules)) {
         for (const rule of columnStyle.styleRules) {
             let match = false;

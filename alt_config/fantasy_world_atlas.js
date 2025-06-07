@@ -9,7 +9,7 @@ let defaultConfig = {
     "csvDelimiter": ",",
     "multiValueColumns": ["Tags/Keywords", "Related Entries"],
     "linkColumns": [ "Wiki Link", "Inspiration Link" ],
-    // --- NEW: Default Sort Order ---
+    // Default sort order
     "defaultItemSortBy": [
       { "column": "Region", "direction": "asc" },
       { "column": "Entry Type", "direction": "asc" },

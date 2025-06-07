@@ -1,4 +1,4 @@
-// --- START OF (NEW or ADD TO) js/export-handler.js ---
+// Utility functions for exporting data
 
 /**
  * Gets the display text/icon for a data value based on indicatorStyles configuration.

@@ -16,7 +16,7 @@ function renderTableHierarchy(filteredData, tabConfig, globalConfig, targetEleme
     targetElement.innerHTML = '';
 
     const config = tabConfig.config;
-    const { idColumn, parentColumn, displayColumns, columnWidths, headerOrientations, columnLabels } = config; // <<< GET columnLabels
+    const { idColumn, parentColumn, displayColumns, columnWidths, headerOrientations, columnLabels } = config; // Include columnLabels for custom headers
     const validHeaders = globalConfig.csvHeaders || [];
 
     if (!idColumn || !validHeaders.includes(idColumn)) {
@@ -87,7 +87,7 @@ function renderTableHierarchy(filteredData, tabConfig, globalConfig, targetEleme
         th.classList.add(orientation === 'horizontal' ? 'header-horizontal' : 'header-vertical');
         const span = document.createElement('span');
         span.className = 'header-text';
-        // <<< MODIFIED LINE: Use the label from columnLabels, or fall back to the header name >>>
+        // Use the label from columnLabels, or fall back to the header name
         span.textContent = labels[header] || header;
         span.title = header;
         th.appendChild(span);

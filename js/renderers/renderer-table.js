@@ -45,7 +45,7 @@ function renderTable(filteredData, tabConfig, globalConfig, targetElement, showM
     const linkColumns = globalConfig.generalSettings?.linkColumns || [];
     const colWidths = tabConfig.config?.columnWidths || {};
     const headerOrientations = tabConfig.config?.headerOrientations || {};
-    const columnLabels = tabConfig.config?.columnLabels || {}; // <<< GET THE NEW CONFIG
+    const columnLabels = tabConfig.config?.columnLabels || {}; // Optional column label overrides
     let displayedHeaderCount = 0;
 
     // --- Render Header ---
@@ -57,7 +57,7 @@ function renderTable(filteredData, tabConfig, globalConfig, targetElement, showM
 
             const span = document.createElement('span');
             span.className = 'header-text';
-            // <<< MODIFIED LINE: Use the label from columnLabels, or fall back to the header name >>>
+            // Use the label from columnLabels, or fall back to the header name
             span.textContent = columnLabels[header] || header;
             span.title = header; // Tooltip still shows the original column name
             th.appendChild(span);

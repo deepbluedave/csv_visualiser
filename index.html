@@ -17,7 +17,7 @@
     <!-- Title remains outside the wrapper -->
     <h1>CSV Dashboard Generator</h1>
 
-    <!-- NEW: Dashboard Wrapper Div -->
+    <!-- Wrapper for the dashboard -->
     <div id="cdg-dashboard-wrapper">
 
         <!-- Upload Area -->
@@ -28,11 +28,10 @@
             <label for="cdg-globalSearchInput" class="visually-hidden">Search:</label>
             <input type="search" id="cdg-globalSearchInput" placeholder="Search visible items..." style="margin-left: 15px; min-width: 200px; padding: 4px 8px;"> <!-- Adjusted margin -->
 
-            <!-- *** NEW EXPORT BUTTON START *** -->
+            <!-- Export button -->
             <button type="button" id="cdg-exportButton" title="Export Current View as CSV" style="margin-left: 10px; padding: 4px 10px; font-size: 0.9em; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">
                 📊 Export View
             </button>
-            <!-- *** NEW EXPORT BUTTON END *** -->
 
             <!-- Icon Key pushed further right -->
             <div id="cdg-iconKeyContainer" style="margin-left: auto;">
@@ -68,14 +67,12 @@
     <script src="js/renderers/renderer-counts.js"></script>
     <script src="js/export-handler.js"></script>
 
-   <!-- *** NEW: Add Vis.js Network library *** -->
+   <!-- Include Vis.js Network library -->
    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
    <link href="https://unpkg.com/vis-network/styles/vis-network.min.css" rel="stylesheet" type="text/css" />
-   <!-- *** END NEW *** -->
 
-   <!-- *** NEW: Add Graph Renderer Script *** -->
+   <!-- Graph renderer script -->
    <script src="js/renderers/renderer-graph.js"></script>
-   <!-- *** END NEW *** -->
 
     <script src="js/app.js"></script>
 
