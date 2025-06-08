@@ -36,16 +36,41 @@ function renderTableHierarchy(filteredData, tabConfig, globalConfig, targetEleme
         return;
     }
 
+    const partitionConfig = config.partitionBy;
+
     const itemMap = new Map();
     const rootItems = [];
+    const partitionNodes = [];
+
+    const checkPartition = (row) => {
+        if (!partitionConfig?.enabled || !partitionConfig?.filter?.conditions?.length) return false;
+        const filterGroup = partitionConfig.filter;
+        const logicIsOr = filterGroup.logic && filterGroup.logic.toUpperCase() === 'OR';
+        try {
+            if (logicIsOr) {
+                return filterGroup.conditions.some(cond => checkCondition(row, cond, globalConfig));
+            } else {
+                return filterGroup.conditions.every(cond => checkCondition(row, cond, globalConfig));
+            }
+        } catch (e) {
+            console.error('renderTableHierarchy: error evaluating partition filter', e);
+            return false;
+        }
+    };
     filteredData.forEach(row => {
+        if (checkPartition(row)) {
+            partitionNodes.push(row);
+            return;
+        }
         const id = row[idColumn];
         if (id !== null && typeof id !== 'undefined' && id !== '') {
             row.children = [];
             itemMap.set(String(id), row);
         }
     });
+
     filteredData.forEach(row => {
+        if (partitionNodes.includes(row)) return;
         const parentIdValue = row[parentColumn];
         let parentId = null;
         if (Array.isArray(parentIdValue) && parentIdValue.length > 0) {
@@ -99,6 +124,7 @@ function renderTableHierarchy(filteredData, tabConfig, globalConfig, targetEleme
 
     const sortByConfig = config.sortBy ?? globalConfig.generalSettings?.defaultItemSortBy ?? null;
     const sortedRootItems = sortData(rootItems, sortByConfig, globalConfig);
+    const sortedPartition = sortData(partitionNodes, sortByConfig, globalConfig);
 
     const renderRowRecursive = (item, level) => {
         const tr = tbody.insertRow();
@@ -135,6 +161,18 @@ function renderTableHierarchy(filteredData, tabConfig, globalConfig, targetEleme
     };
 
     sortedRootItems.forEach(root => renderRowRecursive(root, 0));
+
+    if (sortedPartition.length > 0) {
+        const sepRow = tbody.insertRow();
+        sepRow.classList.add('table-partition-separator');
+        const sepCell = sepRow.insertCell();
+        sepCell.colSpan = validDisplayCols.length;
+    }
+
+    sortedPartition.forEach(item => {
+        renderRowRecursive(item, 0);
+    });
+
     hideMessages(tabConfig.id);
 }
 // --- END OF FILE js/renderers/renderer-table-hierarchy.js ---

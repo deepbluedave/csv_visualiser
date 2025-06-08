@@ -105,4 +105,9 @@
 #cdg-dashboard-wrapper .view-container[data-view-type="table-hierarchy"] td[style*="text-align: center"] .cell-content-wrapper {
     justify-content: center;
 }
+
+/* Separator row used when partitioning hierarchical data */
+#cdg-dashboard-wrapper .view-container[data-view-type="table-hierarchy"] tbody tr.table-partition-separator td {
+    border-top: 3px solid #555;
+}
 /* --- END OF FILE css/view-table.css --- */
