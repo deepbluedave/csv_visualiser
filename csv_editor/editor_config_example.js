@@ -46,7 +46,12 @@ window.editorConfig = {
             { "id": "sub-items", "label": "Show Sub-Items Only", "criteria": { "conditions": [{ "column": "ParentItemID", "filterType": "valueNotEmpty" }] } },
             { "id": "my-owned", "label": "Show Items I Own", "criteria": { "conditions": [{ "column": "Owner", "filterType": "valueEquals", "filterValue": "Director Dave" }] } },
             { "id": "blocked", "label": "Show Blocked Items", "criteria": { "conditions": [{ "column": "IsBlocked", "filterType": "booleanTrue" }] } }
-        ]
+        ],
+        "hierarchyView": {
+            "enabled": true,
+            "idColumn": "ItemID",
+            "parentColumn": "ParentItemID"
+        }
     },
 
     "columns": [

@@ -207,9 +207,139 @@ function getStyledCellDisplay(cellValue, colDef) {
     return String(cellValue ?? '');
 }
 
+function renderGridDataHierarchy(hCfg) {
+    const { editorGridTbody } = editorDomElements;
+    if (!editorGridTbody) { console.error("EDITOR_GRID: renderGridDataHierarchy - tbody not found."); return; }
+    clearGridContent();
+    const columnDefinitions = _editorConfigInstance.columns;
+    if (!_csvDataInstance || _csvDataInstance.length === 0) {
+        const tr = editorGridTbody.insertRow();
+        const td = tr.insertCell();
+        td.colSpan = columnDefinitions.length + 1;
+        td.textContent = "No CSV data loaded. Click '+ Add Row' or load a CSV file.";
+        td.style.textAlign = "center"; td.style.fontStyle = "italic"; td.style.padding = "20px";
+        return;
+    }
+
+    const viewerCfg = _viewerConfigInstance;
+    const validHeaders = columnDefinitions.map(c => c.name);
+    const itemMap = new Map();
+    const rootNodes = [];
+    _csvDataInstance.forEach((row, idx) => {
+        const id = row[hCfg.idColumn];
+        if (id !== null && typeof id !== 'undefined' && id !== '') {
+            itemMap.set(String(id), { row, index: idx, children: [] });
+        }
+    });
+    _csvDataInstance.forEach((row) => {
+        const parentVal = row[hCfg.parentColumn];
+        let parentId = null;
+        if (Array.isArray(parentVal) && parentVal.length > 0) parentId = String(parentVal[0]);
+        else if (parentVal !== null && typeof parentVal !== 'undefined' && String(parentVal) !== '') parentId = String(parentVal);
+        const node = itemMap.get(String(row[hCfg.idColumn]));
+        if (parentId && itemMap.has(parentId)) {
+            itemMap.get(parentId).children.push(node);
+        } else {
+            rootNodes.push(node);
+        }
+    });
+
+    const sortByConfig = _viewerConfigInstance?.generalSettings?.defaultItemSortBy ?? null;
+    const sortGlobalConfig = { generalSettings: { trueValues: viewerCfg?.generalSettings?.trueValues || [] }, csvHeaders: validHeaders };
+    const sortedRoots = sortData([...rootNodes], sortByConfig, sortGlobalConfig);
+
+    const partitionSettings = _editorConfigInstance?.editorDisplaySettings?.partitionBy;
+    const isPartitionActive = partitionSettings?.enabled && partitionSettings?.filter?.conditions?.length > 0;
+    const configForSeparatorCheck = { generalSettings: { trueValues: viewerCfg?.generalSettings?.trueValues || [] }, csvHeaders: validHeaders };
+    let previousItemMetPartitionCriteria = null;
+
+    const checkPartition = (row) => {
+        if (!isPartitionActive) return false;
+        let match = false;
+        try {
+            const filterGroup = partitionSettings.filter;
+            if (filterGroup.logic && filterGroup.conditions && filterGroup.conditions.length > 0) {
+                if (filterGroup.logic.toUpperCase() === 'OR') {
+                    match = filterGroup.conditions.some(c => checkCondition(row, c, configForSeparatorCheck));
+                } else {
+                    match = filterGroup.conditions.every(c => checkCondition(row, c, configForSeparatorCheck));
+                }
+            }
+        } catch (e) { console.error("Error in checkCondition (for separator):", e); }
+        return match;
+    };
+
+    const renderNode = (node, level) => {
+        const { row, index } = node;
+        const tr = editorGridTbody.insertRow();
+        tr.dataset.rowIndex = index;
+        tr.classList.add(`hierarchy-row-level-${level}`);
+
+        if (isPartitionActive) {
+            const meets = checkPartition(row);
+            if (previousItemMetPartitionCriteria === false && meets === true) {
+                if (partitionSettings.separatorStyle === "heavyLine") {
+                    tr.classList.add('editor-grid-partition-separator-top');
+                }
+            }
+            previousItemMetPartitionCriteria = meets;
+        }
+
+        columnDefinitions.forEach((colDef, colIndex) => {
+            const td = tr.insertCell();
+            td.dataset.columnName = colDef.name;
+            td.dataset.rowIndex = index;
+            let cellValue = row[colDef.name];
+            if (cellValue === undefined) cellValue = (colDef.type === 'multi-select' ? [] : '');
+            const styleConfForCol = viewerCfg?.indicatorStyles?.[colDef.viewerStyleColumnName || colDef.name];
+            if (colDef.type === 'checkbox' || colDef.type === 'multi-select' || (styleConfForCol && styleConfForCol.type === 'icon') || (colDef.type === 'select' && styleConfForCol && styleConfForCol.type === 'tag') || (viewerCfg?.generalSettings?.linkColumns?.includes(colDef.name) && !(styleConfForCol && (styleConfForCol.type === 'tag')))) {
+                td.classList.add('cell-align-center');
+            }
+            if (colIndex === 0) td.classList.add('sticky-col', 'first-col');
+            if (colDef.type === 'multi-select') td.classList.add('cell-type-multi-select');
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'cell-content-wrapper';
+            if (colIndex === 0 && level > 0) {
+                wrapper.style.paddingLeft = `${level * 25}px`;
+            }
+            wrapper.innerHTML = getStyledCellDisplay(cellValue, colDef);
+            td.appendChild(wrapper);
+
+            if (!colDef.readOnly) {
+                td.addEventListener('click', handleCellClickToEdit);
+                if (colDef.type === 'checkbox') td.classList.add('editor-cell-boolean-toggle');
+            } else {
+                td.classList.add('cell-readonly');
+            }
+            validateCell(td, cellValue, colDef);
+        });
+        const actionTd = tr.insertCell();
+        actionTd.classList.add('action-cell');
+        const deleteBtn = document.createElement('button');
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.dataset.rowIndex = index;
+        deleteBtn.addEventListener('click', handleDeleteRowClick);
+        actionTd.appendChild(deleteBtn);
+
+        if (node.children && node.children.length > 0) {
+            const sortedChildren = sortData([...node.children], sortByConfig, sortGlobalConfig);
+            sortedChildren.forEach(child => renderNode(child, level + 1));
+        }
+    };
+
+    sortedRoots.forEach(root => renderNode(root, 0));
+    console.log(`EDITOR_GRID: renderGridDataHierarchy - Grid data rendered: ${_csvDataInstance.length} rows.`);
+}
+
 function renderGridData() {
     const { editorGridTbody } = editorDomElements;
     if (!editorGridTbody) { console.error("EDITOR_GRID: renderGridData - tbody not found."); return; }
+    const hierarchyCfg = _editorConfigInstance?.editorDisplaySettings?.hierarchyView;
+    if (hierarchyCfg?.enabled && hierarchyCfg.idColumn && hierarchyCfg.parentColumn) {
+        renderGridDataHierarchy(hierarchyCfg);
+        return;
+    }
     clearGridContent();
     if (!_editorConfigInstance || !_editorConfigInstance.columns || _editorConfigInstance.columns.length === 0) {
         return;

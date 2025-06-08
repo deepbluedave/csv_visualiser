@@ -81,6 +81,11 @@ This section details the key capabilities of the CSV Editor.
     *   When a filter is selected, rows that do *not* match its criteria are hidden using CSS (`display: none`).
     *   **Importantly, the data itself is not removed from the underlying `_csvDataInstance`.** All rows are preserved for editing (if unhidden), sorting, partitioning, and are always included in CSV exports. This feature purely controls the visual presentation in the grid.
 
+*   **Hierarchy View (New):**
+    *   When `editorDisplaySettings.hierarchyView.enabled` is `true`, the grid shows parent and child rows in an indented tree structure.
+    *   Configure `idColumn` and `parentColumn` to specify which columns store the unique ID and parent reference.
+    *   Root rows and their children are automatically sorted using the viewer's default sort settings.
+
 *   **Configuration Preloading:**
     *   To streamline setup, the main `editor_config.js` (which must be included via a `<script>` tag in `editor.html`) can define a `preloadUrls` object.
     *   This object can contain URLs to automatically fetch:
@@ -207,7 +212,12 @@ window.editorConfig = {
         }
       }
       // ... more custom filters ...
-    ]
+    ],
+    "hierarchyView": {
+      "enabled": true,
+      "idColumn": "ItemID",
+      "parentColumn": "ParentItemID"
+    }
   },
 
   "columns": [

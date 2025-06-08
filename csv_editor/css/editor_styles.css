@@ -346,17 +346,28 @@ h1 {
 #editorGridContainer td .cell-content-wrapper,
 #editorGridContainer td.cell-readonly,
 #editorGridContainer td .cell-text {
-    /* These styles ensure that long, unbreakable text like IDs get truncated */
-    display: block; /* Make it a block element to control overflow */
-    white-space: nowrap; /* Prevent the text from wrapping to a new line */
-    overflow: hidden; /* Hide the part of the text that overflows the cell's width */
-    text-overflow: ellipsis; /* Display "..." for the hidden part */
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-/* Ensure the wrapper itself doesn't shrink unnecessarily */
 #editorGridContainer td .cell-content-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 4px;
     width: 100%;
 }
+
+#editorGridContainer td[style*="text-align: center"] .cell-content-wrapper {
+    justify-content: center;
+}
+
+#editorGridContainer tr.hierarchy-row-level-1 td.first-col .cell-content-wrapper { padding-left: 25px; }
+#editorGridContainer tr.hierarchy-row-level-2 td.first-col .cell-content-wrapper { padding-left: 50px; }
+#editorGridContainer tr.hierarchy-row-level-3 td.first-col .cell-content-wrapper { padding-left: 75px; }
+#editorGridContainer tr.hierarchy-row-level-4 td.first-col .cell-content-wrapper { padding-left: 100px; }
+#editorGridContainer tr.hierarchy-row-level-5 td.first-col .cell-content-wrapper { padding-left: 125px; }
 
 /* Custom Select Popup Styles */
 .custom-select-popup {
