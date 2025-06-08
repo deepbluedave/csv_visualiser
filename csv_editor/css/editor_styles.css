@@ -340,11 +340,13 @@ h1 {
     background-color: #f8f9fa;
     color: #5a6268;
     font-style: italic;
+    white-space: nowrap; /* Prevent the text from wrapping to a new line */
+    overflow: hidden; /* Hide the part of the text that overflows the cell's width */
+    text-overflow: ellipsis; /* Display "..." for the hidden part */
 }
 
 /* --- General Cell Content Handling --- */
 #editorGridContainer td .cell-content-wrapper,
-#editorGridContainer td.cell-readonly,
 #editorGridContainer td .cell-text {
     /* These styles ensure that long, unbreakable text like IDs get truncated */
     display: block; /* Make it a block element to control overflow */
