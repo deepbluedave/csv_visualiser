@@ -17,12 +17,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     const {
         viewerConfigFileInput, editorConfigFileInput, csvDataFileInput,
         addRowBtn, sortDataBtn, exportCsvBtn, uploadConfluenceBtn, statusMessages,
-        viewChangesBtn, changesModal, changeDigestOutput, closeChangesModalBtn
+        viewChangesBtn, changesModal, changeDigestOutput, closeChangesModalBtn,
+        hierarchyToggle
     } = editorDomElements;
     const mainPageHeading = document.querySelector('#csv-editor-wrapper h1');
     const displayFilterDropdown = document.createElement('select'); // Dropdown for selecting a display filter
     displayFilterDropdown.id = 'editorDisplayFilterDropdown';
     displayFilterDropdown.style.marginLeft = '15px'; // Add some spacing
+    updateHierarchyToggleFromConfig();
 
     // --- Helper Function Definitions ---
 
@@ -259,6 +261,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         if (csvDataFileInput) csvDataFileInput.parentElement.style.display = '';
         populateDisplayFilterDropdown(); // Refresh filter dropdown
+        updateHierarchyToggleFromConfig();
     }
 
     function handleConfigLoadError(configType, error) {
@@ -275,6 +278,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             cachedCumulativeLogContent = null;
             activeDisplayFilterId = null; // Reset after loading
             populateDisplayFilterDropdown(); // Repopulate dropdown
+            updateHierarchyToggleFromConfig();
         }
         initDataGridReferences(csvDataMain, getEditorConfig(), getViewerConfig());
     }
@@ -289,8 +293,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             resetEditorTitles();
         }
 
-        // Update the dropdown after loading new editorConfig
+        // Update the dropdown and toggle after loading new editorConfig
         populateDisplayFilterDropdown();
+        updateHierarchyToggleFromConfig();
 
         if (edCfg) {
             console.log("EDITOR_APP: finalizeConfigAndDataLoad - Editor config present, rendering grid structure.");
@@ -787,6 +792,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    function updateHierarchyToggleFromConfig() {
+        if (!hierarchyToggle) return;
+        const edCfg = getEditorConfig();
+        hierarchyToggle.checked = !!(edCfg?.editorDisplaySettings?.hierarchyView?.enabled);
+    }
+
     // Apply CSS-based display filtering
     function applyDisplayFilter() {
         console.log(`EDITOR_APP: applyDisplayFilter - Applying filter: ${activeDisplayFilterId || 'None (Show All)'}`);
@@ -990,6 +1001,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         applyDisplayFilter();
         // No need to call checkAndEnableActions as this doesn't change underlying data count
     });
+
+    if (hierarchyToggle) {
+        hierarchyToggle.addEventListener('change', () => {
+            const edCfg = getEditorConfig();
+            if (!edCfg) return;
+            if (!edCfg.editorDisplaySettings) edCfg.editorDisplaySettings = {};
+            if (!edCfg.editorDisplaySettings.hierarchyView) edCfg.editorDisplaySettings.hierarchyView = {};
+            edCfg.editorDisplaySettings.hierarchyView.enabled = hierarchyToggle.checked;
+            renderGridData();
+            applyDisplayFilter();
+        });
+    }
 
     if (addRowBtn) {
         addRowBtn.addEventListener('click', () => {

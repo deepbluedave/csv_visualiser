@@ -18,7 +18,8 @@ const editorDomElements = {
     viewChangesBtn: document.getElementById('viewChangesBtn'),
     changesModal: document.getElementById('changesModal'),
     changeDigestOutput: document.getElementById('changeDigestOutput'),
-    closeChangesModalBtn: document.getElementById('closeChangesModalBtn') // For the modal's close button
+    closeChangesModalBtn: document.getElementById('closeChangesModalBtn'), // For the modal's close button
+    hierarchyToggle: document.getElementById('hierarchyToggle')
 };
 
 if (!editorDomElements.editorGridTable) {
@@ -34,5 +35,6 @@ if (!editorDomElements.changesModal) console.warn("DOM Element 'changesModal' no
 if (!editorDomElements.changeDigestOutput) console.warn("DOM Element 'changeDigestOutput' not found.");
 if (!editorDomElements.closeChangesModalBtn) console.warn("DOM Element 'closeChangesModalBtn' not found.");
 if (!editorDomElements.uploadConfluenceBtn) console.warn("DOM Element 'uploadConfluenceBtn' not found.");
+if (!editorDomElements.hierarchyToggle) console.warn("DOM Element 'hierarchyToggle' not found.");
 
 // --- End of file editor_dom_elements.js ---

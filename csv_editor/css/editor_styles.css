@@ -84,6 +84,22 @@ h1 {
     margin-right: 8px;
 }
 
+.actions .toggle-btn {
+    padding: 8px 12px;
+    background-color: #007bff;
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    margin-right: 8px;
+    display: inline-flex;
+    align-items: center;
+    user-select: none;
+}
+.actions .toggle-btn input {
+    margin-right: 4px;
+}
+
 .actions button:hover:not(:disabled) {
     background-color: #0056b3;
 }
