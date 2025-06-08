@@ -42,6 +42,7 @@ function renderGridStructure(columnDefinitions) {
             th.style.width = (orientation === 'vertical') ? '50px' : '150px';
         }
         if (index === 0) { th.classList.add('sticky-col', 'first-col'); }
+        if (index === 1) { th.classList.add('indent-col'); }
         tr.appendChild(th);
     });
     const thActions = document.createElement('th');
@@ -244,12 +245,11 @@ function renderGridDataHierarchy(hCfg) {
         }
     });
 
-    const sortByConfig = _viewerConfigInstance?.generalSettings?.defaultItemSortBy ?? null;
-    const sortGlobalConfig = { generalSettings: { trueValues: viewerCfg?.generalSettings?.trueValues || [] }, csvHeaders: validHeaders };
-    const sortedRoots = sortData([...rootNodes], sortByConfig, sortGlobalConfig);
-
     const partitionSettings = _editorConfigInstance?.editorDisplaySettings?.partitionBy;
     const isPartitionActive = partitionSettings?.enabled && partitionSettings?.filter?.conditions?.length > 0;
+    const sortByConfig = _viewerConfigInstance?.generalSettings?.defaultItemSortBy ?? null;
+    const sortGlobalConfig = { generalSettings: { trueValues: viewerCfg?.generalSettings?.trueValues || [] }, csvHeaders: validHeaders };
+    const sortedRoots = isPartitionActive ? rootNodes : sortData([...rootNodes], sortByConfig, sortGlobalConfig);
     const configForSeparatorCheck = { generalSettings: { trueValues: viewerCfg?.generalSettings?.trueValues || [] }, csvHeaders: validHeaders };
     let previousItemMetPartitionCriteria = null;
 
@@ -296,11 +296,12 @@ function renderGridDataHierarchy(hCfg) {
                 td.classList.add('cell-align-center');
             }
             if (colIndex === 0) td.classList.add('sticky-col', 'first-col');
+            if (colIndex === 1) td.classList.add('indent-col');
             if (colDef.type === 'multi-select') td.classList.add('cell-type-multi-select');
 
             const wrapper = document.createElement('div');
             wrapper.className = 'cell-content-wrapper';
-            if (colIndex === 0 && level > 0) {
+            if (colIndex === 1 && level > 0) {
                 wrapper.style.paddingLeft = `${level * 25}px`;
             }
             wrapper.innerHTML = getStyledCellDisplay(cellValue, colDef);
@@ -323,7 +324,7 @@ function renderGridDataHierarchy(hCfg) {
         actionTd.appendChild(deleteBtn);
 
         if (node.children && node.children.length > 0) {
-            const sortedChildren = sortData([...node.children], sortByConfig, sortGlobalConfig);
+            const sortedChildren = isPartitionActive ? node.children : sortData([...node.children], sortByConfig, sortGlobalConfig);
             sortedChildren.forEach(child => renderNode(child, level + 1));
         }
     };
@@ -396,6 +397,7 @@ function renderGridData() {
                 td.classList.add('cell-align-center');
             }
             if (colIndex === 0) td.classList.add('sticky-col', 'first-col');
+            if (colIndex === 1) td.classList.add('indent-col');
             if (colDef.type === 'multi-select') td.classList.add('cell-type-multi-select');
             td.innerHTML = getStyledCellDisplay(cellValue, colDef);
             if (!colDef.readOnly) {

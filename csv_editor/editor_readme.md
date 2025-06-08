@@ -84,7 +84,8 @@ This section details the key capabilities of the CSV Editor.
 *   **Hierarchy View (New):**
     *   When `editorDisplaySettings.hierarchyView.enabled` is `true`, the grid shows parent and child rows in an indented tree structure.
     *   Configure `idColumn` and `parentColumn` to specify which columns store the unique ID and parent reference.
-    *   Root rows and their children are automatically sorted using the viewer's default sort settings.
+*   Root rows and their children are automatically sorted using the viewer's default sort settings (sorting is skipped when data is already partitioned).
+*   Indentation is applied to the second column (typically the title) while the ID column remains flush.
 
 *   **Configuration Preloading:**
     *   To streamline setup, the main `editor_config.js` (which must be included via a `<script>` tag in `editor.html`) can define a `preloadUrls` object.
