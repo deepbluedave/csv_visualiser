@@ -12,10 +12,12 @@ let defaultConfig = {
     "linkColumns": ["InfoLink"],
     "defaultCardIndicatorColumns": ["Pillar", "WorkItemType", "Status", "Owner", "DueDate"],
     "defaultItemSortBy": [
-       { "column": "ParentItemID", "direction": "asc" },
+      { "column": "WorkItemID", "direction": "asc" },
       { "column": "Pillar", "direction": "asc" },
       { "column": "Priority", "direction": "custom", "order": ["Critical", "High", "Medium", "Low"] },
       { "column": "DueDate", "direction": "asc" },
+            { "column": "ParentItemID", "direction": "asc" },
+
 
     ]
   },

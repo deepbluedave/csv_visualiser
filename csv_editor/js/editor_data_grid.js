@@ -215,6 +215,10 @@ function renderGridData() {
         return;
     }
     const columnDefinitions = _editorConfigInstance.columns;
+    // Find the parent column name once before the loop
+    const parentColumnDef = _editorConfigInstance.columns.find(c => c.deriveOptionsFrom);
+    const parentColumnName = parentColumnDef ? parentColumnDef.name : null;
+
     if (!_csvDataInstance || _csvDataInstance.length === 0) {
         const tr = editorGridTbody.insertRow();
         const td = tr.insertCell();
@@ -231,6 +235,17 @@ function renderGridData() {
     _csvDataInstance.forEach((row, rowIndex) => {
         const tr = editorGridTbody.insertRow();
         tr.dataset.rowIndex = rowIndex;
+
+        // Add class if the item is a child
+        if (parentColumnName) {
+            const parentIdValue = row[parentColumnName];
+            // Check if the parent ID is not null, undefined, or an empty string/array
+            const isChild = Array.isArray(parentIdValue) ? parentIdValue.length > 0 : (parentIdValue !== null && parentIdValue !== undefined && String(parentIdValue).trim() !== '');
+            if (isChild) {
+                tr.classList.add('editor-grid-child-item');
+            }
+        }
+        
         if (isPartitionActive) {
             const effectiveHeadersForSeparatorCheck = editorCfg.columns.map(c => c.name);
             const configForSeparatorCheck = {
@@ -508,13 +523,37 @@ function createSelectPopup(td, currentValueForPopup, colDef, rowIndex, columnNam
     const optionsList = document.createElement('ul');
     optionsList.className = 'popup-options-list';
     popup.appendChild(optionsList);
+
+    // This function is called by 'select' type options OR by the 'Apply' button for 'multi-select'
     window._editorUpdateAndCloseFromPopup = (valueToSet) => {
-        _csvDataInstance[rowIndex][columnName] = valueToSet;
+        _csvDataInstance[rowIndex][columnName] = valueToSet; // Update the main data model
         td.innerHTML = getStyledCellDisplay(valueToSet, colDef);
         validateCell(td, valueToSet, colDef);
+
+        // --- NEW: DYNAMICALLY UPDATE ROW STYLE ON PARENT CHANGE ---
+        // After updating the cell, check if this was the parent column and update the row's style.
+        const parentColumnDef = _editorConfigInstance.columns.find(c => c.deriveOptionsFrom);
+        const parentColumnName = parentColumnDef ? parentColumnDef.name : null;
+
+        if (parentColumnName && columnName === parentColumnName) {
+            const tr = td.closest('tr');
+            if (tr) {
+                // Determine if the item is now a child based on the new value.
+                const isNowChild = Array.isArray(valueToSet)
+                    ? valueToSet.length > 0
+                    : (valueToSet !== null && valueToSet !== undefined && String(valueToSet).trim() !== '');
+
+                // Use toggle with the boolean to add/remove the class dynamically.
+                tr.classList.toggle('editor-grid-child-item', isNowChild);
+                console.log(`Row ${rowIndex} is now ${isNowChild ? 'a child' : 'a top-level item'}. Class updated.`);
+            }
+        }
+        // --- END OF NEW LOGIC ---
+
         if (_activePopup === popup) { popup.remove(); _activePopup = null; }
         window.dispatchEvent(new CustomEvent('editorDataChanged'));
     };
+
     const rerenderOptionsList = () => {
         const searchTerm = useSearch ? searchInput.value.toLowerCase() : '';
         filterAndSortPopupOptions(optionsList, searchTerm, allOptions, currentSelectionsArray, colDef);

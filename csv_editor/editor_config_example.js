@@ -16,7 +16,7 @@ window.editorConfig = {
     "csvOutputOptions": {
         "delimiter": ",",
         "booleanTrueValue": "TRUE",
-        "booleanFalseValue": "FALSE"
+        "booleanFalseValue": ""
     },
 
     "confluenceAttachmentSettings": {

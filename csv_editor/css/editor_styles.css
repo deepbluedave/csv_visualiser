@@ -517,3 +517,8 @@ h1 {
     min-width: 150px; /* Ensure it's not too small */
 }
 
+#editorGridContainer tr.editor-grid-child-item td[data-column-name="WorkItem"] ,
+#editorGridContainer tr.editor-grid-child-item td[data-column-name="WorkItem"] .editor-single-line-text {
+    font-style: italic;
+    color: #7c85ac; /* A slightly lighter, less intense color than the default */
+}
