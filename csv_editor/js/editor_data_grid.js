@@ -341,17 +341,14 @@ function handleCellClickToEdit(event) {
             }
             break;
         case 'date':
-            inputElement = document.createElement('input'); inputElement.type = 'date';
-            try {
-                if (cellValue && !isNaN(new Date(cellValue))) {
-                    inputElement.value = new Date(cellValue).toISOString().split('T')[0];
-                } else {
-                    inputElement.value = cellValue ?? '';
-                }
-            } catch (e) { inputElement.value = cellValue ?? ''; }
+            inputElement = document.createElement('input');
+            inputElement.type = 'date';
+            // Use the new helper function to format the value before setting it
+            inputElement.value = formatInputForDateField(cellValue ?? '');
             break;
         case 'number':
-            inputElement = document.createElement('input'); inputElement.type = 'number';
+            inputElement = document.createElement('input');
+            inputElement.type = 'number';
             inputElement.value = cellValue ?? '';
             break;
         default:
@@ -749,6 +746,40 @@ function handleDeleteRowClick(event) {
             window.dispatchEvent(new CustomEvent('editorDataChanged'));
         }
     }
+}
+
+/**
+ * Converts a date string from dd/mm/yyyy or dd-mm-yyyy to yyyy-mm-dd.
+ * If the string is already in yyyy-mm-dd, it's returned as is.
+ * Returns an empty string if the input is invalid or empty.
+ * @param {string} dateString The date string to format.
+ * @returns {string} The formatted date string (yyyy-mm-dd) or an empty string.
+ */
+function formatInputForDateField(dateString) {
+    if (!dateString || typeof dateString !== 'string') return '';
+    const trimmed = dateString.trim();
+
+    // Check if it's already in the correct ISO format
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+        return trimmed;
+    }
+
+    // Match dd/mm/yyyy or dd-mm-yyyy formats
+    const match = trimmed.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+    if (match) {
+        const day = match[1].padStart(2, '0');
+        const month = match[2].padStart(2, '0');
+        const year = match[3];
+        // Validate date components to avoid creating invalid dates like month 13
+        if (parseInt(month, 10) > 12 || parseInt(day, 10) > 31) {
+            console.warn(`Invalid date components found in "${trimmed}".`);
+            return trimmed; // Return original on invalid components
+        }
+        return `${year}-${month}-${day}`;
+    }
+
+    // Return the original string if it doesn't match a known format to be parsed
+    return trimmed;
 }
 
 // --- END OF FILE csv_editor/js/editor_data_grid.js ---
