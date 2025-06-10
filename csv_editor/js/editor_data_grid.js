@@ -188,7 +188,7 @@ function getStyledCellDisplay(cellValue, colDef) {
     if (isLinkColInViewer && colDef.type !== 'checkbox') {
         const urlValueStr = String(cellValue ?? '');
         if (urlValueStr.trim() !== '') {
-            return `<span class="cell-url-display-span" title="${urlValueStr}">🔗${urlValueStr}</span>`;
+            return `<span class="cell-url-display-span" title="${urlValueStr}"><a style="text-decoration: none;" href="${urlValueStr}" target="_blank">🔗</a> ${urlValueStr}</span>`;
         } else { return ''; }
     }
 
