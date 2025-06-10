@@ -12,11 +12,11 @@ let defaultConfig = {
     "linkColumns": ["InfoLink"],
     "defaultCardIndicatorColumns": ["Pillar", "WorkItemType", "Status", "Owner", "DueDate"],
     "defaultItemSortBy": [
-      { "column": "WorkItemID", "direction": "asc" },
+      { "column": "ItemID", "direction": "asc" },
       { "column": "Pillar", "direction": "asc" },
       { "column": "Priority", "direction": "custom", "order": ["Critical", "High", "Medium", "Low"] },
       { "column": "DueDate", "direction": "asc" },
-            { "column": "ParentItemID", "direction": "asc" },
+      { "column": "ParentItemID", "direction": "asc" },
 
 
     ]
@@ -208,6 +208,54 @@ let defaultConfig = {
         "layoutEngine": "hierarchical",
         "physicsEnabled": false,
         "edges": [{ "from": "ParentItemID", "to": "WorkItem" }]
+      }
+    },
+    {
+      "id": "parent-workstreams-stacked",
+      "title": " Parent Workstreams (Stacked)",
+      "type": "kanban",
+      "enabled": true,
+      "bgColor": "#d1e7dd", // A distinct color for this example tab
+      "textColor": "#0f5132",
+      "filter": {
+        "logic": "AND",
+        "conditions": [{ "column": "Status", "filterType": "valueNotInList", "filterValue": ["Completed", "Archived", "Cancelled"] }]
+      },
+      "config": {
+        "groupByColumn": "ParentItemID",
+        "groupHeaderLookup": {
+          "sourceColumn": "ItemID",
+          "displayColumn": "WorkItem"
+        },
+        "cardTitleColumn": "WorkItem",
+        "cardLinkColumn": "InfoLink",
+        // It will use defaultItemSortBy and defaultCardIndicatorColumns from generalSettings
+
+        // -- All Stacking & Layout Options Included --
+        "layout": {
+          // The minimum width a visual column can have. The browser will fit as many
+          // of these as possible into the available space.
+          "minColumnWidth": "350px",
+
+          // The horizontal gap between the visual columns.
+          "columnGap": "15px",
+
+          // The vertical gap between individual cards AND between stacked group blocks
+          // within the same column.
+          "itemGap": "12px",
+
+          // The maximum number of *group blocks* (e.g., "Parent: Item A", "Parent: Item B")
+          // that are allowed to stack vertically in a single visual column.
+          // After this limit is reached, a new visual column is started.
+          // Set to 1 to prevent any stacking.
+          "maxItemsPerGroupInColumn": 3,
+
+          // If a single group (e.g., a parent with many children) has more items than this number,
+          // the layout will try to give it its own full-width column, preventing other smaller groups
+          // from stacking next to it. This is useful for highlighting very large workstreams.
+          // Set to 0 to disable this behavior.
+          "preventStackingAboveItemCount": 2
+        }
       }
     },
     {

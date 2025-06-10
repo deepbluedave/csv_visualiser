@@ -517,8 +517,10 @@ h1 {
     min-width: 150px; /* Ensure it's not too small */
 }
 
-#editorGridContainer tr.editor-grid-child-item td[data-column-name="WorkItem"] ,
-#editorGridContainer tr.editor-grid-child-item td[data-column-name="WorkItem"] .editor-single-line-text {
+#editorGridContainer tr.editor-grid-child-item td[data-column-name="WorkItem"]::after {
+    content: " 🠖";
     font-style: italic;
-    color: #7c85ac; /* A slightly lighter, less intense color than the default */
+    color: #888;
+    font-size: 0.9em; /* Smaller font for the suffix */
+    margin-left: 5px; /* Space between text and suffix */
 }

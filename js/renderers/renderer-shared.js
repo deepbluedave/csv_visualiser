@@ -12,7 +12,7 @@ function isTruthy(value, config) {
     const stringValue = String(value).toLowerCase();
     if (stringValue === '') return false;
     const trueValsLower = (config.generalSettings?.trueValues || ["true", "yes", "1", "y", "x", "on", "✓"])
-                            .map(v => String(v).toLowerCase());
+        .map(v => String(v).toLowerCase());
     return trueValsLower.includes(stringValue);
 }
 
@@ -25,15 +25,15 @@ function isTruthy(value, config) {
  * @param {string} [titlePrefix=''] Optional prefix for the tag's title attribute.
  * @returns {string} The HTML string for the tag, or an empty string if value is empty or no style applies.
  */
- function formatTag(value, config, columnName, titlePrefix = '') {
+function formatTag(value, config, columnName, titlePrefix = '') {
     const stringValue = String(value || '');
     // Skip truly empty strings unless config explicitly styles them via valueMap[''] or a rule matching empty
     // We'll check for explicit empty match later. If style is not found for empty, it returns ''.
     if (stringValue === '' && !(config.indicatorStyles?.[columnName]?.valueMap?.['']) && !(config.indicatorStyles?.[columnName]?.styleRules?.some(r => r.matchType === 'exact' && r.value === ''))) {
         // Only return empty if there isn't an explicit style defined for an empty string value
-         if (!config.indicatorStyles?.[columnName]?.styleRules?.some(r => r.matchType === 'regex' && new RegExp(r.pattern).test(''))) {
-              return '';
-         }
+        if (!config.indicatorStyles?.[columnName]?.styleRules?.some(r => r.matchType === 'regex' && new RegExp(r.pattern).test(''))) {
+            return '';
+        }
     }
 
 
@@ -57,7 +57,7 @@ function isTruthy(value, config) {
                     }
                 }
             } catch (e) {
-                 console.error(`Error processing styleRule for column "${columnName}", pattern "${rule.pattern || rule.value}":`, e);
+                console.error(`Error processing styleRule for column "${columnName}", pattern "${rule.pattern || rule.value}":`, e);
             }
 
             if (match && rule.style) {
@@ -72,18 +72,18 @@ function isTruthy(value, config) {
     }
     // --- FALLBACK: Check legacy valueMap if styleRules didn't match or don't exist ---
     else if (columnStyle && columnStyle.type === 'tag' && !tagStyle && columnStyle.valueMap) {
-       const lowerValue = stringValue.toLowerCase();
-       tagStyle = columnStyle.valueMap.hasOwnProperty(stringValue) ? columnStyle.valueMap[stringValue] :
-                  columnStyle.valueMap.hasOwnProperty(lowerValue) ? columnStyle.valueMap[lowerValue] :
-                  columnStyle.valueMap['default']; // Use valueMap's default
+        const lowerValue = stringValue.toLowerCase();
+        tagStyle = columnStyle.valueMap.hasOwnProperty(stringValue) ? columnStyle.valueMap[stringValue] :
+            columnStyle.valueMap.hasOwnProperty(lowerValue) ? columnStyle.valueMap[lowerValue] :
+                columnStyle.valueMap['default']; // Use valueMap's default
     }
 
     // --- Apply the determined style ---
     if (!tagStyle) {
         // If absolutely no style found (no rules, no valueMap, no defaults configured)
         // render a basic default tag to show *something* unless the value was empty string
-         if (stringValue === '') return ''; // Don't render tag for empty string if no style matched
-         return `<span class="tag tag-default" title="${titlePrefix}${stringValue}">${stringValue}</span>`;
+        if (stringValue === '') return ''; // Don't render tag for empty string if no style matched
+        return `<span class="tag tag-default" title="${titlePrefix}${stringValue}">${stringValue}</span>`;
     }
 
     // Allow style to explicitly define empty output (e.g., for hiding certain values)
@@ -211,21 +211,21 @@ function generateIndicatorsHTML(row, columnName, globalConfig, fullDataset) {
                     } else {
                         // Use the passed-in fullDataset for the lookup
                         if (!fullDataset || !Array.isArray(fullDataset)) {
-                             console.error(`Lookup for column "${columnName}" failed: fullDataset was not provided or not an array.`);
-                             itemHtml = `<span class="tag" style="background-color: #f8d7da; color: #58151c;">Data Error</span>`;
+                            console.error(`Lookup for column "${columnName}" failed: fullDataset was not provided or not an array.`);
+                            itemHtml = `<span class="tag" style="background-color: #f8d7da; color: #58151c;">Data Error</span>`;
                         } else {
-                             const foundItem = fullDataset.find(dataRow => String(dataRow[sourceConfig.dataColumn]) === lookupId);
-                             if (foundItem) {
-                                 const displayValue = foundItem[sourceConfig.displayColumn] || `(Label missing for ${lookupId})`;
-                                 if (styleConfig.styleAs === 'tag') {
-                                     const tempStyleConfig = { ...styleConfig, type: 'tag', valueMap: null, styleRules: null };
-                                     itemHtml = formatTag(displayValue, tempStyleConfig, columnName, styleConfig.titlePrefix);
-                                 } else {
-                                     itemHtml = `<span class="cell-text">${displayValue}</span>`;
-                                 }
-                             } else {
-                                 itemHtml = `<span class="tag" style="background-color: #fff3cd; color: #664d03;" title="Parent ID not found: ${lookupId}">${lookupId} (Not Found)</span>`;
-                             }
+                            const foundItem = fullDataset.find(dataRow => String(dataRow[sourceConfig.dataColumn]) === lookupId);
+                            if (foundItem) {
+                                const displayValue = foundItem[sourceConfig.displayColumn] || `(Label missing for ${lookupId})`;
+                                if (styleConfig.styleAs === 'tag') {
+                                    const tempStyleConfig = { ...styleConfig, type: 'tag', valueMap: null, styleRules: null };
+                                    itemHtml = formatTag(displayValue, tempStyleConfig, columnName, styleConfig.titlePrefix);
+                                } else {
+                                    itemHtml = `<span class="cell-text">${displayValue}</span>`;
+                                }
+                            } else {
+                                itemHtml = `<span class="tag" style="background-color: #fff3cd; color: #664d03;" title="Parent ID not found: ${lookupId}">${lookupId} (Not Found)</span>`;
+                            }
                         }
                     }
                 }
@@ -254,7 +254,7 @@ function generateIndicatorsHTML(row, columnName, globalConfig, fullDataset) {
  * @param {string} [cardClass='kanban-card'] The CSS class for the card element.
  * @returns {HTMLElement} The card DOM element.
  */
-function createInitiativeCard(row, tabViewConfig, globalConfig, cardClass = 'kanban-card') {
+function createInitiativeCard(row, tabViewConfig, globalConfig, fullDataset, cardClass = 'kanban-card') {
     const cardDiv = document.createElement('div');
     cardDiv.className = cardClass;
     const headerDiv = document.createElement('div');
@@ -275,9 +275,9 @@ function createInitiativeCard(row, tabViewConfig, globalConfig, cardClass = 'kan
     if (titleLinkColumn && validHeaders.includes(titleLinkColumn) && row[titleLinkColumn]) {
         const url = String(row[titleLinkColumn]).trim();
         if (url.startsWith('http://') || url.startsWith('https://')) {
-             linkElement = document.createElement('a');
-             linkElement.href = url; linkElement.target = '_blank'; linkElement.rel = 'noopener noreferrer';
-             linkElement.className = 'card-title-link'; linkElement.title = `Link to: ${url}`;
+            linkElement = document.createElement('a');
+            linkElement.href = url; linkElement.target = '_blank'; linkElement.rel = 'noopener noreferrer';
+            linkElement.className = 'card-title-link'; linkElement.title = `Link to: ${url}`;
         }
     }
     if (linkElement) {
@@ -292,14 +292,14 @@ function createInitiativeCard(row, tabViewConfig, globalConfig, cardClass = 'kan
 
     indicatorCols.forEach(colName => {
         if (validHeaders.includes(colName)) {
-            // Pass globalConfig.parsedData as the full dataset for lookups
-            const indicatorHtmlArray = generateIndicatorsHTML(row, colName, globalConfig, globalConfig.parsedData);
+            // Pass the fullDataset down to the indicator generator
+            const indicatorHtmlArray = generateIndicatorsHTML(row, colName, globalConfig, fullDataset);
             indicatorHtmlArray.forEach(indicatorHtmlString => {
-                 indicatorsSpan.insertAdjacentHTML('beforeend', indicatorHtmlString);
+                indicatorsSpan.insertAdjacentHTML('beforeend', indicatorHtmlString);
             });
         }
     });
-
+    
     if (indicatorsSpan.childNodes.length > 0) {
         headerDiv.appendChild(indicatorsSpan);
     }
@@ -322,7 +322,7 @@ function createInitiativeCard(row, tabViewConfig, globalConfig, cardClass = 'kan
  * @param {string} [groupTitleElement='h4'] HTML tag name for the group title (e.g., 'h3', 'h4').
  * @param {string[]|null} [sortedKeys=null] Optional pre-sorted array of keys from groupedData.
  */
- function renderGroupedItemsAsGrid(parentGridContainer, groupedData, tabViewConfig, globalConfig, cardClass, groupBlockClass, columnWrapperClass, groupTitleElement = 'h4', sortedKeys = null) {
+function renderGroupedItemsAsGrid(parentGridContainer, groupedData, tabViewConfig, globalConfig, cardClass, groupBlockClass, columnWrapperClass, groupTitleElement = 'h4', sortedKeys = null) {
     const keysToRender = sortedKeys ? sortedKeys : Object.keys(groupedData).sort();
     if (keysToRender.length === 0) return;
 
@@ -342,7 +342,7 @@ function createInitiativeCard(row, tabViewConfig, globalConfig, cardClass = 'kan
 
         // Determine if stacking wrappers are needed
         if (maxGroupsPerColumn > 1) {
-             if (currentColumnWrapper === null || groupsInCurrentColumn >= maxGroupsPerColumn) {
+            if (currentColumnWrapper === null || groupsInCurrentColumn >= maxGroupsPerColumn) {
                 currentColumnWrapper = document.createElement('div');
                 currentColumnWrapper.className = columnWrapperClass;
                 if (layoutConfig?.itemGap) currentColumnWrapper.style.gap = layoutConfig.itemGap;
@@ -374,7 +374,7 @@ function createInitiativeCard(row, tabViewConfig, globalConfig, cardClass = 'kan
             targetContainer.appendChild(groupBlockDiv);
             if (maxGroupsPerColumn > 1) groupsInCurrentColumn++;
         } else {
-             console.error("renderGroupedItemsAsGrid: targetContainer is unexpectedly null.");
+            console.error("renderGroupedItemsAsGrid: targetContainer is unexpectedly null.");
         }
     });
 }

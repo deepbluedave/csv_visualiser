@@ -318,12 +318,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Call the correct renderer based on type
                 switch (tabConfig.type) {
-                    case 'table': renderTable(filteredData, tabConfig, currentConfig, targetElement, showMessage); break;
-                    case 'table-hierarchy': renderTableHierarchy(filteredData, tabConfig, currentConfig, targetElement, showMessage);break; 
-                    case 'kanban': renderKanban(filteredData, tabConfig, currentConfig, targetElement, showMessage); break;
-                    case 'summary': renderSummaryView(filteredData, tabConfig, currentConfig, targetElement, showMessage); break;
-                    case 'counts': renderCountsView(filteredData, tabConfig, currentConfig, targetElement, showMessage); break;
-                    case 'graph': renderGraph(filteredData, tabConfig, currentConfig, targetElement, showMessage); break;
+                    case 'table':
+                        renderTable(filteredData, tabConfig, currentConfig, targetElement, showMessage);
+                        break;
+                    case 'table-hierarchy':
+                        renderTableHierarchy(filteredData, tabConfig, currentConfig, targetElement, showMessage, parsedData);
+                        break;
+                    case 'kanban':
+                        renderKanban(filteredData, tabConfig, currentConfig, targetElement, showMessage, parsedData);
+                        break;
+                    case 'summary':
+                        renderSummaryView(filteredData, tabConfig, currentConfig, targetElement, showMessage, parsedData);
+                        break;
+                    case 'counts':
+                        renderCountsView(filteredData, tabConfig, currentConfig, targetElement, showMessage);
+                        break;
+                    case 'graph':
+                        renderGraph(filteredData, tabConfig, currentConfig, targetElement, showMessage);
+                        break;
                     default:
                         console.warn(`renderAllTabs: Unknown tab type "${tabConfig.type}" for tab "${tabConfig.title}".`);
                         showMessage(`Unknown view type configured: "${tabConfig.type}"`, tabConfig.id);

@@ -58,8 +58,6 @@ window.editorConfig = {
             "columnWidth": "50px"
         },
         { "name": "WorkItem", "label": "Work Item Title", "type": "text", "required": true, "columnWidth": "350px" },
-        { "name": "Pillar", "label": "Pillar", "type": "select", "required": true, "optionsSource": "viewerConfigValueMap", "viewerStyleColumnName": "Pillar", "columnWidth": "180px" },
-        { "name": "WorkItemType", "label": "Type", "type": "select", "required": true, "optionsSource": "viewerConfigValueMap", "viewerStyleColumnName": "WorkItemType", "columnWidth": "180px" },
         {
             "name": "ParentItemID", "label": "Parent Item", "type": "select",
             // This is the core new configuration for relational lookups
@@ -73,6 +71,8 @@ window.editorConfig = {
             },
             "allowNewTags": false, "viewerStyleColumnName": "ParentItemID", "columnWidth": "250px"
         },
+        { "name": "Pillar", "label": "Pillar", "type": "select", "required": true, "optionsSource": "viewerConfigValueMap", "viewerStyleColumnName": "Pillar", "columnWidth": "180px" },
+        { "name": "WorkItemType", "label": "Type", "type": "select", "required": true, "optionsSource": "viewerConfigValueMap", "viewerStyleColumnName": "WorkItemType", "columnWidth": "180px" },
         { "name": "Status", "label": "Status", "type": "select", "required": true, "optionsSource": "viewerConfigValueMap", "viewerStyleColumnName": "Status", "columnWidth": "160px" },
         {
             "name": "Owner", "label": "Owner", "type": "multi-select", "required": true, "allowNewTags": true,

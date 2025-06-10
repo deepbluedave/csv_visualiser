@@ -1095,46 +1095,55 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (uploadConfluenceBtn) {
         uploadConfluenceBtn.addEventListener('click', async () => {
-            const cfg = getEditorConfig();
-            if (!cfg) { updateEditorStatus('Editor config not loaded.', true); return; }
-            if (!confluenceAvailable()) { updateEditorStatus('Confluence integration not available.', true); return; }
+            const confirmationMessage = "This will save the current data and changelog to Confluence, potentially overwriting existing attachments with the same name.\n\nAre you sure you want to proceed?";
 
-            updateEditorStatus('Uploading attachments to Confluence...');
-            try {
-                const csvOptions = cfg.csvOutputOptions || {};
-                const csvString = generateCsvForExport(csvDataMain, cfg.columns, csvOptions);
-                const csvName = cfg.confluenceAttachmentSettings?.csvAttachmentName || 'editor_data.csv';
-                const csvPageId = cfg.confluenceAttachmentSettings?.csvAttachmentPageId || null;
+            // Add the confirmation prompt before proceeding
+            if (window.confirm(confirmationMessage)) {
+                const cfg = getEditorConfig();
+                if (!cfg) { updateEditorStatus('Editor config not loaded.', true); return; }
+                if (!confluenceAvailable()) { updateEditorStatus('Confluence integration not available.', true); return; }
 
-                const now = new Date();
-                const ts = getFormattedTimestampsForLog(now);
-                const newChangesStamp = `${ts.utc} | ${ts.newYork} | ${ts.phoenix}`;
-                let changesDigest = '*No new changes detected since last CSV load.*\n';
-                if (initialCsvData.length > 0) changesDigest = generateChangeDigestOnDemand();
+                updateEditorStatus('Uploading attachments to Confluence...');
+                try {
+                    const csvOptions = cfg.csvOutputOptions || {};
+                    const csvString = generateCsvForExport(csvDataMain, cfg.columns, csvOptions);
+                    const csvName = cfg.confluenceAttachmentSettings?.csvAttachmentName || 'editor_data.csv';
+                    const csvPageId = cfg.confluenceAttachmentSettings?.csvAttachmentPageId || null;
 
-                let combined = `## Changes Recorded: ${newChangesStamp}\n\n` + changesDigest + "\n\n";
-                const user = getConfluenceUser();
-                if (user) {
-                    combined += `Editor - User ID: ${user.id} | UserName: ${user.name}\n\n`;
-                } else {
-                    combined += `Editor - User ID : Not available outside of confluence\n\n`;
+                    const now = new Date();
+                    const ts = getFormattedTimestampsForLog(now);
+                    const newChangesStamp = `${ts.utc} | ${ts.newYork} | ${ts.phoenix}`;
+                    let changesDigest = '*No new changes detected since last CSV load.*\n';
+                    if (initialCsvData.length > 0) changesDigest = generateChangeDigestOnDemand();
+
+                    let combined = `## Changes Recorded: ${newChangesStamp}\n\n`;
+                    const user = getConfluenceUser();
+                    if (user) {
+                        combined += `Editor - User ID: ${user.id} | UserName: ${user.name}\n\n`;
+                    } else {
+                        combined += `Editor - User ID : Not available outside of confluence\n\n`;
+                    }
+                    combined += "---\n\n";
+                    if (cachedCumulativeLogContent !== null) {
+                        combined += cachedCumulativeLogContent;
+                    } else if (cfg.cumulativeLogUrl) {
+                        combined += `*Note: Previous cumulative log from ${cfg.cumulativeLogUrl} could not be loaded.*\n`;
+                    }
+                    const logName = cfg.confluenceAttachmentSettings?.changelogAttachmentName || 'changelog.md';
+                    const logPageId = cfg.confluenceAttachmentSettings?.changelogAttachmentPageId || null;
+
+                    await saveOrUpdateConfluenceAttachment(csvName, csvString, csvPageId);
+                    await saveOrUpdateConfluenceAttachment(logName, combined, logPageId);
+                    updateEditorStatus('Attachments saved to Confluence.');
+                } catch (err) {
+                    console.error('Confluence upload failed', err);
+                    const msg = err.statusText || err.message || 'Unknown error';
+                    updateEditorStatus(`Error uploading to Confluence: ${msg}`, true);
                 }
-                combined += "---\n\n";
-                if (cachedCumulativeLogContent !== null) {
-                    combined += cachedCumulativeLogContent;
-                } else if (cfg.cumulativeLogUrl) {
-                    combined += `*Note: Previous cumulative log from ${cfg.cumulativeLogUrl} could not be loaded.*\n`;
-                }
-                const logName = cfg.confluenceAttachmentSettings?.changelogAttachmentName || 'changelog.md';
-                const logPageId = cfg.confluenceAttachmentSettings?.changelogAttachmentPageId || null;
-
-                await saveOrUpdateConfluenceAttachment(csvName, csvString, csvPageId);
-                await saveOrUpdateConfluenceAttachment(logName, combined, logPageId);
-                updateEditorStatus('Attachments saved to Confluence.');
-            } catch (err) {
-                console.error('Confluence upload failed', err);
-                const msg = err.statusText || err.message || 'Unknown error';
-                updateEditorStatus(`Error uploading to Confluence: ${msg}`, true);
+            } else {
+                // User clicked "Cancel"
+                updateEditorStatus('Confluence save cancelled by user.');
+                console.log("Confluence save cancelled by user.");
             }
         });
     }
